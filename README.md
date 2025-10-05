@@ -63,28 +63,9 @@ These principles converge in Azazel’s design: **defense is not about passive p
   OpenCanary等を利用し、攻撃者を観察ではなく誘導・拘束。正規ユーザーには影響を与えずに隔離。  
   *Leverages tools like OpenCanary to mislead and isolate attackers—not merely observe them—without affecting legitimate users.*
 
-- **可搬型設計 / Portable Deployment**
-  軽量構成でRaspberry Piに最適化。災害対応や一時的な現場展開にも対応。
+- **可搬型設計 / Portable Deployment**  
+  軽量構成でRaspberry Piに最適化。災害対応や一時的な現場展開にも対応。  
   *Lightweight and optimized for Raspberry Pi, enabling easy deployment in disaster recovery or temporary field operations.*
-
-## What's new
-
-- Sample configs under `configs/profiles/` showcase SAT, LTE, and fiber tuning
-  complete with thresholds and notify/storage defaults.
-- The operations guide now carries a mode action table describing preset intent
-  for each defensive posture.
-- `/v1/mode` documentation clarifies that invoking the endpoint applies presets
-  and records operator-triggered decisions in `decisions.log`.
-- Mode-aware presets backed by `azazel.yaml` apply delay/shape/block actions as
-  the daemon transitions between portal, shield, and lockdown.
-- Vector remap normalization now emits a unified schema (ts/node/src/dst/proto
-  fields) validated via unit tests.
-- QoS plans derive HTB class rate/ceil values per profile using
-  `configs/tc/classes.htb`.
-- Lockdown tooling ships with a templated nftables ruleset and an
-  `resolve_allowlist.py` utility that resolves medical FQDNs into CIDRs.
-- CI enforces schema validation, pytest, shellcheck, and allowlist generation
-  to ensure release tags remain deployable on clean systems.
 
 ---
 
@@ -175,35 +156,6 @@ As cyber attacks become faster and more automated, traditional honeypots fall sh
 
 ---
 
-## 特別謝辞 / Special Thanks
-
-- @k
-
 ## ライセンス / License
 
 MIT License
-
----
-
-## 新しいデプロイフロー / Modern deployment flow
-
-旧来の `1_install_raspap.sh` と `2_install_azazel.sh` はメンテナンス対象外となり、
-`legacy/` ディレクトリに退避されました。今後はタグ付きリリースに含まれる
-インストーラを利用してください。
-
-### Install on Raspberry Pi (clean image)
-```bash
-# 固定タグを使うこと（例: v1.0.0）
-TAG=v1.0.0
-curl -fsSL https://github.com/01rabbit/Azazel/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
- | tar xz -C /tmp
-cd /tmp/azazel-installer && sudo bash scripts/bootstrap_mvp.sh
-```
-
-ブートストラップ後は `/etc/azazel/azazel.yaml` を編集し、必要に応じて
-`docs/OPERATIONS.md` の手順に従って Suricata や OpenCanary を再設定します。
-
-### Documentation
-- `docs/ARCHITECTURE.md` — コントロールプレーンの構成図と役割
-- `docs/OPERATIONS.md` — タグ付きリリースの取得からローリング更新まで
-- `docs/API_REFERENCE.md` — Python モジュールおよびスクリプトの概要
