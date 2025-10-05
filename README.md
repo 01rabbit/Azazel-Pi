@@ -1,0 +1,209 @@
+# 御調子門 -AZAZEL system- : The Cyber Scapegoat Gateway
+![御調子門_logo](images/御調子門_logo.png)
+## 概要 / Overview
+
+**Delaying Action（遅滞行動）** という言葉をご存知でしょうか？
+これは軍事戦略において、防御部隊が決定的な戦闘を避けつつ、敵の進撃を可能な限り遅らせるために戦い続け、時間を稼ぐための防衛行動を意味します。今日のサイバー戦では、攻撃が高速かつ自動化され、わずか数秒で資産が侵害されるリスクがあります。この古典的な戦術思想を、現代のサイバーセキュリティに再解釈して応用すべきだと私たちは考えました。
+
+この考え方をもとに開発されたのが **御調子門 -Azazel System-** です。本ツールは、**スケープゴート型デコイ**を実装しており、攻撃を吸収し、攻撃者を誤誘導しながら、その進行を戦術的に遅延させます。従来のハニーポットのように単に観察するのではなく、攻撃者を能動的に拘束し、**サイバー空間における遅滞行動**を実現します。
+
+本ツールは、出張先のホテルやイベント会場などの**信頼できない外部ネットワーク**に接続する際や、**一時的なラボ環境**を守る必要がある場面において、ユーザーを能動的に保護する**可搬型のセキュリティゲートウェイ**として設計されています。
+
+現代の戦場はサイバー空間へと移りましたが、「時間を稼ぐために敵を拘束する」という発想は今も通用します。**御調子門**は、サイバー戦における「戦術的足止め」を具現化するための、一つの答えです。
+
+**Azazel System** is a portable active cyber defense tool inspired by the classical military concept of **Delaying Action**—a defensive operation aimed at slowing the enemy's advance while avoiding decisive engagement. In the age of automated and lightning-fast cyber attacks, where assets can be compromised within seconds, we believe this timeless strategy deserves modern re-implementation.
+
+The system uses a **scapegoat-style decoy** to absorb, mislead, and delay adversaries. Unlike traditional honeypots that passively observe, Azazel actively restrains attacker behavior to buy time—a tactical "delaying action" in cyberspace.
+
+This tool is designed for use in **untrusted external environments**—such as hotel Wi-Fi, public venues, or temporary lab setups—where users need portable, proactive protection.
+
+Though the battlefield has shifted into cyberspace, the principle of "binding the enemy to buy time" remains effective. **Azazel System** provides a modern response to that strategic need.
+
+---
+
+## 設計思想 / Design Philosophy
+
+御調子門 -AZAZEL system- の防御思想は、日本における二つの戦術的概念に着想を得ています。
+
+ひとつは、日本陸軍における防御戦術の原則である「**敵を戦場に拘束する**」という考え方です。これは、敵の攻撃をただ防ぐのではなく、あえて戦場に引き留め、敵の行動を制限しながら、味方の後続準備や反撃の時間を稼ぐことを目的としています。御調子門もこれと同様に、侵入者をシステム上に誘導し、デコイや通信遅延の中に拘束することで、攻撃の自由度を奪い、防御側に主導権を渡す構造をとっています。
+
+もうひとつは、日本古来の武術における「**後の先（ごのせん）**」という戦い方です。これは、相手の動きを見てから反応することで、逆に主導権を握るという高度な戦術です。見かけ上は後手に見えても、実際には相手の攻撃を利用して、制御し、反撃の機を得るというものです。御調子門では、Suricataによる侵入検知後に遅滞制御を発動することで、この「後の先」の構えを実装しています。攻撃をあえて引き受け、観察し、制御するという戦術的な対応が、この思想に通じます。
+
+このように、御調子門は「防御とは単に守ることではなく、敵の行動を制御し、時間を稼ぐこと」というコンセプトを体現しており、日本的な戦術思想に根ざしたサイバーデセプションツールです。
+
+**Azazel System** is rooted in two key Japanese strategic doctrines:
+
+- The **Imperial Japanese Army’s principle of battlefield containment**—not simply blocking the enemy, but intentionally binding them to a location to limit their actions and buy time for reinforcements or counteroffensives.
+
+- The **martial arts concept of "Go no Sen"**, or taking initiative in response. Rather than preemptive strikes, this principle capitalizes on the opponent's move, using their momentum against them. Azazel embodies this by activating its response only after intrusion is detected, deliberately reacting to the attacker’s behavior to assert control.
+
+These principles converge in Azazel’s design: **defense is not about passive protection, but about active control and strategic delay.**
+
+---
+
+## 可搬型設計 / Portable Deployment
+
+- **軽量・省電力な構成により、外出先や現場などの一時的なネットワーク接続環境でも容易に導入可能です。**  
+*Lightweight and energy-efficient, enabling quick deployment in temporary and mobile environments.*
+
+- **出張時、イベント会場、外部検証ネットワークなど、セキュリティが保証されない場所での利用に最適です。**  
+*Perfect for use during business trips, field operations, or in untrusted networks outside your primary infrastructure.*
+
+## 特徴 / Features
+
+- **遅滞戦術の実装 / Tactical Delaying**  
+  陸戦における「遅滞行動」の概念を、サイバー空間に適用。侵入を許容しつつ、その進行をコントロール。  
+  *Applies the military concept of delaying action to cyberspace—permitting intrusion while strategically controlling its progression.*
+
+- **リアルタイム侵入検知と制御 / Real-Time IDS-based Control**  
+  Suricata による侵入検知をトリガーに、攻撃元IPの通信を `tc` や `iptables/nftables` により動的に遅延・制限。  
+  *Triggered by Suricata IDS alerts, dynamically throttles or restricts traffic from attacker IPs using `tc` and `iptables/nftables`.*
+
+- **スケープゴート型デコイ / Scapegoat Decoy**  
+  OpenCanary等を利用し、攻撃者を観察ではなく誘導・拘束。正規ユーザーには影響を与えずに隔離。  
+  *Leverages tools like OpenCanary to mislead and isolate attackers—not merely observe them—without affecting legitimate users.*
+
+- **可搬型設計 / Portable Deployment**
+  軽量構成でRaspberry Piに最適化。災害対応や一時的な現場展開にも対応。
+  *Lightweight and optimized for Raspberry Pi, enabling easy deployment in disaster recovery or temporary field operations.*
+
+## What's new
+
+- Sample configs under `configs/profiles/` showcase SAT, LTE, and fiber tuning
+  complete with thresholds and notify/storage defaults.
+- The operations guide now carries a mode action table describing preset intent
+  for each defensive posture.
+- `/v1/mode` documentation clarifies that invoking the endpoint applies presets
+  and records operator-triggered decisions in `decisions.log`.
+- Mode-aware presets backed by `azazel.yaml` apply delay/shape/block actions as
+  the daemon transitions between portal, shield, and lockdown.
+- Vector remap normalization now emits a unified schema (ts/node/src/dst/proto
+  fields) validated via unit tests.
+- QoS plans derive HTB class rate/ceil values per profile using
+  `configs/tc/classes.htb`.
+- Lockdown tooling ships with a templated nftables ruleset and an
+  `resolve_allowlist.py` utility that resolves medical FQDNs into CIDRs.
+- CI enforces schema validation, pytest, shellcheck, and allowlist generation
+  to ensure release tags remain deployable on clean systems.
+
+---
+
+## 使用技術 / Stack
+
+- Raspberry Pi OS (64bit Lite)
+- Suricata (IDS/IPS)
+- OpenCanary (Decoy Services)
+- Vector (Log Collection)
+- iptables / nftables + tc (Traffic Control)
+- Mattermost (Alerting)
+- Python + Scapy (Custom Response Logic)
+- rsync + SSH (Optional Log Export)
+
+---
+
+## インストール / Installation
+
+### 🔧 必要条件 / Requirements
+- Raspberry Pi OS (64bit Lite)
+- インターネット接続 / Internet connection
+- 管理者権限（sudo） / Administrator privileges (sudo)
+
+---
+
+### セットアップ手順 / Setup Instructions
+
+最初に **1_install_raspap.sh** を実行し、Wi-Fi APとネットワーク環境を構築します。
+First, run **1_install_raspap.sh** to set up the Wi-Fi AP and network environment.
+
+```bash
+git clone https://github.com/01rabbit/Azazel.git azazel
+cd azazel
+sudo bash 1_install_raspap.sh          # 日本語モード (default)
+sudo bash 1_install_raspap.sh --lang=en # 英語モード (English)
+```
+
+---
+
+### ネットワーク構成 / Configure Network via WebGUI
+
+`docs/RaspAP_config.md`の内容に従い、WebUIで RaspAP の設定を完了させます。
+Follow `docs/RaspAP_config.md` and configure RaspAP settings via WebUI.
+
+- IP固定設定 / Set static IP for wlan0
+- DHCP範囲設定 / Configure DHCP range
+- SSID/パスワードの設定 / Set SSID/Password
+
+
+WebUI URL: `http://172.16.0.254`
+
+---
+
+### Azazelシステムのインストール / Install Azazel System
+
+ネットワークが完成したら **2_install_azazel.sh** を実行します。
+Once the network is configured, run **2_install_azazel.sh**.
+
+```bash
+sudo bash 2_install_azazel.sh          # 日本語モード (default)
+sudo bash 2_install_azazel.sh --lang=en # 英語モード (English)
+```
+
+- Dockerコンテナ / Mattermost / OpenCanary 等が起動されます。
+- Docker containers / Mattermost / OpenCanary will be deployed and started.
+
+
+---
+
+詳細な構成は [`docs/setup.md`](docs/setup.md) を参照してください。
+For detailed configurations, refer to [`docs/setup.md`](docs/setup.md).
+
+
+---
+
+## 開発の背景 / Background
+
+現代のサイバー攻撃は高速化・自動化し、従来のハニーポットでは対応が困難です。本システムは、**単なる観察やブロックではなく、戦術的に遅らせる**ことを目的に設計されています。
+
+As cyber attacks become faster and more automated, traditional honeypots fall short. This system embraces a **strategic delaying approach**, turning time into a defensive asset.
+
+---
+
+## メッセージ / Message
+
+> 防御とは、時間を稼ぐことである。  
+> Defense is the art of buying time.
+
+---
+
+## 特別謝辞 / Special Thanks
+
+- @k
+
+## ライセンス / License
+
+MIT License
+
+---
+
+## 新しいデプロイフロー / Modern deployment flow
+
+旧来の `1_install_raspap.sh` と `2_install_azazel.sh` はメンテナンス対象外となり、
+`legacy/` ディレクトリに退避されました。今後はタグ付きリリースに含まれる
+インストーラを利用してください。
+
+### Install on Raspberry Pi (clean image)
+```bash
+# 固定タグを使うこと（例: v1.0.0）
+TAG=v1.0.0
+curl -fsSL https://github.com/01rabbit/Azazel/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
+ | tar xz -C /tmp
+cd /tmp/azazel-installer && sudo bash scripts/bootstrap_mvp.sh
+```
+
+ブートストラップ後は `/etc/azazel/azazel.yaml` を編集し、必要に応じて
+`docs/OPERATIONS.md` の手順に従って Suricata や OpenCanary を再設定します。
+
+### Documentation
+- `docs/ARCHITECTURE.md` — コントロールプレーンの構成図と役割
+- `docs/OPERATIONS.md` — タグ付きリリースの取得からローリング更新まで
+- `docs/API_REFERENCE.md` — Python モジュールおよびスクリプトの概要
