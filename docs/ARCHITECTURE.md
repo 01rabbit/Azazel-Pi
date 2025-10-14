@@ -14,7 +14,7 @@ become operational without ad-hoc configuration.
 | `azazel_core/qos/` | Maps profiles to QoS enforcement classes. |
 | `azctl/` | Thin CLI/daemon interface used by systemd. |
 | `configs/` | Declarative configuration set including schema validation. |
-| `scripts/bootstrap_mvp.sh` | Installer that stages the runtime on target nodes. |
+| `scripts/install_azazel.sh` | Provisioning script that stages the runtime and dependencies. |
 | `systemd/` | Units and targets that compose the Azazel service stack. |
 
 ## State machine overview
@@ -39,8 +39,10 @@ opinionated defaults that can be adapted per deployment.
 
 ## Packaging goal
 
-`bootstrap_mvp.sh` installs Azazel onto `/opt/azazel` and copies configuration
-and systemd units into place. The repository layout mirrors the staged
-filesystem, ensuring releases are reproducible. Tagging a commit triggers the
-release workflow that builds `azazel-installer-<tag>.tar.gz` containing the
-entire payload required for air-gapped installs.
+`install_azazel.sh` installs Azazel onto `/opt/azazel`, copies configuration
+and systemd units into place, and ensures Debian dependencies are present. The
+repository layout mirrors the staged filesystem, ensuring releases are
+reproducible. Tagging a commit triggers the release workflow that builds
+`azazel-installer-<tag>.tar.gz` containing the entire payload required for
+air-gapped installs. The previous minimal bootstrap script is preserved under
+`legacy/bootstrap_mvp.sh` for reference.

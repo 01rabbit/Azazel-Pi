@@ -2,7 +2,7 @@
 lint:
 	python -m json.tool < configs/azazel.schema.json > /dev/null
 	shellcheck scripts/*.sh
-	test -f scripts/bootstrap_mvp.sh
+	test -f scripts/install_azazel.sh
 	test -f scripts/nft_apply.sh
 	test -f scripts/rollback.sh
 	test -f scripts/sanity_check.sh

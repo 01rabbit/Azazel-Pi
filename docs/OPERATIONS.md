@@ -18,11 +18,14 @@ The archive includes configuration templates, scripts, and systemd units.
 
 ## 2. Bootstrap the node
 
-Run the installer on the target host:
+Run the installer on the target host. When working from a git checkout you can
+use `scripts/install_azazel.sh`. Historical deployments that only stage the
+runtime without provisioning dependencies remain available under
+`legacy/bootstrap_mvp.sh`:
 
 ```bash
 cd /tmp/azazel-installer
-sudo bash scripts/bootstrap_mvp.sh
+sudo bash scripts/install_azazel.sh
 ```
 
 The script copies the repository payload to `/opt/azazel`, pushes configuration

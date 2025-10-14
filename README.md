@@ -104,58 +104,46 @@ These principles converge in Azazel’s design: **defense is not about passive p
 ## インストール / Installation
 
 ### 🔧 必要条件 / Requirements
-- Raspberry Pi OS (64bit Lite)
+- Raspberry Pi OS (64bit Lite) などの Debian 系ディストリビューション
 - インターネット接続 / Internet connection
 - 管理者権限（sudo） / Administrator privileges (sudo)
 
----
+### クイックセットアップ / Quick setup
 
-### セットアップ手順 / Setup Instructions
+最新のリリース、またはこのリポジトリを取得後、ルート権限で `scripts/install_azazel.sh` を実行すると、
+必要な依存関係のインストールから Azazel 本体の配置までを一括で行います。
 
-最初に **1_install_raspap.sh** を実行し、Wi-Fi APとネットワーク環境を構築します。
-First, run **1_install_raspap.sh** to set up the Wi-Fi AP and network environment.
-
-```bash
-git clone https://github.com/01rabbit/Azazel.git azazel
-cd azazel
-sudo bash 1_install_raspap.sh          # 日本語モード (default)
-sudo bash 1_install_raspap.sh --lang=en # 英語モード (English)
-```
-
----
-
-### ネットワーク構成 / Configure Network via WebGUI
-
-`docs/RaspAP_config.md`の内容に従い、WebUIで RaspAP の設定を完了させます。
-Follow `docs/RaspAP_config.md` and configure RaspAP settings via WebUI.
-
-- IP固定設定 / Set static IP for wlan0
-- DHCP範囲設定 / Configure DHCP range
-- SSID/パスワードの設定 / Set SSID/Password
-
-
-WebUI URL: `http://172.16.0.254`
-
----
-
-### Azazelシステムのインストール / Install Azazel System
-
-ネットワークが完成したら **2_install_azazel.sh** を実行します。
-Once the network is configured, run **2_install_azazel.sh**.
+After cloning the repository or unpacking a release bundle, run the installer as root to
+provision dependencies and stage the runtime:
 
 ```bash
-sudo bash 2_install_azazel.sh          # 日本語モード (default)
-sudo bash 2_install_azazel.sh --lang=en # 英語モード (English)
+cd Azazel-Pi
+sudo scripts/install_azazel.sh
+# 必要に応じてサービス起動まで自動化する場合 / start services automatically:
+# sudo scripts/install_azazel.sh --start
 ```
 
-- Dockerコンテナ / Mattermost / OpenCanary 等が起動されます。
-- Docker containers / Mattermost / OpenCanary will be deployed and started.
+スクリプトは以下を実施します。
+- Suricata、Vector、OpenCanary などの主要コンポーネントをインストール
+- `/opt/azazel` へコアモジュールとユーティリティを配置
+- `/etc/azazel` に設定テンプレートを展開し、`azctl.target` を有効化
 
+サービス起動前に `/etc/azazel/azazel.yaml` を編集し、使用するインターフェース名や QoS プロファイルを
+環境に合わせて調整してください。
 
----
+より詳細な構成手順やチューニング方法は [`docs/setup.md`](docs/setup.md) および
+[`docs/OPERATIONS.md`](docs/OPERATIONS.md) を参照してください。
 
-詳細な構成は [`docs/setup.md`](docs/setup.md) を参照してください。
-For detailed configurations, refer to [`docs/setup.md`](docs/setup.md).
+## 運用の流れ / Usage workflow
+
+Azazel を展開した後の代表的な運用タスクは以下のとおりです。
+
+1. `/etc/azazel/azazel.yaml` を編集し、モードごとの遅延・帯域制御値やロックダウン時の許可リストを調整する（テンプレートは `configs/azazel.yaml`）。
+2. Suricata の設定テンプレートを環境に合わせてレンダリングしたい場合は `scripts/suricata_generate.py` を使用する。
+3. すべての設定が整ったら `sudo systemctl restart azctl.target` で制御プレーンを再読み込みし、`scripts/sanity_check.sh` で主要サービスの稼働状況を確認する。
+4. インシデント時は `azctl` 経由でモードを手動切り替えしつつ、`decisions.log` に記録されるスコアリング結果を分析する（詳細は `docs/API_REFERENCE.md`）。
+
+これらのステップにより、Suricata や OpenCanary の検知イベントをトリガーとして、遅滞戦術を段階的に適用できます。
 
 
 ---
@@ -197,11 +185,13 @@ MIT License
 TAG=v1.0.0
 curl -fsSL https://github.com/01rabbit/Azazel/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
  | tar xz -C /tmp
-cd /tmp/azazel-installer && sudo bash scripts/bootstrap_mvp.sh
+cd /tmp/azazel-installer && sudo bash scripts/install_azazel.sh
 ```
 
 ブートストラップ後は `/etc/azazel/azazel.yaml` を編集し、必要に応じて
 `docs/OPERATIONS.md` の手順に従って Suricata や OpenCanary を再設定します。
+依存パッケージの導入を伴わない従来型の最小ブートストラップは
+`legacy/bootstrap_mvp.sh` に退避されています。
 
 ### Documentation
 - `docs/ARCHITECTURE.md` — コントロールプレーンの構成図と役割
