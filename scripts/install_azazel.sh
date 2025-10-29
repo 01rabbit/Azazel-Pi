@@ -64,7 +64,7 @@ MATTERMOST_DB_NAME="${MATTERMOST_DB_NAME:-mattermost}"
 MATTERMOST_DB_USER="${MATTERMOST_DB_USER:-mmuser}"
 MATTERMOST_DB_PASSWORD="${MATTERMOST_DB_PASSWORD:-securepassword}"
 MATTERMOST_VERSION="${MATTERMOST_VERSION:-9.7.1}"
-MATTERMOST_TARBALL="${MATTERMOST_TARBALL:-https://releases.mattermost.com/${MATTERMOST_VERSION}/mattermost-team-${MATTERMOST_VERSION}-linux-amd64.tar.gz}"
+MATTERMOST_TARBALL="${MATTERMOST_TARBALL:-}"
 MATTERMOST_DIR="/opt/mattermost"
 MATTERMOST_USER="mattermost"
 
@@ -74,24 +74,87 @@ install_mattermost() {
   fi
 
   local mattermost_binary="$MATTERMOST_DIR/bin/mattermost"
+  # If binary exists but is the wrong architecture (e.g., x86_64 on arm64 host), remove and re-install
+  if [[ -f "$mattermost_binary" ]]; then
+    BIN_INFO="$(file "$mattermost_binary" 2>/dev/null || true)"
+    ARCHD="$(dpkg --print-architecture 2>/dev/null || true)"
+    if [[ "$BIN_INFO" =~ "x86-64" && ( "$ARCHD" == "arm64" || "$ARCHD" == "aarch64" ) ]]; then
+      log "Detected Mattermost binary for x86_64 on an ARM host; removing to reinstall correct arch"
+      rm -rf "$MATTERMOST_DIR"
+    fi
+  fi
+
   if [[ ! -x "$mattermost_binary" ]]; then
     log "Installing Mattermost ${MATTERMOST_VERSION}"
-    local tmp_tar
+    # Determine architecture-aware tarball if not provided
+    if [[ -z "${MATTERMOST_TARBALL:-}" ]]; then
+      ARCHD="$(dpkg --print-architecture 2>/dev/null || true)"
+      case "$ARCHD" in
+        amd64|x86_64)
+          TARBALL_NAME="mattermost-team-${MATTERMOST_VERSION}-linux-amd64.tar.gz" ;;
+        arm64|aarch64)
+          # Recent Mattermost releases provide an arm64 tarball
+          TARBALL_NAME="mattermost-team-${MATTERMOST_VERSION}-linux-arm64.tar.gz" ;;
+        armhf|armv7l)
+          # Fallback: try arm64 build; older armv7 builds may not be available
+          TARBALL_NAME="mattermost-team-${MATTERMOST_VERSION}-linux-arm64.tar.gz" ;;
+        *)
+          TARBALL_NAME="mattermost-team-${MATTERMOST_VERSION}-linux-amd64.tar.gz" ;;
+      esac
+      MATTERMOST_TARBALL="https://releases.mattermost.com/${MATTERMOST_VERSION}/${TARBALL_NAME}"
+      log "Selected Mattermost tarball: $MATTERMOST_TARBALL (arch: $ARCHD)"
+    fi
+
+    local tmp_tar tmp_dir SRC_DIR
     tmp_tar="$(mktemp /tmp/mattermost.XXXXXX.tar.gz)"
-    if ! curl -fsSL "$MATTERMOST_TARBALL" -o "$tmp_tar"; then
+    # Download with retries to be more resilient to transient network errors
+    if ! curl -fsSL --retry 3 --retry-connrefused --retry-delay 2 --max-time 600 "$MATTERMOST_TARBALL" -o "$tmp_tar"; then
       rm -f "$tmp_tar"
       error "Failed to download Mattermost tarball from $MATTERMOST_TARBALL"
     fi
 
-    local tmp_dir
     tmp_dir="$(mktemp -d /tmp/mattermost.XXXXXX)"
-    tar -xzf "$tmp_tar" -C "$tmp_dir"
-    if [[ ! -d "$tmp_dir/mattermost" ]]; then
+    if ! tar -xzf "$tmp_tar" -C "$tmp_dir"; then
+      rm -f "$tmp_tar"
+      rm -rf "$tmp_dir"
+      error "Failed to extract Mattermost tarball (corrupt download?): $tmp_tar"
+    fi
+    # Many Mattermost tarballs contain a top-level directory named 'mattermost' or 'mattermost-team-*'
+    if [[ -d "$tmp_dir/mattermost" ]]; then
+      SRC_DIR="$tmp_dir/mattermost"
+    else
+      # Try to find first directory inside extracted tree
+      SRC_DIR="$(find "$tmp_dir" -maxdepth 1 -type d | tail -n +2 | head -n1)"
+    fi
+    if [[ -z "$SRC_DIR" || ! -d "$SRC_DIR" ]]; then
       rm -rf "$tmp_dir" "$tmp_tar"
       error "Mattermost tarball did not contain the expected directory structure."
     fi
+    # Backup existing install atomically before replacing
+    if [[ -d "$MATTERMOST_DIR" && ! -L "$MATTERMOST_DIR" ]]; then
+      BACKUP_DIR="${MATTERMOST_DIR}.bak.$(date +%s)"
+      log "Backing up existing $MATTERMOST_DIR to $BACKUP_DIR"
+      mv "$MATTERMOST_DIR" "$BACKUP_DIR"
+    fi
     mkdir -p "$MATTERMOST_DIR"
-    rsync -a "$tmp_dir/mattermost/" "$MATTERMOST_DIR/"
+    if ! rsync -a "$SRC_DIR/" "$MATTERMOST_DIR/"; then
+      # restore backup on failure
+      rm -rf "$MATTERMOST_DIR"
+      if [[ -n "${BACKUP_DIR:-}" && -d "$BACKUP_DIR" ]]; then
+        mv "$BACKUP_DIR" "$MATTERMOST_DIR"
+      fi
+      rm -rf "$tmp_dir" "$tmp_tar"
+      error "Failed to copy Mattermost files into $MATTERMOST_DIR"
+    fi
+    # Basic validation: ensure mattermost binary exists and is ELF
+    if [[ ! -x "$MATTERMOST_DIR/bin/mattermost" ]]; then
+      rm -rf "$MATTERMOST_DIR"
+      if [[ -n "${BACKUP_DIR:-}" && -d "$BACKUP_DIR" ]]; then
+        mv "$BACKUP_DIR" "$MATTERMOST_DIR"
+      fi
+      rm -rf "$tmp_dir" "$tmp_tar"
+      error "Installed Mattermost binary missing or not executable after installation"
+    fi
     rm -rf "$tmp_dir" "$tmp_tar"
   else
     log "Mattermost already installed at $MATTERMOST_DIR"
