@@ -1,13 +1,14 @@
 [Unit]
 Description=Mattermost
-After=network.target
+After=network.target docker.service
+Wants=docker.service
 
 [Service]
 Type=simple
-ExecStart=/opt/mattermost/bin/mattermost
-WorkingDirectory=/opt/mattermost
 User=mattermost
 Group=mattermost
+WorkingDirectory=/opt/mattermost
+ExecStart=/opt/mattermost/bin/mattermost
 Restart=always
 LimitNOFILE=49152
 

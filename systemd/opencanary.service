@@ -1,11 +1,14 @@
 [Unit]
-Description=OpenCanary honeypot
-After=network.target
+Description=OpenCanary honeypot (venv)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/opencanaryd --config=/etc/azazel/opencanary/opencanary.conf
-Restart=on-failure
+Environment=OPENCANARY_CONFIG=/etc/azazel/opencanary/opencanary.conf
+ExecStart=/opt/opencanary-venv/bin/opencanaryd --dev --uid nobody --gid nogroup
+Restart=always
+RestartSec=2
 
 [Install]
 WantedBy=azctl.target

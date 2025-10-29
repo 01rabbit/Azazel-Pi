@@ -3,13 +3,14 @@
 Azazelは以下のコンポーネントで構成されます：  
 *Azazel is composed of the following components:*
 
-- OpenCanary（ハニーポットサービス） / Honeypot service
-- Vector（ログ収集と転送） / Log collection and forwarding
-- PostgreSQL（Mattermost用DB） / Database for Mattermost
-- Mattermost（通知UI） / Notification and collaboration UI
+- OpenCanary（ハニーポットサービス、ホスト上で稼働） / Honeypot service running on the host
+- Vector（ログ収集と転送、ホスト上で稼働） / Log collection and forwarding on the host
+- Mattermost（通知UI、ホスト上で稼働） / Notification and collaboration UI on the host
+- Nginx（Mattermost向けリバースプロキシ） / Reverse proxy for Mattermost
+- PostgreSQL（Mattermost用DB、Dockerコンテナとして稼働） / Mattermost database running in Docker
 
-各サービスはDockerコンテナ上で稼働し、ホスト上で制御・通知連携が可能です。  
-*All components run in Docker containers and are managed and integrated via the host system.*
+PostgreSQL のみ Docker コンテナで提供され、それ以外のサービスは systemd から直接管理されます。  
+*Only PostgreSQL runs inside Docker; all other services are managed directly via systemd on the host.*
 
 ---
 
@@ -33,23 +34,33 @@ Azazelは以下のコンポーネントで構成されます：
 - 手動でSMTPやファイルストレージなど追加設定可能  
   *You can manually configure SMTP, file storage, etc.*
 
+### `/opt/azazel/config/docker-compose.yml` & `.env`
+- PostgreSQL コンテナの定義と資格情報を保持  
+  *Defines the PostgreSQL container and stores credentials.*
+- `.env` は `MATTERMOST_DB_*` 変数を提供し、Mattermost との整合性を維持します  
+  *The `.env` file exposes the `MATTERMOST_DB_*` variables to keep Mattermost in sync.*
+
 ---
 
 ## 🚦 起動順と依存関係 / Startup Sequence and Dependencies
 
-- `/opt/azazel/config/*` の設定ファイルは `docker-compose up` の**前に配置**する必要があります  
-  *Configuration files must be placed before running `docker-compose up`.*
+- PostgreSQL コンテナは `/opt/azazel/config/docker-compose.yml` を用いて起動 (`docker compose --project-name azazel-db up -d`)  
+  *Bring up PostgreSQL with `docker compose --project-name azazel-db up -d` in `/opt/azazel/config`.*
 - Mattermost は PostgreSQL が `Up` になってから systemd 経由で起動  
   *Mattermost requires PostgreSQL to be running before its own startup.*
 - `config.json` 編集後は `chown/chmod` を適切に行わないと起動失敗します  
   *Ensure `config.json` has correct ownership and permissions after editing.*
+- `install_azazel.sh` は `mattermost.service` と `nginx.service` を自動有効化します  
+  *The installer enables both `mattermost.service` and `nginx.service` automatically.*
 
 ---
 
 ## 🛠️ カスタマイズ例 / Customization Examples
 
-- `docker-compose.yml` 内の IP アドレスを固定化（例：172.16.10.10）  
-  *Set static IP addresses in `docker-compose.yml` (e.g., 172.16.10.10).* 
+- `.env` の `MATTERMOST_DB_PASSWORD` を変更し、同値を `config.json` に反映  
+  *Rotate `MATTERMOST_DB_PASSWORD` in `.env` and mirror the change into `config.json`.*
+- Nginx のリッスンポートや TLS 設定を `/etc/nginx/nginx.conf` で調整  
+  *Tune Nginx listen ports and TLS settings via `/etc/nginx/nginx.conf`.*
 - OpenCanary のサービス追加（Telnet, SMBなど）  
   *Enable additional OpenCanary services (e.g., Telnet, SMB).* 
 - Vector のログ出力形式を JSON → text に変更  
@@ -63,7 +74,7 @@ Azazelは以下のコンポーネントで構成されます：
 |------|------|--------|
 | OpenCanary が Restarting を繰り返す / OpenCanary keeps restarting | `/root/.opencanary.conf` がディレクトリ / It is a directory | `rm -rf` して再起動 / Remove and restart |
 | Vector が `is a directory` エラー / Vector "is a directory" error | `/etc/vector/vector.toml` が誤ってディレクトリ / It is incorrectly a directory | 正しいファイルを再配置 / Replace with correct file |
-| Mattermost 起動失敗 `exit-code` / Mattermost fails with exit-code | `config.json` のパーミッション or DB接続誤り / Permission or DB access error | `chown` + `azazel_postgres` に修正 / Fix ownership and DB host |
+| Mattermost 起動失敗 `exit-code` / Mattermost fails with exit-code | `config.json` のパーミッション or DB接続誤り / Permission or DB access error | `chown` と DSN (例: `127.0.0.1:5432`) を確認 / Fix ownership and the DSN (e.g., `127.0.0.1:5432`) |
 
 ---
 
@@ -75,11 +86,10 @@ Azazelは以下のコンポーネントで構成されます：
 sudo suricata-update
 ```
 
-- コンテナの再起動：  
-  *Restart containers:*
+- PostgreSQL コンテナの再起動：  
+  *Restart the PostgreSQL container:*
 ```bash
-cd /opt/azazel/containers
-sudo docker-compose down && sudo docker-compose up -d
+(cd /opt/azazel/config && sudo docker compose --project-name azazel-db down && sudo docker compose --project-name azazel-db up -d)
 ```
 
 - Mattermostのログ確認：  
@@ -98,4 +108,3 @@ sudo journalctl -u mattermost -e
   *Create the Mattermost admin account via the browser on first access.*
 
 For advanced use, consider adjusting `.env` or mounting your own configuration volume.
-

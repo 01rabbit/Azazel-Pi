@@ -60,16 +60,123 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TARGET_ROOT="/opt/azazel"
 CONFIG_ROOT="/etc/azazel"
 
+MATTERMOST_DB_NAME="${MATTERMOST_DB_NAME:-mattermost}"
+MATTERMOST_DB_USER="${MATTERMOST_DB_USER:-mmuser}"
+MATTERMOST_DB_PASSWORD="${MATTERMOST_DB_PASSWORD:-securepassword}"
+MATTERMOST_VERSION="${MATTERMOST_VERSION:-9.7.1}"
+MATTERMOST_TARBALL="${MATTERMOST_TARBALL:-https://releases.mattermost.com/${MATTERMOST_VERSION}/mattermost-team-${MATTERMOST_VERSION}-linux-amd64.tar.gz}"
+MATTERMOST_DIR="/opt/mattermost"
+MATTERMOST_USER="mattermost"
+
+install_mattermost() {
+  if ! id -u "$MATTERMOST_USER" >/dev/null 2>&1; then
+    useradd --system --user-group --home-dir "$MATTERMOST_DIR" "$MATTERMOST_USER"
+  fi
+
+  local mattermost_binary="$MATTERMOST_DIR/bin/mattermost"
+  if [[ ! -x "$mattermost_binary" ]]; then
+    log "Installing Mattermost ${MATTERMOST_VERSION}"
+    local tmp_tar
+    tmp_tar="$(mktemp /tmp/mattermost.XXXXXX.tar.gz)"
+    if ! curl -fsSL "$MATTERMOST_TARBALL" -o "$tmp_tar"; then
+      rm -f "$tmp_tar"
+      error "Failed to download Mattermost tarball from $MATTERMOST_TARBALL"
+    fi
+
+    local tmp_dir
+    tmp_dir="$(mktemp -d /tmp/mattermost.XXXXXX)"
+    tar -xzf "$tmp_tar" -C "$tmp_dir"
+    if [[ ! -d "$tmp_dir/mattermost" ]]; then
+      rm -rf "$tmp_dir" "$tmp_tar"
+      error "Mattermost tarball did not contain the expected directory structure."
+    fi
+    mkdir -p "$MATTERMOST_DIR"
+    rsync -a "$tmp_dir/mattermost/" "$MATTERMOST_DIR/"
+    rm -rf "$tmp_dir" "$tmp_tar"
+  else
+    log "Mattermost already installed at $MATTERMOST_DIR"
+  fi
+
+  mkdir -p "$MATTERMOST_DIR/data" "$MATTERMOST_DIR/logs"
+  chown -R "$MATTERMOST_USER:$MATTERMOST_USER" "$MATTERMOST_DIR"
+
+  local cfg_path="$MATTERMOST_DIR/config/config.json"
+  if [[ -f "$cfg_path" ]]; then
+    python3 - "$cfg_path" "$MATTERMOST_DB_USER" "$MATTERMOST_DB_PASSWORD" "$MATTERMOST_DB_NAME" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+cfg_path = Path(sys.argv[1])
+db_user = sys.argv[2]
+db_password = sys.argv[3]
+db_name = sys.argv[4]
+
+cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+sql = cfg.setdefault("SqlSettings", {})
+changed = False
+
+dsn = f"postgres://{db_user}:{db_password}@127.0.0.1:5432/{db_name}?sslmode=disable&connect_timeout=10"
+if sql.get("DriverName") != "postgres":
+    sql["DriverName"] = "postgres"
+    changed = True
+if sql.get("DataSource") != dsn:
+    sql["DataSource"] = dsn
+    changed = True
+if sql.get("DataSourceReplicas"):
+    sql["DataSourceReplicas"] = []
+    changed = True
+if sql.get("DataSourceSearchReplicas"):
+    sql["DataSourceSearchReplicas"] = []
+    changed = True
+if sql.get("UseExperimentalGorm"):
+    sql["UseExperimentalGorm"] = False
+    changed = True
+
+service = cfg.setdefault("ServiceSettings", {})
+if not service.get("ListenAddress"):
+    service["ListenAddress"] = ":8065"
+    changed = True
+
+if changed:
+    cfg_path.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
+PY
+    chown "$MATTERMOST_USER:$MATTERMOST_USER" "$cfg_path"
+    log "Mattermost configured to use PostgreSQL at 127.0.0.1:5432."
+  else
+    log "Mattermost config ($cfg_path) not found; skipping database configuration."
+  fi
+}
+
+configure_nginx() {
+  if [[ ! -f "$REPO_ROOT/config/nginx.conf" ]]; then
+    return
+  fi
+
+  log "Deploying Nginx reverse proxy configuration"
+  install -m 644 "$REPO_ROOT/config/nginx.conf" /etc/nginx/nginx.conf
+  if nginx -t >/dev/null 2>&1; then
+    systemctl enable nginx
+    systemctl restart nginx
+  else
+    error "nginx configuration validation failed; please review /etc/nginx/nginx.conf"
+  fi
+}
+
 log "Updating apt repositories"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 
 APT_PACKAGES=(
   curl
+  docker.io
+  docker-compose
+  gnupg
   git
   jq
   moreutils
   netfilter-persistent
+  nginx
   nftables
   python3
   python3-pip
@@ -84,21 +191,118 @@ log "Installing base packages: ${APT_PACKAGES[*]}"
 apt-get install -yqq "${APT_PACKAGES[@]}"
 
 if ! command -v vector >/dev/null 2>&1; then
-  log "Vector not found. Adding Vector repository and installing."
-  curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | bash
-  apt-get install -yqq vector
+  log "Vector not found. Installing via official repo (signed-by), with tarball fallback."
+
+  # Determine architecture for repo and fallback tarball
+  ARCH="$(dpkg --print-architecture)"
+  case "$ARCH" in
+    amd64)  VEC_DEB_ARCH="amd64";  TARBALL_ARCH="x86_64-unknown-linux-gnu" ;;
+    arm64)  VEC_DEB_ARCH="arm64";  TARBALL_ARCH="aarch64-unknown-linux-gnu" ;;
+    *) error "Unsupported architecture for Vector: $ARCH";;
+  esac
+
+  # Install repo key (dearmor) and add APT source
+  mkdir -p /usr/share/keyrings
+  if curl -1sLf 'https://packages.timber.io/vector/gpg.key' | gpg --dearmor -o /usr/share/keyrings/vector-archive-keyring.gpg; then
+    echo "deb [arch=${VEC_DEB_ARCH} signed-by=/usr/share/keyrings/vector-archive-keyring.gpg] https://packages.timber.io/vector/deb stable main" > /etc/apt/sources.list.d/vector.list
+    if apt-get update -qq && apt-get install -yqq vector; then
+      log "Vector installed via APT repository."
+    else
+      log "APT install of Vector failed. Falling back to tarball method."
+      FALLBACK=1
+    fi
+  else
+    log "Failed to retrieve Vector repo key (DNS or network issue). Falling back to tarball method."
+    FALLBACK=1
+  fi
+
+  if [[ "${FALLBACK:-0}" -eq 1 ]]; then
+    # Minimal tarball-based install
+    VECTOR_VERSION="${VECTOR_VERSION:-0.39.0}"
+    TARBALL_URL="https://packages.timber.io/vector/${VECTOR_VERSION}/vector-${VECTOR_VERSION}-${TARBALL_ARCH}.tar.gz"
+    TMP_TGZ="/tmp/vector-${VECTOR_VERSION}.tar.gz"
+    TMP_DIR="/tmp/vector-${VECTOR_VERSION}"
+
+    log "Downloading Vector tarball: $TARBALL_URL"
+    if curl -fsSL --retry 3 --retry-connrefused -o "$TMP_TGZ" "$TARBALL_URL"; then
+      mkdir -p "$TMP_DIR"
+      tar -xzf "$TMP_TGZ" -C "$TMP_DIR" --strip-components=0
+      # Find the binary path within the extracted tree
+      if install -m 0755 "$(find "$TMP_DIR" -type f -path '*/bin/vector' | head -n1)" /usr/local/bin/vector; then
+        log "Installed /usr/local/bin/vector from tarball."
+        # Create a simple systemd unit if missing
+        if [[ ! -f /etc/systemd/system/vector.service ]]; then
+          cat >/etc/systemd/system/vector.service <<'UNIT'
+[Unit]
+Description=Vector observability agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/vector -c /etc/vector/vector.toml
+Restart=always
+RestartSec=5s
+User=root
+Group=root
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+          log "Installed systemd unit for Vector."
+        fi
+        mkdir -p /etc/vector
+        systemctl daemon-reload
+        systemctl enable vector
+        log "Vector (tarball) installed and enabled. Provide /etc/vector/vector.toml before starting."
+      else
+        error "Failed to install Vector binary from tarball."
+      fi
+    else
+      error "Failed to download Vector tarball from $TARBALL_URL. Check DNS/connectivity."
+    fi
+  fi
 fi
 
 if ! command -v opencanaryd >/dev/null 2>&1; then
-  log "Installing OpenCanary via pip"
-  PIP_INSTALL=(python3 -m pip install)
-  if python3 -m pip help install 2>&1 | grep -q -- '--break-system-packages'; then
-    PIP_INSTALL+=(--break-system-packages)
-  fi
-  "${PIP_INSTALL[@]}" --upgrade pip
-  "${PIP_INSTALL[@]}" opencanary scapy
-  if [[ -x /usr/local/bin/opencanaryd && ! -e /usr/bin/opencanaryd ]]; then
-    ln -s /usr/local/bin/opencanaryd /usr/bin/opencanaryd
+  log "Installing OpenCanary in dedicated venv to avoid system pip conflicts"
+
+  VENV_DIR="/opt/opencanary-venv"
+  mkdir -p "$(dirname "$VENV_DIR")"
+  python3 -m venv "$VENV_DIR"
+
+  # Upgrade pip inside the venv only
+  "$VENV_DIR/bin/python" -m pip install --upgrade pip
+  # Install OpenCanary and dependencies inside the venv
+  "$VENV_DIR/bin/python" -m pip install opencanary scapy
+
+  # Create required directories for OpenCanary
+  mkdir -p /etc/azazel/opencanary /var/log/azazel
+  chmod 755 /var/log/azazel
+
+  # Make opencanaryd visible system-wide without touching system pip
+  install -d /usr/local/bin
+  ln -sf "$VENV_DIR/bin/opencanaryd" /usr/local/bin/opencanaryd
+
+  # Provide a minimal systemd unit for OpenCanary if missing
+  if [[ ! -f /etc/systemd/system/opencanary.service ]]; then
+    cat >/etc/systemd/system/opencanary.service <<'UNIT'
+[Unit]
+Description=OpenCanary honeypot (venv)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=OPENCANARY_CONFIG=/etc/azazel/opencanary/opencanary.conf
+ExecStart=/opt/opencanary-venv/bin/opencanaryd --dev --uid nobody --gid nogroup
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+    log "Installed systemd unit for OpenCanary."
   fi
 fi
 
@@ -114,7 +318,48 @@ install -m 755 "$REPO_ROOT/scripts/sanity_check.sh" "$TARGET_ROOT/sanity_check.s
 install -m 755 "$REPO_ROOT/scripts/rollback.sh" "$TARGET_ROOT/rollback.sh"
 
 systemctl daemon-reload
+install_mattermost
 systemctl enable azctl.target
+systemctl enable mattermost.service
+configure_nginx
+
+# Ensure docker is running and enabled (PostgreSQL runs in Docker)
+if command -v docker >/dev/null 2>&1; then
+  log "Enabling and starting Docker"
+  systemctl enable --now docker
+  usermod -aG docker "${SUDO_USER:-$USER}"
+  
+  # Prepare Docker compose config under /opt/azazel/config
+  mkdir -p "$TARGET_ROOT/config"
+  if [[ -f "$REPO_ROOT/config/docker-compose.yml" ]]; then
+    install -m 644 "$REPO_ROOT/config/docker-compose.yml" "$TARGET_ROOT/config/docker-compose.yml"
+  fi
+  cat >"$TARGET_ROOT/config/.env" <<ENV
+MATTERMOST_DB_NAME=${MATTERMOST_DB_NAME}
+MATTERMOST_DB_USER=${MATTERMOST_DB_USER}
+MATTERMOST_DB_PASSWORD=${MATTERMOST_DB_PASSWORD}
+ENV
+  chmod 600 "$TARGET_ROOT/config/.env"
+
+  mkdir -p /opt/azazel/data/postgres
+  chown 999:999 /opt/azazel/data/postgres || true
+
+  # Launch docker-compose (prefer docker-compose binary, fallback to `docker compose`)
+  if command -v docker-compose >/dev/null 2>&1; then
+    log "Starting PostgreSQL via docker-compose"
+    (cd "$TARGET_ROOT/config" && docker-compose --project-name azazel-db up -d) || log "docker-compose up returned non-zero exit code"
+  else
+    log "Starting PostgreSQL via 'docker compose'"
+    (cd "$TARGET_ROOT/config" && docker compose --project-name azazel-db up -d) || log "docker compose up returned non-zero exit code"
+  fi
+else
+  log "Docker not found; skipping PostgreSQL container setup."
+fi
+
+if systemctl list-unit-files | grep -q '^mattermost.service'; then
+  log "Restarting Mattermost service so it connects to PostgreSQL"
+  systemctl restart mattermost.service || log "Mattermost restart failed; verify PostgreSQL connectivity."
+fi
 
 log "Installer complete. Review /etc/azazel/azazel.yaml before starting services."
 
@@ -124,6 +369,6 @@ if (( START_SERVICES )); then
 fi
 
 log "Next steps:" 
-log "  * Adjust Suricata, Vector, and OpenCanary configs under /etc/azazel"
-log "  * Run 'systemctl restart azctl.target' after making changes"
-log "  * Use scripts/sanity_check.sh to verify services"
+log "  * Adjust Suricata, Vector, OpenCanary, and Mattermost configs under /etc/azazel and /opt/mattermost"
+log "  * Run 'systemctl restart azctl.target' after making Azazel changes"
+log "  * Use scripts/sanity_check.sh plus 'systemctl status mattermost nginx docker' to verify services"
