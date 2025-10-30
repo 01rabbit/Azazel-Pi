@@ -3,7 +3,7 @@
 from .core.state_machine import Event, StateMachine, State, Transition
 from .core.scorer import ScoreEvaluator
 from .core.config import AzazelConfig
-from .core.notify_config import get_notify_config
+from .core.notify_config import get
 
 __version__ = "1.0.0"
 __all__ = [
@@ -13,5 +13,5 @@ __all__ = [
     "Transition",
     "ScoreEvaluator",
     "AzazelConfig",
-    "get_notify_config",
+    "get",
 ]

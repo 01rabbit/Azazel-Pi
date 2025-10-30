@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from azazel_core.state_machine import Event, State, StateMachine, Transition
+from azazel_pi.core.state_machine import Event, State, StateMachine, Transition
 
 
 @dataclass
@@ -11,11 +11,11 @@ class FakeClock:
         return self.value
 
 
-def build_machine(clock: FakeClock) -> StateMachine:
+def build_machine(clock: FakeClock, config_path: str | None = None) -> StateMachine:
     portal = State(name="portal")
     shield = State(name="shield")
     lockdown = State(name="lockdown")
-    machine = StateMachine(initial_state=portal, clock=clock)
+    machine = StateMachine(initial_state=portal, clock=clock, config_path=config_path)
     machine.add_transition(
         Transition(
             source=portal,
@@ -61,9 +61,9 @@ def build_machine(clock: FakeClock) -> StateMachine:
     return machine
 
 
-def test_state_machine_transitions():
+def test_state_machine_transitions(mock_azazel_yaml):
     clock = FakeClock()
-    machine = build_machine(clock)
+    machine = build_machine(clock, config_path=mock_azazel_yaml)
 
     assert machine.current_state.name == "portal"
     machine.dispatch(Event(name="shield", severity=55))
@@ -74,9 +74,9 @@ def test_state_machine_transitions():
     assert machine.current_state.name == "portal"
 
 
-def test_state_machine_presets_and_unlocks():
+def test_state_machine_presets_and_unlocks(mock_azazel_yaml):
     clock = FakeClock()
-    machine = build_machine(clock)
+    machine = build_machine(clock, config_path=mock_azazel_yaml)
 
     # Start from portal – presets come from configs/azazel.yaml
     actions = machine.get_actions_preset()

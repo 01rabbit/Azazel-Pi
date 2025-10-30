@@ -1,4 +1,4 @@
-from azazel_core.actions import BlockAction, DelayAction, RedirectAction, ShapeAction
+from azazel_pi.core.actions import BlockAction, DelayAction, RedirectAction, ShapeAction
 
 
 def test_delay_action_plan():
