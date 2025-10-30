@@ -9,7 +9,7 @@ from datetime import datetime
 from collections import defaultdict
 from pathlib import Path
 
-from config import notice
+from azazel_core import notify_config as notice
 from utils.mattermost     import send_alert_to_mattermost
 from utils.delay_action   import divert_to_opencanary, OPENCANARY_IP
 

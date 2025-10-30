@@ -6,7 +6,7 @@ import logging
 import subprocess
 from datetime import datetime, timedelta
 
-from config import notice
+from azazel_core import notify_config as notice
 from utils.mattermost import send_alert_to_mattermost
 import main_suricata
 import main_opencanary

@@ -2,7 +2,8 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import time
-from config.notice import EVENTS_JSON_PATH
+from azazel_core import notify_config as notice
+EVENTS_JSON_PATH = notice.EVENTS_JSON_PATH
 from analytics.correlation_engine import EventCorrelator
 
 if __name__ == "__main__":
