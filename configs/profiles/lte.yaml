@@ -1,5 +1,5 @@
 node: azazel-lte-field
-interfaces: { lan: lan0, wan: wan0 }
+interfaces: { lan: lan0, wan: wlan1 }
 profiles:
   active: lte
   sat:   { uplink_kbps: 1800, rtt_ms: 650 }

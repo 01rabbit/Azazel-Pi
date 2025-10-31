@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/suricata -c /etc/suricata/suricata.yaml -i wan0
+ExecStart=/usr/bin/suricata -c /etc/suricata/suricata.yaml -i wlan1
 Restart=on-failure
 
 [Install]

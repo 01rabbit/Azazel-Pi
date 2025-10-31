@@ -1,0 +1,8 @@
+interface={{WLAN_AP}}
+dhcp-range={{DHCPS_START}},{{DHCPS_END}},24h
+dhcp-option=3,{{AP_IP}}
+dhcp-option=6,8.8.8.8,8.8.4.4
+server=8.8.8.8
+domain-needed
+bogus-priv
+listen-address=127.0.0.1,{{AP_IP}}

@@ -1,0 +1,1 @@
+alert tcp any any -> any any (msg:"AZAZEL_TEST_BASIC"; content:"AzazelTestString"; sid:1000001; rev:1; classtype:bad-unknown;)
