@@ -84,7 +84,7 @@ The E-Paper service is installed automatically with Azazel Pi, but can be manual
 sudo cp systemd/azazel-epd.service /etc/systemd/system/
 
 # Copy default configuration
-sudo cp config/azazel-epd.default /etc/default/azazel-epd
+sudo cp deploy/azazel-epd.default /etc/default/azazel-epd
 
 # Reload systemd
 sudo systemctl daemon-reload

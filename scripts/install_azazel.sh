@@ -217,12 +217,12 @@ PY
 }
 
 configure_nginx() {
-  if [[ ! -f "$REPO_ROOT/config/nginx.conf" ]]; then
+  if [[ ! -f "$REPO_ROOT/deploy/nginx.conf" ]]; then
     return
   fi
 
   log "Deploying Nginx reverse proxy configuration"
-  install -m 644 "$REPO_ROOT/config/nginx.conf" /etc/nginx/nginx.conf
+  install -m 644 "$REPO_ROOT/deploy/nginx.conf" /etc/nginx/nginx.conf
   if nginx -t >/dev/null 2>&1; then
     systemctl enable nginx
     systemctl restart nginx
@@ -399,8 +399,8 @@ rsync -a "$REPO_ROOT/configs/" "$CONFIG_ROOT/"
 rsync -a "$REPO_ROOT/systemd/" /etc/systemd/system/
 
 # Install E-Paper default environment file if present
-if [[ -f "$REPO_ROOT/config/azazel-epd.default" ]]; then
-  install -D -m 0644 "$REPO_ROOT/config/azazel-epd.default" /etc/default/azazel-epd
+if [[ -f "$REPO_ROOT/deploy/azazel-epd.default" ]]; then
+  install -D -m 0644 "$REPO_ROOT/deploy/azazel-epd.default" /etc/default/azazel-epd
 fi
 
 # Ensure runtime log directory exists so services that write decisions won't fail
@@ -431,8 +431,8 @@ if command -v docker >/dev/null 2>&1; then
   
   # Prepare Docker compose config under /opt/azazel/config
   mkdir -p "$TARGET_ROOT/config"
-  if [[ -f "$REPO_ROOT/config/docker-compose.yml" ]]; then
-    install -m 644 "$REPO_ROOT/config/docker-compose.yml" "$TARGET_ROOT/config/docker-compose.yml"
+  if [[ -f "$REPO_ROOT/deploy/docker-compose.yml" ]]; then
+    install -m 644 "$REPO_ROOT/deploy/docker-compose.yml" "$TARGET_ROOT/config/docker-compose.yml"
   fi
   cat >"$TARGET_ROOT/config/.env" <<ENV
 MATTERMOST_DB_NAME=${MATTERMOST_DB_NAME}
