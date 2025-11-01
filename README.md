@@ -175,9 +175,8 @@ MIT License
 
 ## 新しいデプロイフロー / Modern deployment flow
 
-旧来の `1_install_raspap.sh` と `2_install_azazel.sh` はメンテナンス対象外となり、
-`legacy/` ディレクトリに退避されました。今後はタグ付きリリースに含まれる
-インストーラを利用してください。
+旧来の `1_install_raspap.sh` と `2_install_azazel.sh` は廃止されました。
+今後はタグ付きリリースに含まれるインストーラを利用してください。
 
 ### Install on Raspberry Pi (clean image)
 ```bash
@@ -190,8 +189,7 @@ cd /tmp/azazel-installer && sudo bash scripts/install_azazel.sh
 
 ブートストラップ後は `/etc/azazel/azazel.yaml` を編集し、必要に応じて
 `docs/OPERATIONS.md` の手順に従って Suricata や OpenCanary を再設定します。
-依存パッケージの導入を伴わない従来型の最小ブートストラップは
-`legacy/bootstrap_mvp.sh` に退避されています。
+依存パッケージの導入を伴わない従来型の最小ブートストラップは提供されません。
 
 ### Documentation
 - `docs/ARCHITECTURE.md` — コントロールプレーンの構成図と役割

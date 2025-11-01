@@ -19,9 +19,7 @@ The archive includes configuration templates, scripts, and systemd units.
 ## 2. Bootstrap the node
 
 Run the installer on the target host. When working from a git checkout you can
-use `scripts/install_azazel.sh`. Historical deployments that only stage the
-runtime without provisioning dependencies remain available under
-`legacy/bootstrap_mvp.sh`:
+use `scripts/install_azazel.sh`:
 
 ```bash
 cd /tmp/azazel-installer
@@ -75,8 +73,3 @@ state transitions and scoring decisions.
 
 To remove Azazel from a host, execute `sudo /opt/azazel/rollback.sh`. The script
 deletes `/opt/azazel`, removes `/etc/azazel`, and disables the `azctl.target`.
-
-## 6. Legacy installers
-
-Historical provisioning scripts are stored under `legacy/` and are not supported
-for new deployments.

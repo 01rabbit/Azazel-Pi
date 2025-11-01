@@ -44,5 +44,4 @@ and systemd units into place, and ensures Debian dependencies are present. The
 repository layout mirrors the staged filesystem, ensuring releases are
 reproducible. Tagging a commit triggers the release workflow that builds
 `azazel-installer-<tag>.tar.gz` containing the entire payload required for
-air-gapped installs. The previous minimal bootstrap script is preserved under
-`legacy/bootstrap_mvp.sh` for reference.
+air-gapped installs.
