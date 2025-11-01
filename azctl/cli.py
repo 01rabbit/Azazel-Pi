@@ -11,6 +11,7 @@ import os
 import subprocess
 from pathlib import Path
 from typing import Iterable, Optional
+from datetime import datetime
 
 from azazel_pi.core.config import AzazelConfig
 from azazel_pi.core.scorer import ScoreEvaluator
@@ -25,6 +26,7 @@ import signal
 from azazel_pi.core.ingest.suricata_tail import SuricataTail
 from azazel_pi.core.ingest.canary_tail import CanaryTail
 from azazel_pi.core import notify_config as notice
+from azazel_pi.core.display.status_collector import StatusCollector
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +305,106 @@ def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0
     return 0
 
 
+def _human_bytes(n: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB"]
+    x = float(max(n, 0))
+    for u in units:
+        if x < 1024.0 or u == units[-1]:
+            return f"{x:.1f} {u}" if u != "B" else f"{int(x)} {u}"
+        x /= 1024.0
+
+
+def _mode_style(mode: Optional[str]) -> tuple[str, str]:
+    name = (mode or "unknown").lower()
+    if name == "portal":
+        return ("PORTAL", "green")
+    if name == "shield":
+        return ("SHIELD", "yellow")
+    if name == "lockdown":
+        return ("LOCKDOWN", "red")
+    return (name.upper(), "cyan")
+
+
+def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval: float, once: bool) -> int:
+    # Soft dependency to keep CLI usable without rich
+    try:
+        from rich.live import Live
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.columns import Columns
+        from rich.align import Align
+        from rich.text import Text
+        from rich import box
+    except ImportError:
+        print("'rich' is not installed. Install it with: pip install rich")
+        return 1
+
+    # Decisions and WLAN info (reuse existing helpers)
+    decisions_paths = [
+        Path(decisions) if decisions else None,
+        Path("/var/log/azazel/decisions.log"),
+        Path("decisions.log"),
+    ]
+    decision_paths = [p for p in decisions_paths if p is not None]
+
+    collector = StatusCollector()
+
+    def render():
+        last = _read_last_decision(decision_paths)
+        defensive_mode = last.get("mode") if isinstance(last, dict) else None
+        mode_label, color = _mode_style(defensive_mode)
+
+        status = collector.collect()
+        wlan0 = _wlan_ap_status(lan_if)
+        wlan1 = _wlan_link_info(wan_if)
+
+        # Header
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        header = Text.assemble(
+            (" Azazel Pi ", "bold white on blue"),
+            ("  "),
+            (f"{now}", "dim"),
+        )
+
+        # Mode/Score/Alerts panel
+        t_left = Table.grid(padding=(0, 1))
+        t_left.add_row("Mode", Text(mode_label, style=f"bold {color}"))
+        t_left.add_row("Score(avg)", f"{status.security.score_average:.1f}")
+        t_left.add_row("Alerts(recent)", f"{status.security.total_alerts} ({status.security.recent_alerts})")
+        t_left.add_row("Services", f"Suricata: {'ON' if status.security.suricata_active else 'off'}, Canary: {'ON' if status.security.opencanary_active else 'off'}")
+        left_panel = Panel(t_left, title="Security", border_style=color)
+
+        # Network panel
+        t_net = Table.grid(padding=(0, 1))
+        t_net.add_row("Iface", status.network.interface)
+        t_net.add_row("IP", status.network.ip_address or "-")
+        t_net.add_row("Uptime", f"{status.uptime_seconds//3600}h {(status.uptime_seconds//60)%60}m")
+        t_net.add_row("Traffic", f"TX { _human_bytes(status.network.tx_bytes) }  RX { _human_bytes(status.network.rx_bytes) }")
+        # WLAN quick view
+        ap = "AP" if wlan0.get('is_ap') else ("STA" if wlan0.get('is_ap') is False else "?")
+        t_net.add_row("LAN", f"{lan_if} ({ap}) SSID={wlan0.get('ssid') or '-'} Ch={wlan0.get('channel') or '-'} Sta={wlan0.get('stations') if wlan0.get('stations') is not None else '-'}")
+        conn = "yes" if wlan1.get("connected") else ("no" if wlan1.get("connected") is False else "?")
+        t_net.add_row("WAN", f"{wan_if} conn={conn} SSID={wlan1.get('ssid') or '-'} IP={wlan1.get('ip4') or '-'} SNR={wlan1.get('signal_dbm') or '-'}dBm")
+        right_panel = Panel(t_net, title="Network", border_style="cyan")
+
+        body = Columns([left_panel, right_panel])
+        return Align.center(Panel.fit(body, title=header))
+
+    if once:
+        from rich.console import Console
+        Console().print(render())
+        return 0
+
+    with Live(render(), refresh_per_second=max(1, int(1/interval)) if interval < 1 else int(1/interval) if interval >= 1 else 1, screen=False) as live:
+        try:
+            while True:
+                live.update(render())
+                time.sleep(interval)
+        except KeyboardInterrupt:
+            return 0
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # CLI entrypoint
 # ---------------------------------------------------------------------------
@@ -316,6 +418,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     p_status.add_argument("--json", action="store_true", help="Output JSON")
     p_status.add_argument("--lan-if", default="wlan0", help="LAN/AP interface name (default: wlan0)")
     p_status.add_argument("--wan-if", default="wlan1", help="WAN/client interface name (default: wlan1)")
+    p_status.add_argument("--tui", action="store_true", help="Rich TUI like the E-Paper layout")
+    p_status.add_argument("--watch", action="store_true", help="Continuously update status")
+    p_status.add_argument("--interval", type=float, default=5.0, help="Refresh interval in seconds (default: 5.0)")
 
     # Serve: long-running daemon that consumes ingest streams and updates mode
     p_serve = sub.add_parser("serve", help="Run long-running daemon to consume events and auto-update mode")
@@ -334,6 +439,15 @@ def main(argv: Iterable[str] | None = None) -> int:
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.command == "status":
+        if getattr(args, "tui", False) or getattr(args, "watch", False):
+            # TUI path (one-shot with --tui or continuous with --watch)
+            return cmd_status_tui(
+                decisions=getattr(args, "decisions_log", None),
+                lan_if=getattr(args, "lan_if", "wlan0"),
+                wan_if=getattr(args, "wan_if", "wlan1"),
+                interval=float(getattr(args, "interval", 5.0)),
+                once=not bool(getattr(args, "watch", False)),
+            )
         return cmd_status(
             decisions=getattr(args, "decisions_log", None),
             output_json=bool(getattr(args, "json", False)),
