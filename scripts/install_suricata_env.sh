@@ -33,6 +33,7 @@ mkdir -p "$SURICATA_LOG"
 chown -R ${SURICATA_USER}:${SURICATA_USER} "$SURICATA_HOME" "$SURICATA_LOG"
 chmod -R 750 "$SURICATA_HOME"
 chmod -R 750 "$SURICATA_LOG"
+chmod 755 "$RULES_DIR"
 
 # 3) Create systemd drop-in for non-root execution
 mkdir -p "$SYSTEMD_DROPIN_DIR"
@@ -154,6 +155,59 @@ chown ${SURICATA_USER}:${SURICATA_USER} /run/suricata
 chmod 0755 /run/suricata
 
 systemctl restart suricata
+
+# 10) Vector log shipper (vector) 設定・ディレクトリ作成・サービス再起動
+VECTOR_CONFIG_DIR="/etc/azazel/vector"
+VECTOR_CONFIG_FILE="${VECTOR_CONFIG_DIR}/vector.toml"
+VECTOR_DATA_DIR="/var/lib/vector"
+mkdir -p "$VECTOR_CONFIG_DIR"
+mkdir -p "$VECTOR_DATA_DIR"
+cat > "$VECTOR_CONFIG_FILE" <<'EOF'
+[sources.syslog]
+type = "file"
+include = ["/var/log/syslog"]
+
+[transforms.parse_syslog]
+type = "syslog_parser"
+inputs = ["syslog"]
+
+[sinks.local_file]
+type = "file"
+inputs = ["parse_syslog"]
+path = "/var/lib/vector/syslog.log"
+encoding.codec = "text"
+EOF
+chown root:root "$VECTOR_CONFIG_FILE"
+chmod 644 "$VECTOR_CONFIG_FILE"
+chown root:root "$VECTOR_DATA_DIR"
+chmod 755 "$VECTOR_DATA_DIR"
+if systemctl list-unit-files | grep -q '^vector.service'; then
+  systemctl restart vector.service || true
+fi
+
+# 11) Dockerメモリ制限設定
+DOCKER_CONFIG_FILE="/etc/docker/daemon.json"
+cat > "$DOCKER_CONFIG_FILE" <<'EOF'
+{
+  "default-runtime": "runc",
+  "runtimes": {"runc": {"path": "runc"}},
+  "storage-driver": "overlay2",
+  "log-driver": "json-file",
+  "log-opts": {"max-size": "10m", "max-file": "3"},
+  "default-ulimits": {"memlock": {"Name": "memlock", "Hard": 524288000, "Soft": 524288000}}
+}
+EOF
+chown root:root "$DOCKER_CONFIG_FILE"
+chmod 644 "$DOCKER_CONFIG_FILE"
+if systemctl list-unit-files | grep -q '^docker.service'; then
+  systemctl restart docker.service || true
+fi
+
+# 12) azazel関連サービスの有効化
+if systemctl list-unit-files | grep -q '^azctl.service'; then
+  systemctl enable azctl.service || true
+  systemctl restart azctl.service || true
+fi
 
 cat <<EOF
 Installer finished. Verify with:
