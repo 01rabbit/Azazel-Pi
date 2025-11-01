@@ -326,6 +326,18 @@ def _mode_style(mode: Optional[str]) -> tuple[str, str]:
 
 
 def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval: float, once: bool) -> int:
+    def _clear_terminal() -> None:
+        """Clear terminal before drawing the TUI.
+
+        Prefer Rich Console.clear() if available; fall back to ANSI.
+        """
+        try:
+            from rich.console import Console  # type: ignore
+            Console().clear()
+        except Exception:
+            # ANSI: clear screen and move cursor to home
+            print("\033[2J\033[H", end="", flush=True)
+
     # Soft dependency to keep CLI usable without rich
     try:
         from rich.live import Live
@@ -391,10 +403,12 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
         return Align.center(Panel.fit(body, title=header))
 
     if once:
+        _clear_terminal()
         from rich.console import Console
         Console().print(render())
         return 0
 
+    _clear_terminal()
     with Live(render(), refresh_per_second=max(1, int(1/interval)) if interval < 1 else int(1/interval) if interval >= 1 else 1, screen=False) as live:
         try:
             while True:
