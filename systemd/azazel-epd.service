@@ -1,0 +1,36 @@
+[Unit]
+Description=Azazel Pi E-Paper Status Display
+Documentation=https://github.com/01rabbit/Azazel-Pi
+After=multi-user.target network-online.target azctl.service
+Wants=network-online.target
+Before=poweroff.target halt.target shutdown.target
+
+[Service]
+Type=simple
+User=root
+# Ensure SPI device is available
+ConditionPathExists=/dev/spidev0.0
+# Environment
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=-/etc/default/azazel-epd
+# Main daemon process
+ExecStart=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py \
+    --interval=${UPDATE_INTERVAL:-10} \
+    --events-log=${EVENTS_LOG:-/var/log/azazel/events.json} \
+    --mode=daemon
+# Graceful shutdown
+ExecStop=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
+# Logging
+StandardOutput=journal
+StandardError=journal
+# Timeouts
+TimeoutStartSec=15s
+TimeoutStopSec=10s
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

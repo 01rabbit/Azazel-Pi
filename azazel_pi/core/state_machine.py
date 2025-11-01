@@ -107,6 +107,20 @@ class StateMachine:
     def _load_config(self) -> Dict[str, Any]:
         if self._config_cache is None:
             path = self._resolve_config_path()
+            # If the resolved path doesn't exist, try common fallback locations
+            if not path.exists():
+                alt = Path("/etc/azazel/azazel.yaml")
+                if alt.exists():
+                    path = alt
+                else:
+                    cwd_conf = Path.cwd() / "configs" / "azazel.yaml"
+                    if cwd_conf.exists():
+                        path = cwd_conf
+                    else:
+                        # No configuration file found; use empty defaults
+                        self._config_cache = {}
+                        return self._config_cache
+
             data = yaml.safe_load(path.read_text())
             if not isinstance(data, dict):
                 raise ValueError("Configuration root must be a mapping")

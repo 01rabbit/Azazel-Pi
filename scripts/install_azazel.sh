@@ -22,10 +22,15 @@ error() {
 }
 
 START_SERVICES=0
+DRY_RUN=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --start)
       START_SERVICES=1
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=1
       shift
       ;;
     -h|--help)
@@ -39,7 +44,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+if [[ ${DRY_RUN:-0} -eq 0 && ${EUID:-$(id -u)} -ne 0 ]]; then
   error "This installer must be run as root. Use sudo if necessary."
 fi
 
@@ -226,9 +231,7 @@ configure_nginx() {
   fi
 }
 
-log "Updating apt repositories"
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
+ 
 
 APT_PACKAGES=(
   curl
@@ -249,6 +252,25 @@ APT_PACKAGES=(
   suricata
   suricata-update
 )
+
+log "Updating apt repositories"
+export DEBIAN_FRONTEND=noninteractive
+
+if [[ ${DRY_RUN:-0} -eq 1 ]]; then
+  log "DRY RUN: installer would perform the following actions (no changes will be made):"
+  cat <<-DRY
+  - Verify OS and dependencies
+  - Install APT packages: ${APT_PACKAGES[*]}
+  - Install or enable Vector, OpenCanary, Mattermost and Azazel systemd units
+  - Stage runtime files to $TARGET_ROOT and configs to $CONFIG_ROOT
+  - Ensure /var/log/azazel exists and set permissions
+  - Enable and start azctl-serve.service (if present)
+  - Optionally start azctl.target if --start supplied
+DRY
+  exit 0
+fi
+
+apt-get update -qq
 
 log "Installing base packages: ${APT_PACKAGES[*]}"
 apt-get install -yqq "${APT_PACKAGES[@]}"
@@ -371,9 +393,19 @@ fi
 
 log "Staging Azazel runtime under $TARGET_ROOT"
 mkdir -p "$TARGET_ROOT" "$CONFIG_ROOT"
-rsync -a --delete "$REPO_ROOT/azazel_core" "$REPO_ROOT/azctl" "$TARGET_ROOT/"
+# Copy current package layout (azazel_pi) and azctl CLI into target runtime
+rsync -a --delete "$REPO_ROOT/azazel_pi" "$REPO_ROOT/azctl" "$TARGET_ROOT/"
 rsync -a "$REPO_ROOT/configs/" "$CONFIG_ROOT/"
 rsync -a "$REPO_ROOT/systemd/" /etc/systemd/system/
+
+# Install E-Paper default environment file if present
+if [[ -f "$REPO_ROOT/config/azazel-epd.default" ]]; then
+  install -D -m 0644 "$REPO_ROOT/config/azazel-epd.default" /etc/default/azazel-epd
+fi
+
+# Ensure runtime log directory exists so services that write decisions won't fail
+mkdir -p /var/log/azazel
+chmod 755 /var/log/azazel || true
 
 install -m 755 "$REPO_ROOT/scripts/nft_apply.sh" "$TARGET_ROOT/nft_apply.sh"
 install -m 755 "$REPO_ROOT/scripts/tc_reset.sh" "$TARGET_ROOT/tc_reset.sh"
@@ -381,6 +413,11 @@ install -m 755 "$REPO_ROOT/scripts/sanity_check.sh" "$TARGET_ROOT/sanity_check.s
 install -m 755 "$REPO_ROOT/scripts/rollback.sh" "$TARGET_ROOT/rollback.sh"
 
 systemctl daemon-reload
+# Enable and start the long-running azctl serve unit if present. Don't fail the
+# installer if the unit isn't available for some reason.
+if systemctl list-unit-files | grep -q '^azctl-serve.service'; then
+  systemctl enable --now azctl-serve.service || log "Failed to enable/start azctl-serve.service; continue"
+fi
 install_mattermost
 systemctl enable azctl.target
 systemctl enable mattermost.service

@@ -69,22 +69,19 @@ These principles converge in Azazel’s design: **defense is not about passive p
 
 ## What's new
 
-- Sample configs under `configs/profiles/` showcase SAT, LTE, and fiber tuning
   complete with thresholds and notify/storage defaults.
-- The operations guide now carries a mode action table describing preset intent
   for each defensive posture.
-- `/v1/mode` documentation clarifies that invoking the endpoint applies presets
   and records operator-triggered decisions in `decisions.log`.
-- Mode-aware presets backed by `azazel.yaml` apply delay/shape/block actions as
   the daemon transitions between portal, shield, and lockdown.
-- Vector remap normalization now emits a unified schema (ts/node/src/dst/proto
   fields) validated via unit tests.
-- QoS plans derive HTB class rate/ceil values per profile using
   `configs/tc/classes.htb`.
-- Lockdown tooling ships with a templated nftables ruleset and an
   `resolve_allowlist.py` utility that resolves medical FQDNs into CIDRs.
-- CI enforces schema validation, pytest, shellcheck, and allowlist generation
   to ensure release tags remain deployable on clean systems.
+  
+ - **E-Paper Display Integration** (inspired by Azazel-Zero)  
+   Real-time status visualization on Waveshare E-Paper displays showing current
+   defensive mode, threat score, network status, and alert counters with boot/shutdown
+   animations.
 
 ---
 
