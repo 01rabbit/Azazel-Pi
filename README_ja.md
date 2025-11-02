@@ -1,4 +1,4 @@
-# Azazel-Pi - サイバー贖罪の山羊ゲートウェイ
+# Azazel-Pi - The Cyber Scapegoat Gateway
 
 [English](README.md) | 日本語
 
