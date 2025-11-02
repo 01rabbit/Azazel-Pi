@@ -232,7 +232,7 @@ MIT License
 
 ## Contributing
 
-We welcome contributions to the Azazel-Pi project. Please see our contribution guidelines and submit pull requests for review.
+We welcome contributions to the Azazel-Pi project. Please see our [contribution guidelines](CONTRIBUTING.md) and submit pull requests for review.
 
 ## Security Disclosure
 
