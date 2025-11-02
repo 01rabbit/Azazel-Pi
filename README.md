@@ -57,6 +57,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 
 #### Status Display & Monitoring
 - **E-Paper Display**: Real-time status visualization showing current defensive mode, threat score, network status, and alert counters
+- **Interactive TUI Menu**: Comprehensive terminal-based control interface with keyboard navigation and safety features
 - **Rich CLI Interface**: Terminal-based status monitoring with color-coded mode indicators
 - **Web Dashboard**: Mattermost integration for alerts and notifications
 
@@ -68,7 +69,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 | `azazel_pi/core/actions/` | Models tc/nftables operations as idempotent plans |
 | `azazel_pi/core/ingest/` | Parses Suricata EVE logs and OpenCanary events |
 | `azazel_pi/core/display/` | E-Paper status visualization and rendering |
-| `azctl/` | Command-line interface and daemon management |
+| `azctl/` | Command-line interface, daemon management, and interactive TUI menu |
 | `configs/` | Declarative configuration with schema validation |
 | `deploy/` | Third-party service deployment configurations |
 | `scripts/install_azazel.sh` | Automated provisioning and setup |
@@ -98,7 +99,7 @@ Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment 
 - **Traffic Control**: `tc` (Traffic Control) + `iptables/nftables`
 - **Alerting**: Mattermost integration
 - **Display**: Waveshare E-Paper with Python rendering
-- **Languages**: Python 3.8+ with asyncio and rich libraries
+- **Languages**: Python 3.8+ with asyncio, rich, and interactive TUI libraries
 
 ## Installation
 
@@ -147,6 +148,42 @@ sudo systemctl enable --now azazel-epd.service
 
 See [`docs/EPD_SETUP.md`](docs/EPD_SETUP.md) for complete E-Paper configuration instructions.
 
+### Modular TUI Menu System
+
+The interactive Terminal User Interface (TUI) menu provides comprehensive system management through a modular architecture designed for maintainability and extensibility:
+
+```bash
+# Launch the TUI menu
+python3 -m azctl.cli menu
+
+# With specific interface configuration
+python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+```
+
+**Modular Architecture:**
+
+Azazel-Pi's menu system employs a modular design with functional separation for improved maintainability:
+
+```
+azctl/menu/
+├── core.py          # Main framework
+├── types.py         # Data type definitions
+├── defense.py       # Defense control module
+├── services.py      # Service management module
+├── network.py       # Network information module
+├── wifi.py          # WiFi management module
+├── monitoring.py    # Log monitoring module
+├── system.py        # System information module
+└── emergency.py     # Emergency operations module
+```
+
+**Key Features:**
+- **Modular Design**: Function-specific modules for enhanced maintainability
+- **Rich UI**: Color-coded panels, tables, and progress bars
+- **Safety-First**: Multi-stage confirmation for dangerous operations
+- **Extensible**: Easy addition of new functionality through module system
+- **Real-time Monitoring**: Live status displays with automatic updates
+
 ## Usage
 
 ### Command Line Interface
@@ -176,6 +213,96 @@ echo '{"mode": "shield"}' | azctl events --config -
 echo '{"mode": "lockdown"}' | azctl events --config -
 ```
 
+#### Interactive TUI Menu
+
+The modular TUI menu provides comprehensive system management:
+
+```bash
+# Launch modular TUI menu
+python3 -m azctl.cli menu
+
+# Specify custom interfaces
+python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+```
+
+**Menu Features:**
+
+1. **Defense Control** (`defense.py`)
+   - Current defense mode display (Portal/Shield/Lockdown)
+   - Manual mode switching (emergency overrides)
+   - Decision history and score trends
+   - Real-time threat score monitoring
+
+2. **Service Management** (`services.py`)
+   - Azazel core service control (azctl, suricata, opencanary, vector)
+   - Service status overview
+   - Real-time log file viewing
+   - Service restart and health checks
+
+3. **Network Information** (`network.py`)
+   - WiFi management integration
+   - Interface status and IP configuration
+   - Active profiles and QoS settings
+   - Network traffic statistics
+
+4. **WiFi Management** (`wifi.py`)
+   - Nearby WiFi network scanning
+   - WPA/WPA2 network connection
+   - Saved network management
+   - Connection status and signal strength
+
+5. **Log Monitoring** (`monitoring.py`)
+   - Suricata alert real-time monitoring
+   - OpenCanary honeypot events
+   - System logs and daemon logs
+   - Security event summaries
+
+6. **System Information** (`system.py`)
+   - CPU, memory, disk usage
+   - Network interface statistics
+   - System temperature monitoring
+   - Process list and resource usage
+
+7. **Emergency Operations** (`emergency.py`)
+   - Emergency lockdown (immediate network isolation)
+   - Complete network configuration reset
+   - System status report generation
+   - Factory reset (requires confirmation)
+
+**Technical Features:**
+- **Modular Design**: Each function implemented as independent module
+- **Rich UI**: Color-coded panels, tables, progress bars
+- **Error Handling**: Robust error processing and recovery
+- **Security-Focused**: Multi-stage confirmation for dangerous operations
+- **Extensible**: Easy addition of new functionality
+
+**Safety Features:**
+- Confirmation dialogs for dangerous operations
+- Automatic root permission verification
+- Automatic operation logging
+- Error handling and automatic recovery procedures
+- Emergency operations require multiple confirmations
+
+**Keyboard Navigation:**
+- `Number keys`: Select menu items
+- `r`: Refresh screen
+- `b`: Return to previous menu
+- `q`: Exit
+- `Ctrl+C`: Safe interruption anytime
+
+**Safety Features:**
+- Confirmation dialogs for dangerous operations
+- Root permission validation for privileged actions
+- Automatic operation logging
+- Error handling and recovery procedures
+
+**Navigation:**
+- `Number keys`: Select menu items
+- `r`: Refresh screen
+- `b`: Back to previous menu
+- `q`: Quit
+- `Ctrl+C`: Interrupt at any time
+
 ### Configuration Workflow
 
 1. **Edit Core Configuration**: Modify `/etc/azazel/azazel.yaml` to adjust delay values, bandwidth controls, and lockdown allowlists (template at `configs/network/azazel.yaml`)
@@ -198,6 +325,7 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 
 ## Documentation
 
+### English Documentation
 - [`docs/INSTALLATION.md`](docs/INSTALLATION.md) — Complete installation and setup guide
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — Operational procedures and maintenance
 - [`docs/NETWORK_SETUP.md`](docs/NETWORK_SETUP.md) — Network configuration and gateway setup
@@ -205,6 +333,16 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 - [`docs/EPD_SETUP.md`](docs/EPD_SETUP.md) — E-Paper display configuration
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System architecture and component relationships
 - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — Python modules and script reference
+
+### Japanese Documentation (日本語ドキュメント)
+- [`README_ja.md`](README_ja.md) — 日本語版README
+- [`docs/INSTALLATION_ja.md`](docs/INSTALLATION_ja.md) — インストール・セットアップガイド
+- [`docs/OPERATIONS_ja.md`](docs/OPERATIONS_ja.md) — 運用手順とメンテナンス
+- [`docs/NETWORK_SETUP_ja.md`](docs/NETWORK_SETUP_ja.md) — ネットワーク設定ガイド
+- [`docs/TROUBLESHOOTING_ja.md`](docs/TROUBLESHOOTING_ja.md) — トラブルシューティングガイド
+- [`docs/EPD_SETUP_ja.md`](docs/EPD_SETUP_ja.md) — E-Paperディスプレイ設定
+- [`docs/ARCHITECTURE_ja.md`](docs/ARCHITECTURE_ja.md) — システムアーキテクチャ
+- [`docs/API_REFERENCE_ja.md`](docs/API_REFERENCE_ja.md) — APIリファレンス
 
 ## Development Background
 

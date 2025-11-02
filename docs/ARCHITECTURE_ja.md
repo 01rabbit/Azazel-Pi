@@ -41,6 +41,7 @@ Azazel-Piは、ネットワークセキュリティ監視および自動応答�
 | `azazel_pi/core/display/` | E-Paperステータス表示とレンダリング | 物理インターフェース |
 | `azazel_pi/core/qos/` | プロファイルをQoS実行クラスにマッピング | 帯域制御 |
 | `azctl/` | systemdで使用される軽量CLI/デーモンインターフェース | システム統合 |
+| `azctl/menu/` | モジュラーTUIメニューシステム | ユーザーインターフェース |
 | `configs/` | スキーマ検証を含む宣言的設定セット | 設定管理 |
 | `scripts/install_azazel.sh` | ランタイムと依存関係をステージングするプロビジョニングスクリプト | 導入支援 |
 | `systemd/` | Azazelサービススタックを構成するユニットとターゲット | サービス管理 |
@@ -436,6 +437,101 @@ class MetricsCollector:
 - 証明書検証
 - セキュアな認証機構
 
+## TUIメニューシステムアーキテクチャ
+
+### モジュラー設計
+
+Azazel-Piは保守性と拡張性を重視したモジュラーTUIメニューシステムを採用しています：
+
+```
+azctl/menu/
+├── __init__.py       # エントリーポイント
+├── types.py          # 共通データ型（MenuAction, MenuCategory）
+├── core.py           # メインフレームワーク（AzazelTUIMenu）
+├── defense.py        # 防御制御モジュール
+├── services.py       # サービス管理モジュール  
+├── network.py        # ネットワーク情報統合モジュール
+├── wifi.py           # WiFi管理専用モジュール
+├── monitoring.py     # ログ監視モジュール
+├── system.py         # システム情報モジュール
+└── emergency.py      # 緊急操作モジュール
+```
+
+### 設計原則
+
+#### 1. 責任分離
+各モジュールは明確に定義された単一の責任を持ちます：
+
+```python
+# 例: WiFi管理モジュール
+class WiFiManager:
+    """WiFiネットワーク管理に特化"""
+    def scan_networks(self) -> List[Network]: pass
+    def connect_to_network(self, ssid: str, password: str): pass
+    def get_saved_networks(self) -> List[Network]: pass
+```
+
+#### 2. 型安全性
+共通のデータ型を`types.py`で定義し、循環インポートを回避：
+
+```python
+@dataclass
+class MenuAction:
+    title: str
+    description: str
+    action: Callable
+    requires_root: bool = False
+    dangerous: bool = False
+
+@dataclass 
+class MenuCategory:
+    title: str
+    description: str
+    actions: list[MenuAction]
+```
+
+#### 3. 依存関係注入
+各モジュールはConsoleオブジェクトを注入され、独立してテスト可能：
+
+```python
+class DefenseModule:
+    def __init__(self, console: Console):
+        self.console = console
+        
+    def get_category(self) -> MenuCategory:
+        return MenuCategory(
+            title="防御制御",
+            description="防御システムの監視と制御",
+            actions=self._build_actions()
+        )
+```
+
+### TUIメニューの実行フロー
+
+```
+ユーザー起動 → メインメニュー → カテゴリ選択 → アクション実行 → 結果表示
+     ↓              ↓            ↓            ↓            ↓
+┌─────────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐
+│azctl.cli    │ │AzazelTUI │ │Module    │ │Action   │ │Rich      │
+│menu command │ │Menu.run()│ │Category  │ │Function │ │Console   │
+└─────────────┘ └──────────┘ └──────────┘ └─────────┘ └──────────┘
+```
+
+### メニューレンダリングアーキテクチャ
+
+Rich ライブラリを使用した一貫したUI表示：
+
+```python
+# 統一されたセクションヘッダー表示
+def _print_section_header(self, title: str, subtitle: str = ""):
+    panel = Panel(
+        Align.center(f"[bold]{title}[/bold]\n{subtitle}"),
+        border_style="blue",
+        padding=(1, 2)
+    )
+    self.console.print(panel)
+```
+
 ## 拡張性と保守性
 
 ### プラグインアーキテクチャ
@@ -454,6 +550,48 @@ class CustomAction(Action):
     def plan(self, target: str) -> Iterator[ActionResult]:
         # カスタム制御ロジック
         pass
+```
+
+### TUIメニューモジュールの追加
+
+新しいメニューモジュールの追加は簡単です：
+
+```python
+# azctl/menu/custom.py
+from rich.console import Console
+from .types import MenuCategory, MenuAction
+
+class CustomModule:
+    def __init__(self, console: Console):
+        self.console = console
+    
+    def get_category(self) -> MenuCategory:
+        return MenuCategory(
+            title="カスタム機能",
+            description="カスタム機能の管理",
+            actions=[
+                MenuAction(
+                    title="カスタム操作",
+                    description="カスタム操作を実行",
+                    action=self._custom_action
+                )
+            ]
+        )
+    
+    def _custom_action(self):
+        self.console.print("[green]カスタム操作を実行中...[/green]")
+
+# コアシステムに統合
+# azctl/menu/core.py に追加:
+from .custom import CustomModule
+
+class AzazelTUIMenu:
+    def __init__(self, ...):
+        # ...
+        self.custom_module = CustomModule(self.console)
+    
+    def _setup_menu_categories(self):
+        self.categories.append(self.custom_module.get_category())
 ```
 
 ### テスト戦略

@@ -34,6 +34,24 @@ into `/etc/azazel`, installs systemd units, and enables the aggregate
 
 ## 3. Configure services
 
+### Interactive TUI Menu Usage
+
+**Recommended**: Use the integrated TUI menu system for operational tasks
+
+```bash
+# Launch the main menu
+python3 -m azctl.cli menu
+```
+
+**TUI Daily Tasks:**
+1. **"System Information"** → Check resource usage, temperature, system load
+2. **"Service Management"** → Verify all service states and view logs
+3. **"Defense Control"** → Monitor current mode, scores, decision history
+4. **"Log Monitoring"** → Real-time alert monitoring
+5. **"Network Information"** → Interface status and traffic statistics
+
+### Manual Configuration
+
 1. Adjust `/etc/azazel/azazel.yaml` to reflect interface names, QoS policies, and
    alert thresholds.
 2. Regenerate the Suricata configuration if a non-default ruleset is required:
@@ -75,3 +93,345 @@ state transitions and scoring decisions.
 
 To remove Azazel from a host, execute `sudo /opt/azazel/rollback.sh`. The script
 deletes `/opt/azazel`, removes `/etc/azazel`, and disables the `azctl.target`.
+
+## Defense Mode Details
+
+### Portal Mode
+- **Purpose**: Minimal impact baseline monitoring
+- **Features**:
+  - Light delay injection (100ms)
+  - Normal traffic flow maintained
+  - Event logging and scoring continues
+- **Use Cases**: Daily operations, normal monitoring
+
+### Shield Mode  
+- **Purpose**: Enhanced monitoring and control when threats detected
+- **Features**:
+  - Moderate delay (200ms)
+  - Bandwidth limiting (128kbps)
+  - Traffic shaping applied
+  - Detailed logging
+- **Use Cases**: Suspicious activity detected, moderate threshold exceeded
+
+### Lockdown Mode
+- **Purpose**: Complete containment for high-risk situations
+- **Features**:
+  - High delay (300ms)
+  - Strict bandwidth limiting (64kbps)
+  - Allowlist-based communication only
+  - Medical/emergency FQDN access maintained
+- **Use Cases**: Critical threat detected, high score threshold exceeded
+
+## Daily Operations
+
+### TUI Menu-Based Operations
+
+**Recommended**: Use the integrated TUI menu for daily monitoring and operations
+
+```bash
+# Launch main menu
+python3 -m azctl.cli menu
+```
+
+### Routine Maintenance
+
+#### Daily Tasks (TUI Recommended)
+```bash
+# TUI menu provides:
+# - System Information → Resource usage monitoring
+# - Service Management → All service status
+# - Defense Control → Recent decision history
+# - Log Monitoring → Alert summaries
+
+# Command line (for scripting)
+sudo systemctl status azctl.target
+sudo tail -f /var/log/azazel/decisions.log
+sudo tail -f /var/log/suricata/fast.log
+```
+
+#### Weekly Tasks
+```bash
+# System updates
+sudo apt update && sudo apt upgrade
+
+# Suricata rule updates
+sudo suricata-update
+sudo systemctl restart suricata
+
+# Log rotation check
+sudo journalctl --disk-usage
+sudo journalctl --vacuum-time=7d
+```
+
+#### Monthly Tasks
+```bash
+# Comprehensive health check
+sudo /opt/azazel/sanity_check.sh
+
+# Configuration backup
+sudo tar -czf /backup/azazel-$(date +%Y%m%d).tar.gz /etc/azazel /opt/azazel/config
+
+# Docker resource cleanup
+sudo docker system prune -f
+
+# Service restart (planned maintenance)
+sudo systemctl restart azctl.target
+```
+
+## Incident Response
+
+### Manual Mode Switching
+
+**Recommended**: Use TUI menu for manual mode changes
+
+```bash
+# TUI Menu approach:
+# 1. Launch menu: python3 -m azctl.cli menu
+# 2. Select "Defense Control"
+# 3. Choose "Manual Mode Switch"
+# 4. Select desired mode (Portal/Shield/Lockdown)
+# 5. Confirm in dialog
+```
+
+### Manual Mode Switching (CLI)
+
+Emergency manual mode changes:
+
+```bash
+# Switch to Shield mode
+echo '{"mode": "shield"}' | sudo tee /tmp/mode.json
+python3 -m azctl.cli events --config /tmp/mode.json
+
+# Switch to Lockdown mode
+echo '{"mode": "lockdown"}' | sudo tee /tmp/mode.json
+python3 -m azctl.cli events --config /tmp/mode.json
+
+# Return to Portal mode
+echo '{"mode": "portal"}' | sudo tee /tmp/mode.json
+python3 -m azctl.cli events --config /tmp/mode.json
+```
+
+### HTTP API Mode Control
+
+```bash
+# RESTful API mode switching
+curl -X POST http://localhost:8080/v1/mode \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "shield"}'
+
+# Check current mode
+curl http://localhost:8080/v1/health
+```
+
+### Log Analysis
+
+#### Suricata Alert Analysis
+```bash
+# Alert type aggregation
+jq 'select(.event_type=="alert") | .alert.signature' /var/log/suricata/eve.json | sort | uniq -c
+
+# Source IP aggregation
+jq 'select(.event_type=="alert") | .src_ip' /var/log/suricata/eve.json | sort | uniq -c | sort -nr
+
+# Time series alert analysis
+jq 'select(.event_type=="alert") | [.timestamp, .alert.signature, .src_ip]' /var/log/suricata/eve.json
+```
+
+#### Azazel Decision Log Analysis
+```bash
+# Mode transition history
+grep "mode transition" /var/log/azazel/decisions.log
+
+# Score trend analysis
+grep "score:" /var/log/azazel/decisions.log | tail -20
+
+# Threshold exceeded events
+grep "threshold exceeded" /var/log/azazel/decisions.log
+```
+
+## Configuration Management
+
+### Configuration Template Updates
+
+```bash
+# Apply new configuration templates
+sudo rsync -av /opt/azazel/configs/ /etc/azazel/
+
+# Check configuration differences
+sudo diff -u /etc/azazel/azazel.yaml.backup /etc/azazel/azazel.yaml
+
+# Apply configuration changes
+sudo systemctl restart azctl.target
+```
+
+### Environment-Specific Configuration
+
+```bash
+# Development environment
+sudo cp /opt/azazel/configs/environments/development.yaml /etc/azazel/azazel.yaml
+
+# Production environment
+sudo cp /opt/azazel/configs/environments/production.yaml /etc/azazel/azazel.yaml
+
+# Testing environment
+sudo cp /opt/azazel/configs/environments/testing.yaml /etc/azazel/azazel.yaml
+```
+
+## Performance Optimization
+
+### System Tuning
+
+```bash
+# I/O scheduler optimization
+echo mq-deadline | sudo tee /sys/block/mmcblk0/queue/scheduler
+
+# Network buffer optimization
+echo 'net.core.rmem_max = 16777216' | sudo tee -a /etc/sysctl.conf
+echo 'net.core.wmem_max = 16777216' | sudo tee -a /etc/sysctl.conf
+sudo sysctl -p
+
+# Suricata worker thread adjustment
+sudo nano /etc/suricata/suricata.yaml
+# Adjust threading.cpu-affinity
+```
+
+### Resource Usage Optimization
+
+```bash
+# Log level adjustment
+sudo nano /etc/azazel/vector/vector.toml
+# Set log_level = "warn"
+
+# E-Paper update frequency adjustment  
+sudo nano /etc/default/azazel-epd
+# Set UPDATE_INTERVAL=30
+
+# OpenCanary service selective enabling
+sudo nano /etc/azazel/opencanary/opencanary.conf
+# Disable unnecessary services
+```
+
+## Monitoring and Alerting
+
+### Key Monitoring Items
+```bash
+# CPU usage
+htop
+
+# Memory usage
+free -h
+
+# Disk usage
+df -h
+
+# Network traffic
+sudo iftop
+
+# Service status
+sudo systemctl is-active azctl.target mattermost nginx docker
+```
+
+### Alert Configuration Examples
+```bash
+# Automated health checks via cron
+sudo crontab -e
+# Add: */15 * * * * /opt/azazel/sanity_check.sh >> /var/log/azazel/health.log
+
+# Disk space warning
+sudo nano /etc/crontab
+# Add: 0 6 * * * root df -h | grep -E '(9[0-9]%|100%)' && echo "Disk space warning" | wall
+```
+
+## Backup and Restore
+
+### Configuration Backup
+
+```bash
+# Full backup
+sudo tar -czf azazel-full-backup-$(date +%Y%m%d-%H%M%S).tar.gz \
+  /etc/azazel \
+  /opt/azazel/config \
+  /var/log/azazel \
+  /opt/mattermost/config
+
+# Configuration-only backup
+sudo tar -czf azazel-config-backup-$(date +%Y%m%d).tar.gz \
+  /etc/azazel \
+  /opt/azazel/config
+```
+
+### Restore Procedures
+
+```bash
+# Stop services
+sudo systemctl stop azctl.target
+
+# Restore from backup
+sudo tar -xzf azazel-config-backup-YYYYMMDD.tar.gz -C /
+
+# Fix permissions
+sudo chown -R root:root /etc/azazel
+sudo chmod -R 644 /etc/azazel/*.yaml
+
+# Restart services
+sudo systemctl start azctl.target
+```
+
+## Security Best Practices
+
+### Access Control
+
+```bash
+# SSH key authentication setup
+sudo nano /etc/ssh/sshd_config
+# PasswordAuthentication no
+# PubkeyAuthentication yes
+
+# Firewall configuration
+sudo ufw enable
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+```
+
+### Audit Logging
+
+```bash
+# Enable system auditing
+sudo apt install auditd
+sudo systemctl enable --now auditd
+
+# Azazel file monitoring
+echo "-w /etc/azazel/ -p wa -k azazel-config" | sudo tee -a /etc/audit/rules.d/azazel.rules
+echo "-w /opt/azazel/ -p wa -k azazel-runtime" | sudo tee -a /etc/audit/rules.d/azazel.rules
+sudo systemctl restart auditd
+```
+
+## Troubleshooting
+
+For common issues and solutions, refer to [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md).
+
+### Quick Diagnostics
+
+```bash
+# Comprehensive health check
+sudo /opt/azazel/sanity_check.sh
+
+# Service status check
+sudo systemctl status azctl.target --no-pager
+
+# Recent error log check
+sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i error
+```
+
+## Related Documentation
+
+- [`INSTALLATION.md`](INSTALLATION.md) - Complete installation guide
+- [`NETWORK_SETUP.md`](NETWORK_SETUP.md) - Network configuration procedures
+- [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) - Comprehensive problem resolution guide
+- [`API_REFERENCE.md`](API_REFERENCE.md) - Python modules and HTTP endpoints
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) - System architecture and design
+
+---
+
+*For the latest operational guidance, refer to the [Azazel-Pi repository](https://github.com/01rabbit/Azazel-Pi) and consult with administrators for enterprise deployments.*

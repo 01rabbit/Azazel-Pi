@@ -2,6 +2,260 @@
 
 This comprehensive troubleshooting guide covers common issues encountered during installation, configuration, and operation of Azazel-Pi systems.
 
+## TUI Menu System Issues
+
+### Menu Launch Failures
+
+#### Problem: TUI menu fails to start
+
+**Symptoms:**
+```bash
+$ python3 -m azctl.cli menu
+ModuleNotFoundError: No module named 'azctl.menu'
+```
+
+**Solutions:**
+
+```bash
+# Check module existence
+ls -la azctl/menu/
+
+# Verify Python path
+python3 -c "import sys; print('\n'.join(sys.path))"
+
+# Run from correct directory
+cd /opt/azazel
+python3 -m azctl.cli menu
+```
+
+#### Problem: Circular import errors
+
+**Symptoms:**
+```
+ImportError: cannot import name 'MenuCategory' from partially initialized module
+```
+
+**Solutions:**
+
+```bash
+# Verify correct module structure
+find azctl/menu -name "*.py" -exec grep -l "from.*core import" {} \;
+
+# Ensure imports are from types.py
+grep -r "from.*types import" azctl/menu/
+```
+
+### Menu Display Issues
+
+#### Problem: Rich UI displays incorrectly
+
+**Symptoms:**
+- Colors not displaying
+- Tables malformed
+- Text corruption
+
+**Solutions:**
+
+```bash
+# Check terminal environment variables
+echo $TERM
+echo $COLORTERM
+
+# Test Rich console functionality
+python3 -c "from rich.console import Console; c = Console(); c.print('[red]Test[/red]')"
+
+# Use appropriate terminal
+export TERM=xterm-256color
+python3 -m azctl.cli menu
+```
+
+#### Problem: Keyboard input not responding
+
+**Symptoms:**
+- Number keys don't select menu items
+- Ctrl+C doesn't exit
+- Screen doesn't refresh
+
+**Solutions:**
+
+```bash
+# Check terminal input mode
+stty -a
+
+# Verify standard input
+python3 -c "import sys; print(sys.stdin.isatty())"
+
+# For SSH connections
+ssh -t user@host python3 -m azctl.cli menu
+```
+
+### WiFi Management Issues
+
+#### Problem: WiFi scanning fails
+
+**Symptoms:**
+```
+Error: No networks found or scan failed
+```
+
+**Solutions:**
+
+```bash
+# Check wireless interface
+sudo iw dev
+
+# Test scan permissions
+sudo iw wlan1 scan | head -20
+
+# Resolve NetworkManager conflicts
+sudo systemctl stop NetworkManager
+sudo systemctl disable NetworkManager
+```
+
+#### Problem: WiFi connection fails
+
+**Symptoms:**
+- Connection fails after password entry
+- wpa_supplicant errors
+
+**Solutions:**
+
+```bash
+# Check wpa_supplicant status
+sudo wpa_cli -i wlan1 status
+
+# Verify configuration file permissions
+ls -l /etc/wpa_supplicant/wpa_supplicant.conf
+
+# Test manual connection
+sudo wpa_cli -i wlan1 add_network
+sudo wpa_cli -i wlan1 set_network 0 ssid '"YourSSID"'
+sudo wpa_cli -i wlan1 set_network 0 psk '"YourPassword"'
+sudo wpa_cli -i wlan1 enable_network 0
+```
+
+### Service Management Issues
+
+#### Problem: Service control fails
+
+**Symptoms:**
+- Cannot start/stop services
+- Permission errors
+
+**Solutions:**
+
+```bash
+# Check sudoers configuration
+sudo visudo
+# Add if needed:
+# %azazel ALL=(ALL) NOPASSWD: /bin/systemctl
+
+# Test service status manually
+sudo systemctl status azctl.target
+
+# Test systemctl permissions
+sudo -u azazel sudo systemctl status azctl.service
+```
+
+### Emergency Operations Issues
+
+#### Problem: Emergency lockdown not working
+
+**Symptoms:**
+- Network not blocked
+- nftables rules not applied
+
+**Solutions:**
+
+```bash
+# Check nftables status
+sudo nft list ruleset
+
+# Test manual lockdown rules
+sudo nft flush ruleset
+sudo nft add table inet emergency
+sudo nft add chain inet emergency input '{ type filter hook input priority 0; policy drop; }'
+
+# Check network interface status
+ip link show
+```
+
+#### Problem: System report generation fails
+
+**Symptoms:**
+- Report file not created
+- Permission errors
+
+**Solutions:**
+
+```bash
+# Check /tmp write permissions
+ls -ld /tmp
+touch /tmp/test && rm /tmp/test
+
+# Test manual report generation
+sudo python3 -c "
+import subprocess
+result = subprocess.run(['uname', '-a'], capture_output=True, text=True)
+print(result.stdout)
+"
+```
+
+### Performance Issues
+
+#### Problem: Menu response is slow
+
+**Symptoms:**
+- Menu display takes long time
+- Key input lag
+
+**Solutions:**
+
+```bash
+# Check system resources
+htop
+free -h
+df -h
+
+# Monitor I/O wait
+iostat -x 1 5
+
+# Adjust process priority
+sudo nice -n -10 python3 -m azctl.cli menu
+```
+
+### Debug and Logging
+
+#### TUI Menu Debug Mode
+
+```bash
+# Enable debug logging
+export AZAZEL_DEBUG=1
+python3 -m azctl.cli menu
+
+# Verbose logging
+python3 -c "
+import logging
+logging.basicConfig(level=logging.DEBUG)
+from azctl.menu import AzazelTUIMenu
+menu = AzazelTUIMenu()
+menu.run()
+"
+```
+
+#### Log File Inspection
+
+```bash
+# TUI menu related logs
+sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i menu
+
+# Python error logs
+sudo tail -f /var/log/syslog | grep python3
+
+# Manual log output
+python3 -m azctl.cli menu 2>&1 | tee menu_debug.log
+```
+
 ## Quick Diagnosis
 
 ### System Health Check

@@ -90,17 +90,35 @@ sudo bash scripts/install_azazel.sh
 
 ## 日常運用タスク
 
+### TUIメニューを使用した日常運用
+
+**推奨**: 日常的なモニタリングと運用作業には統合TUIメニューを使用
+
+```bash
+# メインメニューを起動
+python3 -m azctl.cli menu
+```
+
+**TUIでの日常タスク:**
+1. **「システム情報」** → リソース使用率、温度、システム負荷の確認
+2. **「サービス管理」** → 全サービスの状態確認とログ表示
+3. **「防御制御」** → 現在のモード、スコア、決定履歴の確認
+4. **「ログ監視」** → リアルタイムアラート監視
+5. **「ネットワーク情報」** → インターフェース状態とトラフィック統計
+
 ### 定期メンテナンス
 
-#### 日次タスク
+#### 日次タスク（TUI推奨）
 ```bash
-# サービス状態確認
+# TUIメニューから以下を確認:
+# - システム情報 → リソース使用率
+# - サービス管理 → 全サービス状態
+# - 防御制御 → 最近の決定履歴
+# - ログ監視 → アラート要約
+
+# コマンドライン（スクリプト用）
 sudo systemctl status azctl.target
-
-# 最近のアラートチェック
 sudo tail -f /var/log/azazel/decisions.log
-
-# Suricataアラート確認
 sudo tail -f /var/log/suricata/fast.log
 ```
 
@@ -166,22 +184,46 @@ sudo nano /etc/crontab
 
 ## インシデント対応
 
-### 手動モード切り替え
+### インタラクティブTUIメニューの使用
 
-緊急時の手動モード変更：
+**推奨方法**: インタラクティブメニューシステムを使用した運用
+
+```bash
+# TUIメニューを起動
+python3 -m azctl.cli menu
+
+# 特定のネットワークインターフェースを指定
+python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+```
+
+**TUIメニューからのモード切り替え:**
+1. メニューから「防御制御」を選択
+2. 「手動モード切り替え」を選択
+3. 目的のモード（Portal/Shield/Lockdown）を選択
+4. 確認ダイアログで操作を承認
+
+**TUIメニューの主要機能:**
+- **リアルタイム状態監視**: 現在のモード、脅威スコア、ネットワーク状態
+- **ワンクリック操作**: 複雑な操作を簡単なメニューから実行
+- **安全な操作**: 危険な操作には確認ダイアログと権限チェック
+- **包括的情報**: システム全体の状態を一画面で確認
+
+### 手動モード切り替え（CLI）
+
+緊急時やスクリプトからの手動モード変更：
 
 ```bash
 # Shieldモードに切り替え
 echo '{"mode": "shield"}' | sudo tee /tmp/mode.json
-python3 -m azctl.cli --config /tmp/mode.json
+python3 -m azctl.cli events --config /tmp/mode.json
 
-# Lockdownモードに切り替え
+# Lockdownモードに切り替け
 echo '{"mode": "lockdown"}' | sudo tee /tmp/mode.json
-python3 -m azctl.cli --config /tmp/mode.json
+python3 -m azctl.cli events --config /tmp/mode.json
 
 # Portalモードに復帰
 echo '{"mode": "portal"}' | sudo tee /tmp/mode.json
-python3 -m azctl.cli --config /tmp/mode.json
+python3 -m azctl.cli events --config /tmp/mode.json
 ```
 
 ### HTTP APIを使用したモード制御
