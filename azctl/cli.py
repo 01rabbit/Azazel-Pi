@@ -33,11 +33,18 @@ from azazel_pi.core.display.status_collector import StatusCollector
 # State machine wiring (unchanged)
 # ---------------------------------------------------------------------------
 def build_machine() -> StateMachine:
+    # Automatic modes (system controlled)
     portal = State(name="portal", description="Nominal operations")
     shield = State(name="shield", description="Heightened monitoring")
     lockdown = State(name="lockdown", description="Full containment mode")
+    
+    # User intervention modes (manually controlled with 3-minute timer)
+    user_portal = State(name="user_portal", description="User controlled: Nominal operations")
+    user_shield = State(name="user_shield", description="User controlled: Heightened monitoring")
+    user_lockdown = State(name="user_lockdown", description="User controlled: Full containment")
 
     machine = StateMachine(initial_state=portal)
+    # Auto-mode transitions (system threat detection)
     machine.add_transition(
         Transition(
             source=portal,
@@ -78,6 +85,139 @@ def build_machine() -> StateMachine:
             source=lockdown,
             target=portal,
             condition=lambda event: event.name == "portal",
+        )
+    )
+    
+    # User intervention transitions (manual override)
+    # From auto modes to user modes
+    machine.add_transition(
+        Transition(
+            source=portal,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=portal,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=portal,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=shield,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=shield,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=shield,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=lockdown,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=lockdown,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=lockdown,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    
+    # Between user modes
+    machine.add_transition(
+        Transition(
+            source=user_portal,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_portal,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_shield,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_shield,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_lockdown,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_lockdown,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    
+    # User mode timeout transitions (3-minute timer expiry)
+    machine.add_transition(
+        Transition(
+            source=user_portal,
+            target=portal,
+            condition=lambda event: event.name == "timeout_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_shield,
+            target=shield,
+            condition=lambda event: event.name == "timeout_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_lockdown,
+            target=lockdown,
+            condition=lambda event: event.name == "timeout_lockdown",
         )
     )
     return machine
@@ -314,21 +454,24 @@ def _human_bytes(n: int) -> str:
         x /= 1024.0
 
 
-def _mode_style(mode: Optional[str]) -> tuple[str, str]:
-    """Return (mode_label, color) for different defensive modes.
+def _mode_style(mode: str) -> tuple[str, str]:
+    """Get display label and color for a mode."""
+    if not mode:
+        return ("UNKNOWN", "blue")
     
-    Portal: Green (normal operations)
-    Shield: Yellow (heightened monitoring) 
-    Lockdown: Red (full containment)
-    """
-    name = (mode or "unknown").lower()
-    if name == "portal":
-        return ("PORTAL", "green")
-    if name == "shield":
-        return ("SHIELD", "yellow")
-    if name == "lockdown":
-        return ("LOCKDOWN", "red")
-    return (name.upper(), "cyan")
+    mode_colors = {
+        "portal": "green",
+        "shield": "yellow", 
+        "lockdown": "red",
+        "USER_PORTAL": "green",
+        "USER_SHIELD": "yellow",
+        "USER_LOCKDOWN": "red"
+    }
+    
+    color = mode_colors.get(mode.upper(), "blue")
+    label = mode.upper()
+    
+    return (label, color)
 
 
 def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval: float, once: bool) -> int:

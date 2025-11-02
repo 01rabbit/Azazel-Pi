@@ -88,17 +88,13 @@ class AzazelTUIMenu:
     def run(self) -> None:
         """Main menu loop."""
         try:
-            self._show_banner()
-            
             while True:
                 choice = self._display_main_menu()
                 if choice == 'q':
                     self.console.print("\n[yellow]Exiting Azazel TUI Menu...[/yellow]")
                     break
                 elif choice == 'r':
-                    self.console.clear()
-                    self._show_banner()
-                    continue
+                    continue  # _display_main_menu will handle screen clearing
                     
                 try:
                     category_idx = int(choice) - 1
@@ -136,7 +132,26 @@ class AzazelTUIMenu:
         # Show current status summary
         try:
             status = self._get_enhanced_status()
-            mode_label, color = _mode_style(status.get("mode"))
+            # Use custom mode_display if available, otherwise use _mode_style
+            if status.get("mode_display"):
+                mode_label = status["mode_display"]
+                # Determine color based on mode type - User Override uses base mode colors
+                if "USER_PORTAL" in mode_label:
+                    color = "green"  # グリーン
+                elif "USER_SHIELD" in mode_label:
+                    color = "yellow"  # イエロー
+                elif "USER_LOCKDOWN" in mode_label:
+                    color = "red"  # レッド
+                elif "PORTAL" in mode_label:
+                    color = "green"  # グリーン
+                elif "SHIELD" in mode_label:
+                    color = "yellow"  # イエロー
+                elif "LOCKDOWN" in mode_label:
+                    color = "red"  # レッド
+                else:
+                    color = "white"
+            else:
+                mode_label, color = _mode_style(status.get("mode"))
             
             # Create multi-line status display
             status_lines = [
@@ -176,7 +191,10 @@ class AzazelTUIMenu:
     
     def _display_main_menu(self) -> str:
         """Display the main menu and get user choice."""
-        self.console.print()
+        # Clear screen and show banner/status before menu
+        self.console.clear()
+        self._show_banner()
+        
         title = Text("Main Menu", style="bold blue")
         self.console.print(title)
         self.console.print(Text("─" * len("Main Menu"), style="blue"))
@@ -288,16 +306,103 @@ class AzazelTUIMenu:
     
     def _get_current_status(self) -> Dict[str, Any]:
         """Get current system status summary."""
-        # Get decision log status
-        decision_paths = [
-            Path(self.decisions_log) if self.decisions_log else None,
-            Path("/var/log/azazel/decisions.log"),
-            Path("decisions.log"),
-        ]
-        decision_paths = [p for p in decision_paths if p is not None]
+        # Try to get real-time status from running daemon or state files
+        mode = None
+        mode_display = None
         
-        last_decision = _read_last_decision(decision_paths)
-        mode = last_decision.get("mode") if last_decision else None
+        # Check for state files or daemon status
+        state_files = [
+            "/tmp/azazel_state.json",
+            "/var/run/azazel_state.json",
+            "/tmp/azazel_user_command.yaml"
+        ]
+        
+        for state_file in state_files:
+            try:
+                if Path(state_file).exists():
+                    import json
+                    import yaml
+                    
+                    if state_file.endswith('.json'):
+                        with open(state_file, 'r') as f:
+                            state_data = json.load(f)
+                    else:
+                        with open(state_file, 'r') as f:
+                            state_data = yaml.safe_load(f)
+                    
+                    if state_data and isinstance(state_data, dict):
+                        if 'command' in state_data and state_data['command'] == 'user_override':
+                            # This is a user override command file
+                            override_mode = state_data.get('mode', 'unknown')
+                            duration = state_data.get('duration_minutes', 3)
+                            timestamp = state_data.get('timestamp', 0)
+                            
+                            import time
+                            elapsed = time.time() - timestamp
+                            remaining = max(0, (duration * 60) - elapsed)
+                            
+                            if remaining > 0:
+                                mode = f"user_{override_mode}"
+                                mode_display = f"USER_{override_mode.upper()} ({remaining:.0f}s)"
+                            break
+                        elif 'state' in state_data and state_data.get('user_mode'):
+                            # This is a state file with user mode info
+                            mode = state_data['state']
+                            base_mode = state_data.get('base_mode', 'unknown')
+                            timeout_timestamp = state_data.get('timeout_timestamp', 0)
+                            
+                            import time
+                            remaining = max(0, timeout_timestamp - time.time())
+                            
+                            if remaining > 0:
+                                mode_display = f"USER_{base_mode.upper()} ({remaining:.0f}s)"
+                            else:
+                                # Timeout expired, clean up
+                                try:
+                                    import os
+                                    os.unlink(state_file)
+                                except:
+                                    pass
+                                mode = base_mode
+                                mode_display = base_mode.upper()
+                            break
+                        elif 'state' in state_data:
+                            mode = state_data['state']
+                            mode_display = mode.upper()
+                            break
+            except Exception:
+                continue
+        
+        # If no state file found, try to get from a new state machine instance
+        if not mode:
+            try:
+                from azctl.cli import build_machine
+                machine = build_machine()
+                summary = machine.summary()
+                current_mode = summary.get("state", "unknown")
+                is_user_mode = summary.get("user_mode") == "true"
+                
+                if is_user_mode:
+                    timeout_remaining = float(summary.get("user_timeout_remaining", "0"))
+                    base_mode = machine.get_base_mode()
+                    mode = f"user_{base_mode}"
+                    mode_display = f"USER_{base_mode.upper()} ({timeout_remaining:.0f}s)"
+                else:
+                    mode = current_mode
+                    mode_display = current_mode.upper()
+                    
+            except Exception:
+                # Final fallback to decision log status
+                decision_paths = [
+                    Path(self.decisions_log) if self.decisions_log else None,
+                    Path("/var/log/azazel/decisions.log"),
+                    Path("decisions.log"),
+                ]
+                decision_paths = [p for p in decision_paths if p is not None]
+                
+                last_decision = _read_last_decision(decision_paths)
+                mode = last_decision.get("mode") if last_decision else None
+                mode_display = mode.upper() if mode else "UNKNOWN"
         
         # Count active services (simplified)
         services = ["suricata", "opencanary", "vector", "azctl"]
@@ -315,6 +420,7 @@ class AzazelTUIMenu:
         
         return {
             "mode": mode,
+            "mode_display": mode_display if 'mode_display' in locals() else (mode.upper() if mode else "UNKNOWN"),
             "services_active": services_active,
             "services_total": len(services),
         }

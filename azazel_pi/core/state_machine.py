@@ -58,6 +58,7 @@ class StateMachine:
         self._config_cache: Dict[str, Any] | None = None
         self._score_window: Deque[int] = deque(maxlen=max(self.window_size, 1))
         self._unlock_until: Dict[str, float] = {}
+        self._user_mode_until: float = 0.0  # Timer for user intervention modes
 
     # ------------------------------------------------------------------
     # Transition helpers
@@ -82,19 +83,59 @@ class StateMachine:
         return self.current_state
 
     def reset(self) -> None:
-        """Reset the state machine to its initial state."""
+        """Reset to the initial state."""
 
         self.current_state = self.initial_state
-        self._score_window.clear()
-        self._unlock_until.clear()
+        self._user_mode_until = 0.0
 
     def summary(self) -> Dict[str, str]:
         """Return a serializable summary of the state machine."""
 
-        return {
+        status = {
             "state": self.current_state.name,
             "description": self.current_state.description,
         }
+        
+        # Add user mode information
+        if self.is_user_mode():
+            remaining = max(0, self._user_mode_until - self.clock())
+            status["user_mode"] = "true"
+            status["user_timeout_remaining"] = f"{remaining:.1f}"
+        else:
+            status["user_mode"] = "false"
+            
+        return status
+    
+    def is_user_mode(self) -> bool:
+        """Check if current state is a user intervention mode."""
+        return self.current_state.name.startswith("user_")
+    
+    def get_base_mode(self) -> str:
+        """Get the base mode name (removing user_ prefix if present)."""
+        if self.is_user_mode():
+            return self.current_state.name[5:]  # Remove "user_" prefix
+        return self.current_state.name
+    
+    def start_user_mode(self, mode: str, duration_minutes: float = 3.0) -> None:
+        """Start user intervention mode with timer."""
+        user_mode = f"user_{mode}"
+        # Set timer before dispatch to ensure _handle_transition doesn't override it
+        self._user_mode_until = self.clock() + (duration_minutes * 60)
+        self.dispatch(Event(name=user_mode, severity=0))
+    
+    def check_user_mode_timeout(self) -> bool:
+        """Check if user mode has timed out and transition if needed."""
+        if not self.is_user_mode():
+            return False
+            
+        if self.clock() >= self._user_mode_until:
+            # Timeout - transition to corresponding auto mode
+            base_mode = self.get_base_mode()
+            timeout_event = f"timeout_{base_mode}"
+            self.dispatch(Event(name=timeout_event, severity=0))
+            self._user_mode_until = 0.0
+            return True
+        return False
 
     # ------------------------------------------------------------------
     # Configuration helpers
@@ -152,7 +193,10 @@ class StateMachine:
 
         config = self._load_config()
         actions = config.get("actions", {})
-        preset = actions.get(self.current_state.name, {})
+        
+        # For user modes, use the base mode's configuration
+        mode_name = self.get_base_mode()
+        preset = actions.get(mode_name, {})
         shape = preset.get("shape_kbps")
         return {
             "delay_ms": int(preset.get("delay_ms", 0) or 0),
@@ -179,9 +223,23 @@ class StateMachine:
     def apply_score(self, severity: int) -> Dict[str, Any]:
         """Evaluate the score window and transition to the appropriate mode."""
 
+        # Check for user mode timeout first
+        timeout_occurred = self.check_user_mode_timeout()
+        
         evaluation = self.evaluate_window(severity)
         desired_mode = evaluation["desired_mode"]
         now = self.clock()
+        
+        # Skip automatic transitions if in user mode (unless timeout just occurred)
+        if self.is_user_mode() and not timeout_occurred:
+            evaluation.update({
+                "target_mode": self.current_state.name,
+                "applied_mode": self.current_state.name,
+                "user_override": True,
+                "user_timeout_remaining": max(0, self._user_mode_until - now),
+            })
+            return evaluation
+        
         target_mode = desired_mode
         if desired_mode == "portal":
             target_mode = self._target_for_portal(now)
@@ -194,6 +252,7 @@ class StateMachine:
         evaluation.update({
             "target_mode": target_mode,
             "applied_mode": self.current_state.name,
+            "user_override": False,
         })
         return evaluation
 
@@ -204,16 +263,27 @@ class StateMachine:
         thresholds = self.get_thresholds()
         unlocks = thresholds.get("unlock_wait_secs", {})
         now = self.clock()
-        if current.name == "lockdown":
+        
+        # Handle user mode transitions - only set timer if not already set by start_user_mode
+        if current.name.startswith("user_") and self._user_mode_until == 0.0:
+            user_timeout = thresholds.get("user_mode_timeout_mins", 3.0)
+            self._user_mode_until = now + (user_timeout * 60)
+        elif previous.name.startswith("user_"):
+            # Transitioning from user mode to auto mode
+            self._user_mode_until = 0.0
+        
+        # Handle existing lockdown unlock logic for auto modes only
+        current_base = current.name if not current.name.startswith("user_") else current.name[5:]
+        if current_base == "lockdown":
             wait_shield = unlocks.get("shield", 0)
             if wait_shield:
                 self._unlock_until["shield"] = now + wait_shield
-        elif current.name == "shield":
+        elif current_base == "shield":
             wait_portal = unlocks.get("portal", 0)
             if wait_portal:
                 self._unlock_until["portal"] = now + wait_portal
             self._unlock_until.pop("shield", None)
-        elif current.name == "portal":
+        elif current_base == "portal":
             self._unlock_until.clear()
 
     def _target_for_shield(self, now: float) -> str:
