@@ -180,6 +180,22 @@ python3 -m azctl.cli status --tui --config /etc/azazel/azazel.yaml
 python3 -m azctl.cli status --json --config /etc/azazel/azazel.yaml
 ```
 
+#### インタラクティブTUIメニュー
+```bash
+# 包括的なモジュラーメニューシステム
+python3 -m azctl.cli menu
+
+# カスタムインターフェース指定
+python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+```
+
+**TUIメニューの特徴:**
+- **モジュラー設計**: 機能別に分離された8つのモジュール
+- **リアルタイム監視**: システム状態、サービス、ログの即座更新
+- **安全な操作**: 危険な操作には確認ダイアログ
+- **包括的管理**: システム全体を一つのインターフェースから制御
+- **拡張可能**: 新機能を簡単に追加可能な構造
+
 ## E-Paperディスプレイセットアップ（オプション）
 
 Waveshare E-Paperディスプレイをお持ちの場合、以下の追加手順を実行：

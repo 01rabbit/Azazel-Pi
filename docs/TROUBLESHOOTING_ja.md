@@ -806,6 +806,260 @@ sudo nano /etc/crontab
 sudo nano /etc/logrotate.d/azazel
 ```
 
+## TUIメニューシステム問題
+
+### メニュー起動失敗
+
+#### 問題: TUIメニューが起動しない
+
+**症状:**
+```bash
+$ python3 -m azctl.cli menu
+ModuleNotFoundError: No module named 'azctl.menu'
+```
+
+**解決策:**
+
+```bash
+# モジュールの存在確認
+ls -la azctl/menu/
+
+# Pythonパスの確認
+python3 -c "import sys; print('\n'.join(sys.path))"
+
+# 現在のディレクトリから実行
+cd /opt/azazel
+python3 -m azctl.cli menu
+```
+
+#### 問題: 循環インポートエラー
+
+**症状:**
+```
+ImportError: cannot import name 'MenuCategory' from partially initialized module
+```
+
+**解決策:**
+
+```bash
+# 正しいモジュール構造を確認
+find azctl/menu -name "*.py" -exec grep -l "from.*core import" {} \;
+
+# types.pyからのインポートに修正されているか確認
+grep -r "from.*types import" azctl/menu/
+```
+
+### メニュー表示問題
+
+#### 問題: Rich UIが正しく表示されない
+
+**症状:**
+- 色が表示されない
+- 表が崩れる
+- 文字化けが発生
+
+**解決策:**
+
+```bash
+# ターミナル環境変数を確認
+echo $TERM
+echo $COLORTERM
+
+# Richコンソール機能をテスト
+python3 -c "from rich.console import Console; c = Console(); c.print('[red]Test[/red]')"
+
+# 適切なターミナルを使用
+export TERM=xterm-256color
+python3 -m azctl.cli menu
+```
+
+#### 問題: キーボード入力が正しく処理されない
+
+**症状:**
+- 数字キーでメニューが選択されない
+- Ctrl+Cで終了できない
+- 画面更新されない
+
+**解決策:**
+
+```bash
+# ターミナル入力モードを確認
+stty -a
+
+# 標準入力の確認
+python3 -c "import sys; print(sys.stdin.isatty())"
+
+# SSH経由の場合
+ssh -t user@host python3 -m azctl.cli menu
+```
+
+### WiFi管理機能問題
+
+#### 問題: WiFiスキャンが失敗する
+
+**症状:**
+```
+Error: No networks found or scan failed
+```
+
+**解決策:**
+
+```bash
+# 無線インターフェースの確認
+sudo iw dev
+
+# スキャン権限の確認
+sudo iw wlan1 scan | head -20
+
+# NetworkManagerとの競合解決
+sudo systemctl stop NetworkManager
+sudo systemctl disable NetworkManager
+```
+
+#### 問題: WiFi接続が失敗する
+
+**症状:**
+- パスワード入力後に接続に失敗
+- wpa_supplicant エラー
+
+**解決策:**
+
+```bash
+# wpa_supplicant状態を確認
+sudo wpa_cli -i wlan1 status
+
+# 設定ファイルの権限確認
+ls -l /etc/wpa_supplicant/wpa_supplicant.conf
+
+# 手動接続テスト
+sudo wpa_cli -i wlan1 add_network
+sudo wpa_cli -i wlan1 set_network 0 ssid '"YourSSID"'
+sudo wpa_cli -i wlan1 set_network 0 psk '"YourPassword"'
+sudo wpa_cli -i wlan1 enable_network 0
+```
+
+### サービス管理機能問題
+
+#### 問題: サービス制御が失敗する
+
+**症状:**
+- サービスの開始/停止ができない
+- 権限エラーが発生
+
+**解決策:**
+
+```bash
+# sudoers設定を確認
+sudo visudo
+# 追加必要な場合:
+# %azazel ALL=(ALL) NOPASSWD: /bin/systemctl
+
+# サービス状態を手動確認
+sudo systemctl status azctl.target
+
+# systemctl権限テスト
+sudo -u azazel sudo systemctl status azctl.service
+```
+
+### 緊急操作機能問題
+
+#### 問題: 緊急ロックダウンが正しく動作しない
+
+**症状:**
+- ネットワークが遮断されない
+- nftablesルールが適用されない
+
+**解決策:**
+
+```bash
+# nftables状態を確認
+sudo nft list ruleset
+
+# 手動でロックダウンルールをテスト
+sudo nft flush ruleset
+sudo nft add table inet emergency
+sudo nft add chain inet emergency input '{ type filter hook input priority 0; policy drop; }'
+
+# ネットワークインターフェース状態を確認
+ip link show
+```
+
+#### 問題: システムレポート生成が失敗する
+
+**症状:**
+- レポートファイルが作成されない
+- 権限エラーが発生
+
+**解決策:**
+
+```bash
+# /tmp書き込み権限を確認
+ls -ld /tmp
+touch /tmp/test && rm /tmp/test
+
+# 手動でレポート生成をテスト
+sudo python3 -c "
+import subprocess
+result = subprocess.run(['uname', '-a'], capture_output=True, text=True)
+print(result.stdout)
+"
+```
+
+### パフォーマンス問題
+
+#### 問題: メニューの応答が遅い
+
+**症状:**
+- メニュー表示に時間がかかる
+- キー入力の反応が遅い
+
+**解決策:**
+
+```bash
+# システムリソースを確認
+htop
+free -h
+df -h
+
+# I/O待機を確認
+iostat -x 1 5
+
+# プロセス優先度を調整
+sudo nice -n -10 python3 -m azctl.cli menu
+```
+
+### デバッグとログ
+
+#### TUIメニューのデバッグモード
+
+```bash
+# デバッグログを有効化
+export AZAZEL_DEBUG=1
+python3 -m azctl.cli menu
+
+# 詳細ログを有効化
+python3 -c "
+import logging
+logging.basicConfig(level=logging.DEBUG)
+from azctl.menu import AzazelTUIMenu
+menu = AzazelTUIMenu()
+menu.run()
+"
+```
+
+#### ログファイルの確認
+
+```bash
+# TUIメニュー関連ログ
+sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i menu
+
+# Python エラーログ
+sudo tail -f /var/log/syslog | grep python3
+
+# 手動でログ出力
+python3 -m azctl.cli menu 2>&1 | tee menu_debug.log
+```
+
 ## 日本固有のトラブルシューティング
 
 ### 文字エンコーディング問題
@@ -819,6 +1073,13 @@ sudo dpkg-reconfigure locales
 # E-Paperでの日本語表示問題
 sudo apt install fonts-noto-cjk
 sudo fc-cache -fv
+
+# TUIメニューでの日本語表示問題
+python3 -c "
+from rich.console import Console
+console = Console()
+console.print('日本語テスト: あいうえお')
+"
 ```
 
 ### タイムゾーン設定
