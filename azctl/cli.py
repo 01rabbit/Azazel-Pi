@@ -442,6 +442,12 @@ def main(argv: Iterable[str] | None = None) -> int:
     p_status.add_argument("--watch", action="store_true", help="Continuously update status")
     p_status.add_argument("--interval", type=float, default=5.0, help="Refresh interval in seconds (default: 5.0)")
 
+    # Menu: interactive TUI menu system
+    p_menu = sub.add_parser("menu", help="Launch interactive TUI menu for Azazel control operations")
+    p_menu.add_argument("--decisions-log", help="Path to decisions.log (optional)")
+    p_menu.add_argument("--lan-if", default="wlan0", help="LAN/AP interface name (default: wlan0)")
+    p_menu.add_argument("--wan-if", default="wlan1", help="WAN/client interface name (default: wlan1)")
+
     # Serve: long-running daemon that consumes ingest streams and updates mode
     p_serve = sub.add_parser("serve", help="Run long-running daemon to consume events and auto-update mode")
     p_serve.add_argument("--decisions-log", help="Path to decisions.log (optional)")
@@ -474,6 +480,12 @@ def main(argv: Iterable[str] | None = None) -> int:
             lan_if=getattr(args, "lan_if", "wlan0"),
             wan_if=getattr(args, "wan_if", "wlan1"),
         )
+    if args.command == "menu":
+        return cmd_menu(
+            decisions=getattr(args, "decisions_log", None),
+            lan_if=getattr(args, "lan_if", "wlan0"),
+            wan_if=getattr(args, "wan_if", "wlan1"),
+        )
     if args.command == "serve":
         return cmd_serve(
             decisions=getattr(args, "decisions_log", None),
@@ -496,6 +508,26 @@ def main(argv: Iterable[str] | None = None) -> int:
     daemon = AzazelDaemon(machine=machine, scorer=ScoreEvaluator())
     daemon.process_events(load_events(config_path))
     return 0
+
+
+def cmd_menu(decisions: Optional[str], lan_if: str, wan_if: str) -> int:
+    """Launch the interactive TUI menu system."""
+    try:
+        from .menu import AzazelTUIMenu
+        menu = AzazelTUIMenu(
+            decisions_log=decisions,
+            lan_if=lan_if, 
+            wan_if=wan_if
+        )
+        menu.run()
+        return 0
+    except ImportError as e:
+        print(f"Error: TUI menu requires additional dependencies: {e}")
+        print("Install with: pip install rich")
+        return 1
+    except Exception as e:
+        print(f"Error launching menu: {e}")
+        return 1
 
 
 def cmd_serve(decisions: Optional[str], suricata_eve: str, lan_if: str, wan_if: str) -> int:
