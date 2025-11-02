@@ -1,5 +1,5 @@
 node: azazel-fiber-hub
-interfaces: { lan: lan0, wan: wan0 }
+interfaces: { lan: lan0, wan: wlan1 }
 profiles:
   active: fiber
   sat:   { uplink_kbps: 2500, rtt_ms: 600 }

@@ -1,5 +1,5 @@
 node: azazel-sat-field
-interfaces: { lan: lan0, wan: wan0 }
+interfaces: { lan: lan0, wan: wlan1 }
 profiles:
   active: sat
   sat:   { uplink_kbps: 2000, rtt_ms: 700 }

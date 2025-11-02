@@ -1,0 +1,11 @@
+interface={{WLAN_AP}}
+driver=nl80211
+ssid={{SSID}}
+hw_mode=g
+channel=6
+country_code=JP
+ieee80211n=1
+wpa=2
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+wpa_passphrase={{PASSPHRASE}}

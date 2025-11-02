@@ -1,0 +1,15 @@
+# Azazel Pi E-Paper Display Configuration
+# Place this file in /etc/default/azazel-epd
+
+# Update interval in seconds (default: 10)
+UPDATE_INTERVAL=10
+
+# Path to events.json log file
+EVENTS_LOG=/var/log/azazel/events.json
+
+# E-Paper driver name (default: epd2in13_V4)
+# Uncomment and adjust if using different hardware
+# EPD_DRIVER=epd2in13_V4
+
+# Enable debug logging (default: 0)
+# DEBUG=1

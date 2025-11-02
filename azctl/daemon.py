@@ -6,15 +6,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List
 
-from azazel_core import ScoreEvaluator, StateMachine
-from azazel_core.state_machine import Event
+from azazel_pi.core.scorer import ScoreEvaluator
+from azazel_pi.core.state_machine import Event, StateMachine
 
 
 @dataclass
 class AzazelDaemon:
     machine: StateMachine
     scorer: ScoreEvaluator
-    decisions_log: Path = field(default_factory=lambda: Path("decisions.log"))
+    # Default decisions log path aligned with CLI expectations
+    decisions_log: Path = field(default_factory=lambda: Path("/var/log/azazel/decisions.log"))
 
     def process_events(self, events: Iterable[Event]) -> None:
         entries: List[dict] = []
@@ -36,8 +37,26 @@ class AzazelDaemon:
                 }
             )
 
-        if entries:
-            self._append_decisions(entries)
+            # Persist each entry immediately so long-running consumers have up-to-date state
+            self._append_decisions([entries[-1]])
+
+    def process_event(self, event: Event) -> None:
+        """Process a single Event and append a decision entry immediately."""
+        score = self.scorer.evaluate([event])
+        classification = self.scorer.classify(score)
+        evaluation = self.machine.apply_score(score)
+        actions = self.machine.get_actions_preset()
+        entry = {
+            "event": event.name,
+            "score": score,
+            "classification": classification,
+            "average": evaluation["average"],
+            "desired_mode": evaluation["desired_mode"],
+            "target_mode": evaluation["target_mode"],
+            "mode": evaluation["applied_mode"],
+            "actions": actions,
+        }
+        self._append_decisions([entry])
 
     # ------------------------------------------------------------------
     # Persistence helpers

@@ -1,0 +1,42 @@
+# Azazel notification and monitoring settings
+# Updated for production use
+
+# 日本時間（UTC+9）
+tz: "+09:00"
+
+# Mattermost 通知設定
+mattermost:
+  webhook_url: "http://192.168.40.186:8065/hooks/4skkamks8pfx9xka7sd1st1uno"
+  channel: "azazel-alerts"     # 通知先チャンネル
+  username: "Azazel-Bot"       # 投稿ユーザ名
+  icon_emoji: ":shield:"       # アイコン絵文字
+
+# ログファイルパス
+paths:
+  events: "/opt/azazel/logs/events.json"
+  opencanary: "/opt/azazel/logs/opencanary.log"
+  suricata_eve: "/var/log/suricata/eve.json"
+  decisions: "/var/log/azazel/decisions.log"
+
+# イベント抑止設定
+suppress:
+  # 選択肢: "signature", "signature_ip", "signature_ip_user", "signature_ip_user_session"
+  key_mode: "signature_ip_user"
+  cooldown_seconds: 60          # 同一イベントの抑止時間
+  summary_interval_mins: 5      # サマリー通知間隔
+
+# OpenCanary設定
+opencanary:
+  ip: "172.16.10.10"
+  ports:
+    - 22    # SSH
+    - 80    # HTTP
+    - 5432  # PostgreSQL
+
+# ネットワーク制御設定
+network:
+  interface: "wlan1"           # 遅延制御対象インタフェース
+  inactivity_minutes: 2        # 無活動判定時間
+  delay:
+    base_ms: 500              # 基本遅延時間
+    jitter_ms: 100            # 揺らぎ

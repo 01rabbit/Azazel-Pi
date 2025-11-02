@@ -1,0 +1,16 @@
+[Unit]
+Description=Mattermost
+After=network.target docker.service
+Wants=docker.service
+
+[Service]
+Type=simple
+User=mattermost
+Group=mattermost
+WorkingDirectory=/opt/mattermost
+ExecStart=/opt/mattermost/bin/mattermost
+Restart=always
+LimitNOFILE=49152
+
+[Install]
+WantedBy=multi-user.target
