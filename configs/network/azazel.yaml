@@ -20,6 +20,7 @@ thresholds:
   t1_shield: 50
   t2_lockdown: 80
   unlock_wait_secs: { shield: 600, portal: 1800 }
+  user_mode_timeout_mins: 3.0
 notify: { level: warn }
 storage: { log_dir: "/var/log/azazel", retain_days: 14 }
 privacy: { pii_minimize: true, hash_fields: ["src.ip", "dst.ip", "username"] }
