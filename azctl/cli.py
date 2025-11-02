@@ -318,16 +318,16 @@ def _mode_style(mode: Optional[str]) -> tuple[str, str]:
     """Return (mode_label, color) for different defensive modes.
     
     Portal: Green (normal operations)
-    Shield: Red (heightened monitoring) 
-    Lockdown: Grey (full containment)
+    Shield: Yellow (heightened monitoring) 
+    Lockdown: Red (full containment)
     """
     name = (mode or "unknown").lower()
     if name == "portal":
         return ("PORTAL", "green")
     if name == "shield":
-        return ("SHIELD", "red")
+        return ("SHIELD", "yellow")
     if name == "lockdown":
-        return ("LOCKDOWN", "bright_black")  # Grey for lockdown
+        return ("LOCKDOWN", "red")
     return (name.upper(), "cyan")
 
 

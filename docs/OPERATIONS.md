@@ -4,13 +4,15 @@ This document captures the procedures for staging, operating, and maintaining
 Azazel in the field. The workflow assumes deployment on Raspberry Pi OS but can
 be adapted to other Debian derivatives.
 
+For initial installation, see [`INSTALLATION.md`](INSTALLATION.md) for comprehensive setup instructions.
+
 ## 1. Acquire a release
 
 Pick a signed Git tag (for example `v1.0.0`) and download the installer bundle:
 
 ```bash
 TAG=v1.0.0
-curl -fsSL https://github.com/01rabbit/Azazel/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
+curl -fsSL https://github.com/01rabbit/Azazel-Pi/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
   | tar xz -C /tmp
 ```
 
@@ -37,7 +39,7 @@ into `/etc/azazel`, installs systemd units, and enables the aggregate
 2. Regenerate the Suricata configuration if a non-default ruleset is required:
 
    ```bash
-   sudo scripts/suricata_generate.py \
+   sudo /opt/azazel/scripts/suricata_generate.py \
      /etc/azazel/azazel.yaml \
      /etc/azazel/suricata/suricata.yaml.tmpl \
      --output /etc/suricata/suricata.yaml
