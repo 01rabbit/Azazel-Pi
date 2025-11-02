@@ -315,13 +315,19 @@ def _human_bytes(n: int) -> str:
 
 
 def _mode_style(mode: Optional[str]) -> tuple[str, str]:
+    """Return (mode_label, color) for different defensive modes.
+    
+    Portal: Green (normal operations)
+    Shield: Red (heightened monitoring) 
+    Lockdown: Grey (full containment)
+    """
     name = (mode or "unknown").lower()
     if name == "portal":
         return ("PORTAL", "green")
     if name == "shield":
-        return ("SHIELD", "yellow")
+        return ("SHIELD", "red")
     if name == "lockdown":
-        return ("LOCKDOWN", "red")
+        return ("LOCKDOWN", "bright_black")  # Grey for lockdown
     return (name.upper(), "cyan")
 
 
