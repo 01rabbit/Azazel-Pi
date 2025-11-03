@@ -11,7 +11,7 @@ PASSPHRASE="change-this-to-a-strong-pass"
 WLAN_AP="wlan0"
 WLAN_UP="wlan1"
 INTERNAL_NET="172.16.0.0/24"
-AP_IP="172.16.0.1"
+AP_IP="172.16.0.254"
 DHCPS_START="172.16.0.10"
 DHCPS_END="172.16.0.200"
 # -----------------------------------------------------
