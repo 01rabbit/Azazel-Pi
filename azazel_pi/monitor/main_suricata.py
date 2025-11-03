@@ -116,6 +116,87 @@ def should_notify(key: str) -> bool:
         return True
     return False
 
+def calculate_threat_score(alert: dict, signature: str) -> int:
+    """
+    Suricataルールと詳細情報に基づく動的脅威スコア計算
+    
+    Args:
+        alert: Suricataアラート情報
+        signature: シグネチャ文字列
+    
+    Returns:
+        int: 脅威スコア (0-100)
+    """
+    base_score = 0
+    
+    # 1. Suricata severity (1=最高危険, 4=低危険) を基準スコアに変換
+    suricata_severity = alert.get("severity", 3)
+    severity_mapping = {1: 25, 2: 15, 3: 8, 4: 3}
+    base_score = severity_mapping.get(suricata_severity, 5)
+    
+    # 2. シグネチャパターンベースのスコア加算
+    sig_lower = signature.lower()
+    
+    # 高危険度攻撃パターン (+20-30)
+    if any(pattern in sig_lower for pattern in ["exploit", "malware", "trojan", "backdoor"]):
+        base_score += 30
+    elif any(pattern in sig_lower for pattern in ["shellcode", "injection", "overflow"]):
+        base_score += 25
+    elif any(pattern in sig_lower for pattern in ["nmap", "scan", "probe", "reconnaissance"]):
+        base_score += 20
+    
+    # 中危険度パターン (+10-15)
+    elif any(pattern in sig_lower for pattern in ["dos", "ddos", "flood"]):
+        base_score += 15
+    elif any(pattern in sig_lower for pattern in ["brute", "bruteforce", "dictionary"]):
+        base_score += 12
+    elif any(pattern in sig_lower for pattern in ["suspicious", "anomal", "unusual"]):
+        base_score += 10
+    
+    # 3. 対象ポートベースの加算
+    dest_port = alert.get("dest_port")
+    critical_ports = [22, 80, 443, 3389, 5432, 3306, 1433]  # SSH, HTTP, HTTPS, RDP, PostgreSQL, MySQL, MSSQL
+    if dest_port in critical_ports:
+        base_score += 8
+    
+    # 4. プロトコルベースの調整
+    proto = alert.get("proto", "").upper()
+    if proto == "TCP":
+        base_score += 3  # TCPは一般的に重要
+    elif proto == "ICMP":
+        base_score += 1  # ICMPは偵察に使用されることが多い
+    
+    # 5. メタデータからの情報（存在する場合）
+    metadata = alert.get("details", {}).get("metadata", {})
+    if isinstance(metadata, dict):
+        # 攻撃対象カテゴリ
+        if metadata.get("attack_target"):
+            base_score += 5
+        # 既知の脅威グループ/ファミリー
+        if metadata.get("malware_family") or metadata.get("former_category"):
+            base_score += 10
+    
+    # 6. 頻度ベースの動的調整
+    now = time.time()
+    recent_threshold = now - 300  # 5分以内
+    recent_same_sig = sum(1 for t in last_alert_times.values() 
+                         if isinstance(t, datetime) and t.timestamp() > recent_threshold)
+    
+    if recent_same_sig > 5:  # 5分以内に同じシグネチャが5回以上
+        base_score += 15  # 集中攻撃の可能性
+    elif recent_same_sig > 2:
+        base_score += 8
+    
+    # 7. スコアの正規化 (0-100の範囲)
+    final_score = min(max(base_score, 0), 100)
+    
+    logging.debug(f"脅威スコア計算: {signature[:50]}... -> {final_score} "
+                 f"(base:{severity_mapping.get(suricata_severity, 5)}, "
+                 f"pattern:+{base_score-severity_mapping.get(suricata_severity, 5)}, "
+                 f"port:{dest_port}, freq:{recent_same_sig})")
+    
+    return final_score
+
 def send_summary():
     if not suppressed_alerts:
         return
@@ -232,8 +313,9 @@ def main():
         # ── 攻撃検知時の処理 ──────────────────
         if trigger:
             if should_notify(key):
-                # 高脅威イベントとして記録
-                threat_event = Event(name="attack_detected", severity=20)
+                # インテリジェントスコアリング
+                threat_score = calculate_threat_score(alert, sig)
+                threat_event = Event(name="attack_detected", severity=threat_score)
                 state_machine.dispatch(threat_event)
                 
                 send_alert_to_mattermost("Suricata",{
@@ -273,8 +355,9 @@ def main():
 
         # ── 通常通知 ──────────────────
         if should_notify(key):
-            # 通常のアラートとして記録
-            normal_event = Event(name="alert", severity=alert["severity"])
+            # 通常のアラートも詳細スコアリング
+            normal_score = calculate_threat_score(alert, sig)
+            normal_event = Event(name="alert", severity=normal_score)
             state_machine.dispatch(normal_event)
             send_alert_to_mattermost("Suricata", alert)
         else:
