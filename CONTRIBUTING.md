@@ -39,8 +39,7 @@ We welcome contributions to the Azazel-Pi project! This document provides guidel
 The test suite is organized under `tests/` with the following structure:
 - `tests/conftest.py` - Test configuration and fixtures
 - `tests/core/` - Core functionality tests
-- `tests/analytics/` - Analytics engine tests  
-- `tests/monitor/` - Monitoring component tests
+- `tests/monitor/` - Monitoring component tests  
 - `tests/utils/` - Utility function tests
 
 ### Running Tests
