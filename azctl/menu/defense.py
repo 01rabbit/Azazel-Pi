@@ -18,7 +18,8 @@ from rich.prompt import Prompt, Confirm
 from rich.text import Text
 
 from .types import MenuCategory, MenuAction
-from ..cli import _read_last_decision, _mode_style, _wlan_ap_status, _wlan_link_info, _active_profile
+from ..cli import _read_last_decision, _mode_style
+from ...utils.network_utils import get_wlan_ap_status, get_wlan_link_info, get_active_profile
 
 try:
     from ..core.ingest.status_collector import NetworkStatusCollector
@@ -116,7 +117,7 @@ class DefenseModule:
             mode_emoji = {"portal": "🟢", "shield": "🟡", "lockdown": "🔴"}.get(mode, "⚪")
         
         wlan0 = _wlan_ap_status("wlan0")
-        wlan1 = _wlan_link_info("wlan1")
+        wlan1 = get_wlan_link_info("wlan1")
         profile = _active_profile()
         
         try:

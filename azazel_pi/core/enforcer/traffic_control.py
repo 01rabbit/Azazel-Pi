@@ -19,7 +19,18 @@ from ...utils.delay_action import (
     list_active_diversions, OPENCANARY_IP
 )
 
-logger = logging.getLogger(__name__)
+# ログ設定
+try:
+    logger = logging.getLogger(__name__)
+    if not logger.handlers:
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+except Exception:
+    import sys
+    logger = logging.getLogger(__name__)
+    handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 
 @dataclass

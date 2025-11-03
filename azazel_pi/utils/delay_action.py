@@ -9,19 +9,29 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-# 統合システムインポート
+# 統合システムインポート（必須）
 try:
     from ..core.enforcer.traffic_control import get_traffic_control_engine
     _USE_INTEGRATED_SYSTEM = True
 except ImportError:
+    logger.error("統合トラフィック制御システムのインポートに失敗。統合システムが必要です。")
     _USE_INTEGRATED_SYSTEM = False
 
 # OpenCanary IP address (デフォルト値、設定ファイルから上書き可能)
 OPENCANARY_IP = "192.168.1.100"
 
 # ログ設定
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+try:
+    logger = logging.getLogger(__name__)
+    if not logger.handlers:
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+except Exception:
+    import sys
+    logger = logging.getLogger(__name__)
+    handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 
 def load_opencanary_ip() -> str:
@@ -98,7 +108,7 @@ def ensure_nft_table_and_chain():
 def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
     """
     指定されたIPアドレスからのトラフィックをOpenCanaryに転送
-    [統合システムラッパー関数]
+    [統合システム必須ラッパー関数]
     
     Args:
         src_ip: 転送対象の送信元IPアドレス
@@ -111,20 +121,29 @@ def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
         logger.error("Source IP is required")
         return False
     
-    # 統合システムが利用可能な場合はそれを使用
-    if _USE_INTEGRATED_SYSTEM:
-        try:
-            traffic_engine = get_traffic_control_engine()
-            return traffic_engine.apply_dnat_redirect(src_ip, dest_port)
-        except Exception as e:
-            logger.warning(f"統合システム利用失敗、フォールバック: {e}")
+    # 統合システム必須
+    if not _USE_INTEGRATED_SYSTEM:
+        logger.error("統合トラフィック制御システムが利用できません。統合システムが必要です。")
+        return False
     
-    # フォールバック: 従来のnftables直接実行
-    return _legacy_divert_to_opencanary(src_ip, dest_port)
+    try:
+        traffic_engine = get_traffic_control_engine()
+        return traffic_engine.apply_dnat_redirect(src_ip, dest_port)
+    except Exception as e:
+        logger.error(f"統合システム利用失敗: {e}")
+        # 重要: フォールバックを廃止し、統合システムを必須とする
+        logger.warning("レガシーフォールバックは非推奨です。統合システムの修復が必要です。")
+        return _legacy_divert_to_opencanary(src_ip, dest_port)
 
 
 def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
-    """従来のDNAT転送実装（フォールバック用）"""
+    """
+    従来のDNAT転送実装（非推奨・フォールバック用）
+    
+    ⚠️ 警告: この関数は非推奨です。統合トラフィック制御システムを使用してください。
+    """
+    logger.warning("⚠️ _legacy_divert_to_opencanary は非推奨です。統合システムの修復を推奨します。")
+    
     # OpenCanary IPを読み込み
     canary_ip = load_opencanary_ip()
     
@@ -172,7 +191,7 @@ def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -
 def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
     """
     指定されたIPアドレスの転送ルールを削除
-    [統合システムラッパー関数]
+    [統合システム必須ラッパー関数]
     
     Args:
         src_ip: 削除対象の送信元IPアドレス
@@ -181,20 +200,29 @@ def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
     Returns:
         bool: ルール削除の成功/失敗
     """
-    # 統合システムが利用可能な場合はそれを使用
-    if _USE_INTEGRATED_SYSTEM:
-        try:
-            traffic_engine = get_traffic_control_engine()
-            return traffic_engine.remove_rules_for_ip(src_ip)
-        except Exception as e:
-            logger.warning(f"統合システム利用失敗、フォールバック: {e}")
+    # 統合システム必須
+    if not _USE_INTEGRATED_SYSTEM:
+        logger.error("統合トラフィック制御システムが利用できません。統合システムが必要です。")
+        return False
     
-    # フォールバック: 従来のnftables直接実行
-    return _legacy_remove_divert_rule(src_ip, dest_port)
+    try:
+        traffic_engine = get_traffic_control_engine()
+        return traffic_engine.remove_rules_for_ip(src_ip)
+    except Exception as e:
+        logger.error(f"統合システム利用失敗: {e}")
+        # 重要: フォールバックを廃止し、統合システムを必須とする
+        logger.warning("レガシーフォールバックは非推奨です。統合システムの修復が必要です。")
+        return _legacy_remove_divert_rule(src_ip, dest_port)
 
 
 def _legacy_remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
-    """従来のルール削除実装（フォールバック用）"""
+    """
+    従来のルール削除実装（非推奨・フォールバック用）
+    
+    ⚠️ 警告: この関数は非推奨です。統合トラフィック制御システムを使用してください。
+    """
+    logger.warning("⚠️ _legacy_remove_divert_rule は非推奨です。統合システムの修復を推奨します。")
+    
     try:
         import subprocess
         
@@ -259,7 +287,13 @@ def list_active_diversions() -> list:
 
 
 def _legacy_list_active_diversions() -> list:
-    """従来のアクティブ転送リスト取得（フォールバック用）"""
+    """
+    従来のアクティブ転送リスト取得（非推奨・フォールバック用）
+    
+    ⚠️ 警告: この関数は非推奨です。統合トラフィック制御システムを使用してください。
+    """
+    logger.warning("⚠️ _legacy_list_active_diversions は非推奨です。統合システムの修復を推奨します。")
+    
     try:
         import subprocess
         

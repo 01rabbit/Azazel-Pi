@@ -16,6 +16,12 @@ from datetime import datetime
 from azazel_pi.core.config import AzazelConfig
 from azazel_pi.core.scorer import ScoreEvaluator
 from azazel_pi.core.state_machine import Event, State, StateMachine, Transition
+from azazel_pi.utils.network_utils import (
+    get_wlan_ap_status, get_wlan_link_info, get_active_profile,
+    get_network_interfaces_stats, format_bytes,
+    # 後方互換性のため旧関数名も残す
+    _wlan_ap_status, _wlan_link_info, _active_profile
+)
 
 from .daemon import AzazelDaemon
 import yaml
@@ -296,99 +302,13 @@ def _parse_hostapd_status(text: str) -> dict:
     return out
 
 
-def _wlan_ap_status(iface: str = "wlan0") -> dict:
-    info = {"iface": iface, "is_ap": None, "stations": None, "ssid": None, "channel": None, "bssid": None, "hostapd_cli": None}
-    if not _which("iw"):
-        return info
-    # Determine interface type
-    code, out = _run(["iw", "dev", iface, "info"])
-    if code == 0:
-        for line in out.splitlines():
-            line = line.strip()
-            if line.startswith("type "):
-                info["is_ap"] = (line.split(" ", 1)[1] == "AP")
-                break
-    # Count associated stations
-    code, out = _run(["iw", "dev", iface, "station", "dump"])
-    if code == 0:
-        stations = sum(1 for line in out.splitlines() if line.strip().startswith("Station "))
-        info["stations"] = stations
-
-    # hostapd details if available
-    info["hostapd_cli"] = bool(_which("hostapd_cli"))
-    if info["hostapd_cli"]:
-        code, out = _run(["hostapd_cli", "-i", iface, "status"])
-        if code == 0 and out:
-            hs = _parse_hostapd_status(out)
-            # If hostapd says ENABLED, we can assert AP mode
-            state = hs.get("state")
-            if state:
-                info["is_ap"] = True if state.upper() in ("ENABLED", "AUTHENTICATING", "ASSOCIATING", "ASSOCIATED", "_CONNECTED", "RUNNING") else info.get("is_ap")
-            info["ssid"] = hs.get("ssid") or info.get("ssid")
-            info["channel"] = hs.get("channel") or info.get("channel")
-            info["bssid"] = hs.get("bssid") or info.get("bssid")
-            if hs.get("num_sta") is not None:
-                info["stations"] = hs.get("num_sta")
-    return info
+# _wlan_ap_status 関数は network_utils.py に移行しました
 
 
-def _wlan_link_info(iface: str = "wlan1") -> dict:
-    info = {"iface": iface, "connected": None, "ssid": None, "ip4": None, "signal_dbm": None, "tx_bitrate": None, "rx_bitrate": None}
-    if _which("iw"):
-        code, out = _run(["iw", "dev", iface, "link"])
-        if code == 0:
-            if "Not connected." in out:
-                info["connected"] = False
-            else:
-                info["connected"] = True
-                for line in out.splitlines():
-                    line = line.strip()
-                    if line.startswith("SSID:"):
-                        info["ssid"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("signal:"):
-                        # e.g., signal: -45 dBm
-                        parts = line.split(":", 1)[1].strip().split()
-                        try:
-                            info["signal_dbm"] = int(parts[0])
-                        except Exception:
-                            pass
-                    elif line.startswith("tx bitrate:"):
-                        info["tx_bitrate"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("rx bitrate:"):
-                        info["rx_bitrate"] = line.split(":", 1)[1].strip()
-    if _which("ip"):
-        code, out = _run(["ip", "-4", "-o", "addr", "show", "dev", iface])
-        if code == 0:
-            # Format: "3: wlan1    inet 192.168.1.10/24 brd ..."
-            for tok in out.split():
-                if tok.count("/") == 1 and tok.split("/")[0].count(".") == 3:
-                    info["ip4"] = tok
-                    break
-    return info
+# _wlan_link_info 関数は network_utils.py に移行しました
 
 
-def _active_profile() -> Optional[str]:
-    candidates = [
-        Path("/etc/azazel/azazel.yaml"),
-        Path("configs/network/azazel.yaml"),
-        Path("configs/profiles/lte.yaml"),
-        Path("configs/profiles/sat.yaml"),
-        Path("configs/profiles/fiber.yaml"),
-    ]
-    for p in candidates:
-        try:
-            if not p.exists():
-                continue
-            with p.open("r", encoding="utf-8") as fh:
-                data = yaml.safe_load(fh)
-            if not isinstance(data, dict):
-                continue
-            prof = data.get("profiles", {}).get("active")
-            if prof:
-                return str(prof)
-        except Exception:
-            continue
-    return None
+# _active_profile 関数は network_utils.py に移行しました
 
 
 def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0", wan_if: str = "wlan1") -> int:

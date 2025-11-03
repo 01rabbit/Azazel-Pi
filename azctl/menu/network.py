@@ -12,7 +12,10 @@ from rich.console import Console
 
 from .types import MenuCategory, MenuAction
 from .wifi import WiFiManager
-from ..cli import _wlan_ap_status, _wlan_link_info, _active_profile
+from ...utils.network_utils import (
+    get_wlan_ap_status, get_wlan_link_info, get_active_profile,
+    get_network_interfaces_stats, format_bytes
+)
 
 try:
     from ..core.ingest.status_collector import NetworkStatusCollector
@@ -50,8 +53,8 @@ class NetworkModule:
         """Display detailed network interface status."""
         self._print_section_header("Network Interface Status")
         
-        wlan0 = _wlan_ap_status(self.lan_if)
-        wlan1 = _wlan_link_info(self.wan_if)
+        wlan0 = get_wlan_ap_status(self.lan_if)
+        wlan1 = get_wlan_link_info(self.wan_if)
         
         # Create layout for both interfaces
         from rich.layout import Layout
@@ -115,7 +118,7 @@ class NetworkModule:
         """Display active network profile configuration."""
         self._print_section_header("Active Network Profile Configuration")
         
-        profile_name = _active_profile()
+        profile_name = get_active_profile()
         
         if not profile_name:
             self.console.print("[yellow]No active profile detected.[/yellow]")
