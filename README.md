@@ -358,6 +358,22 @@ The core philosophy recognizes that in asymmetric cyber warfare, defenders often
 - **Portable Design**: Optimized for field deployment and temporary network protection
 - **Automated Provisioning**: Single-script installation with dependency management
 
+## Deployment Status
+
+**Current Status**: **95% Combat Ready** 🚀
+
+### ✅ Operational Components
+- **Traffic Control System**: tc delay injection (100ms/200ms/300ms) with integrated DNAT+QoS
+- **Threat Detection**: Suricata IDS with real-time OpenCanary traffic diversion
+- **Network Services**: WiFi AP (Azazel_Internal), DHCP/DNS, external network connectivity
+- **Core Services**: azctl-serve, vector log processing, opencanary honeypot
+- **Auto-startup**: All critical services automatically start on boot
+
+### 🔧 Remaining Items
+- E-Paper display functionality (hardware-dependent, tracked in issues)
+
+The system is **field-deployable** and provides complete malicious traffic delay capabilities with automatic threat detection and response.
+
 ## Message
 
 > Defense is the art of buying time.

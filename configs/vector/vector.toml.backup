@@ -100,7 +100,7 @@ if exists(.severity) {
 
 normalized.actions = []
 if exists(.actions) && is_array(.actions) {
-  normalized.actions = .actions
+  normalized.actions = map(.actions, |value| to_string!(value))
 }
 
 normalized.mode = null

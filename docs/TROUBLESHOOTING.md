@@ -605,6 +605,34 @@ sudo systemctl restart vector
 sudo systemctl restart suricata
 ```
 
+#### Problem: Vector service fails to start
+
+**Symptoms:**
+- Vector service status shows "failed" or "inactive"
+- Error logs show VRL syntax errors or configuration issues
+- Log processing pipeline broken
+
+**Solutions:**
+
+```bash
+# Check Vector configuration syntax
+vector validate --no-environment /etc/azazel/vector/vector.toml
+
+# View detailed error logs
+sudo journalctl -u vector --since "10 minutes ago" --no-pager
+
+# Common fixes for VRL syntax errors:
+# 1. Update map() function syntax for Vector 0.39.0+
+# 2. Fix closure parameter type mismatches
+# 3. Ensure configuration paths are correct
+
+# Test configuration manually
+sudo /usr/local/bin/vector --config /etc/azazel/vector/vector.toml --dry-run
+
+# Restart service after fixes
+sudo systemctl restart vector
+```
+
 #### Problem: Memory exhaustion
 
 **Symptoms:**

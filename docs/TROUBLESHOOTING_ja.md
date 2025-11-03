@@ -351,6 +351,34 @@ sudo systemctl restart vector
 sudo systemctl restart suricata
 ```
 
+#### 問題: Vectorサービスが開始に失敗
+
+**症状:**
+- Vectorサービスのステータスが「failed」または「inactive」と表示
+- エラーログにVRL構文エラーや設定問題が表示
+- ログ処理パイプラインが停止
+
+**解決方法:**
+
+```bash
+# Vector設定構文をチェック
+vector validate --no-environment /etc/azazel/vector/vector.toml
+
+# 詳細なエラーログを表示
+sudo journalctl -u vector --since "10 minutes ago" --no-pager
+
+# VRL構文エラーの一般的な修正:
+# 1. Vector 0.39.0+用のmap()関数構文を更新
+# 2. クロージャパラメータの型不一致を修正
+# 3. 設定パスが正しいことを確認
+
+# 設定を手動でテスト
+sudo /usr/local/bin/vector --config /etc/azazel/vector/vector.toml --dry-run
+
+# 修正後にサービスを再起動
+sudo systemctl restart vector
+```
+
 #### 問題: メモリ不足
 
 **症状:**

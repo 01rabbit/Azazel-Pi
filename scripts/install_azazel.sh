@@ -356,7 +356,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/usr/local/bin/vector -c /etc/vector/vector.toml
+ExecStart=/bin/sh -c "/usr/local/bin/vector --config /etc/azazel/vector/vector.toml || /usr/bin/vector --config /etc/azazel/vector/vector.toml"
 Restart=always
 RestartSec=5s
 User=root
