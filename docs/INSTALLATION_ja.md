@@ -96,7 +96,7 @@ sudo scripts/install_azazel.sh --dry-run
    - 運用ログ用の `/var/log/azazel/` を作成
    - Mattermost用PostgreSQLコンテナを設定
    - Nginxリバースプロキシをセットアップ
-   - `azctl.target`を有効化（開始はしない）
+   - `azctl-unified.service`を有効化（開始はしない）
 
 ### 4. 設定
 
@@ -146,10 +146,10 @@ Azazelシステムを有効化・開始：
 
 ```bash
 # すべてのAzazelサービスを開始
-sudo systemctl start azctl.target
+sudo systemctl start azctl-unified.service
 
 # サービス状態を確認
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 
 # 個別サービスを確認
 sudo systemctl status mattermost nginx docker
@@ -163,7 +163,7 @@ sudo systemctl status mattermost nginx docker
 sudo /opt/azazel/sanity_check.sh
 
 # システムログを確認
-sudo journalctl -u azctl-serve.service -f
+sudo journalctl -u azctl-unified.service -f
 ```
 
 #### Webインターフェースアクセス
@@ -341,7 +341,7 @@ ip addr show <interface-name>
 
 # 正しいインターフェース名で設定を更新
 sudo nano /etc/azazel/azazel.yaml
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### E-Paperディスプレイ問題
@@ -391,7 +391,7 @@ sudo nano /etc/systemd/system/suricata.service
 
 # サービスを再起動
 sudo systemctl daemon-reload
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### 復旧手順
@@ -399,7 +399,7 @@ sudo systemctl restart azctl.target
 #### 完全システムリセット
 ```bash
 # すべてのAzazelサービスを停止
-sudo systemctl stop azctl.target
+sudo systemctl stop azctl-unified.service
 
 # インストールを削除（ログは保持）
 sudo /opt/azazel/rollback.sh
@@ -418,7 +418,7 @@ sudo rsync -a configs/ /etc/azazel/
 
 # カスタマイズして再起動
 sudo nano /etc/azazel/azazel.yaml
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### データベースリセット
@@ -459,7 +459,7 @@ sudo systemctl restart suricata
 
 ```bash
 sudo nano /etc/azazel/tc/classes.htb
-sudo systemctl restart azctl-serve.service
+sudo systemctl restart azctl-unified.service
 ```
 
 ### 外部SIEMとの統合
@@ -483,7 +483,7 @@ sudo apt update && sudo apt upgrade
 sudo suricata-update
 
 # 更新後にサービスを再起動
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### ログ管理
@@ -508,7 +508,7 @@ sudo tar -czf azazel-backup-$(date +%Y%m%d).tar.gz \
 
 # 設定を復元
 sudo tar -xzf azazel-backup-YYYYMMDD.tar.gz -C /
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ## 次のステップ

@@ -13,17 +13,17 @@
 sudo /opt/azazel/sanity_check.sh
 
 # サービス状態を確認
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 
 # 最近のログを表示
-sudo journalctl -u azctl-serve.service --since "10 minutes ago"
+sudo journalctl -u azctl-unified.service --since "10 minutes ago"
 ```
 
 ### サービス状態概要
 
 ```bash
 # 全Azazel関連サービスを確認
-sudo systemctl status azctl.target mattermost nginx docker
+sudo systemctl status azctl-unified.service mattermost nginx docker
 
 # セキュリティサービスを確認
 sudo systemctl status suricata opencanary vector
@@ -170,7 +170,7 @@ sudo nano /etc/azazel/azazel.yaml
 # 'interface'フィールドを実際のインターフェース名で更新
 
 # サービスを再起動
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### 問題: Wi-Fi APが動作しない
@@ -307,13 +307,13 @@ sudo systemctl restart mattermost
 
 ```bash
 # サービス依存関係を確認
-sudo systemctl list-dependencies azctl.target
+sudo systemctl list-dependencies azctl-unified.service
 
 # サービスを個別に開始
 sudo systemctl start suricata
 sudo systemctl start opencanary
 sudo systemctl start vector
-sudo systemctl start azctl-serve.service
+sudo systemctl start azctl-unified.service
 
 # 設定エラーを確認
 sudo systemctl status --full <サービス名>
@@ -406,7 +406,7 @@ sudo nano /etc/systemd/system/suricata.service
 
 # サービスを再起動
 sudo systemctl daemon-reload
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### ネットワークとセキュリティ問題
@@ -699,7 +699,7 @@ sudo systemctl restart nginx
 
 ```bash
 # 全サービスを停止
-sudo systemctl stop azctl.target
+sudo systemctl stop azctl-unified.service
 
 # 設定をバックアップ
 sudo tar -czf /tmp/config-backup.tar.gz /etc/azazel
@@ -716,7 +716,7 @@ sudo scripts/install_azazel.sh --start
 
 # 設定を復元
 sudo tar -xzf /tmp/config-backup.tar.gz -C /
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### 選択的サービスリセット
@@ -739,7 +739,7 @@ sudo systemctl start <サービス>
 
 ```bash
 # システムログ
-sudo journalctl -u azctl-serve.service
+sudo journalctl -u azctl-unified.service
 sudo journalctl -u mattermost
 sudo journalctl -u nginx
 
@@ -786,7 +786,7 @@ git log --oneline -n 5  # gitからインストールした場合
 sudo cat /etc/azazel/azazel.yaml
 
 # サービス状態
-sudo systemctl status azctl.target --no-pager
+sudo systemctl status azctl-unified.service --no-pager
 sudo /opt/azazel/sanity_check.sh
 
 # 最近のログ
@@ -813,7 +813,7 @@ sudo journalctl --vacuum-time=7d
 # 月次タスク
 sudo docker system prune -f
 sudo /opt/azazel/sanity_check.sh
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 
 # 設定をバックアップ
 sudo tar -czf /backup/azazel-$(date +%Y%m%d).tar.gz /etc/azazel /opt/azazel/config
@@ -983,10 +983,10 @@ sudo visudo
 # %azazel ALL=(ALL) NOPASSWD: /bin/systemctl
 
 # サービス状態を手動確認
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 
 # systemctl権限テスト
-sudo -u azazel sudo systemctl status azctl.service
+sudo -u azazel sudo systemctl status azctl-unified.service
 ```
 
 ### 緊急操作機能問題
@@ -1079,7 +1079,7 @@ menu.run()
 
 ```bash
 # TUIメニュー関連ログ
-sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i menu
+sudo journalctl -u azctl-unified.service --since "1 hour ago" | grep -i menu
 
 # Python エラーログ
 sudo tail -f /var/log/syslog | grep python3

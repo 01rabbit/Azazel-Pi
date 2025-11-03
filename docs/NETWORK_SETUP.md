@@ -53,7 +53,7 @@ After editing the configuration:
 
 ```bash
 # Restart Azazel services to apply network changes
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 
 # Verify interface configuration
 ip addr show
@@ -70,7 +70,7 @@ When Azazel-Pi needs to act as a Wi-Fi access point with internet sharing:
 2. **Specify Interfaces**: 
    - `ap_interface`: Interface for hosting the access point (e.g., `wlan0`)
    - `client_interface`: Interface connected to internet (e.g., `wlan1` or `eth0`)
-3. **Restart Services**: `sudo systemctl restart azctl.target`
+3. **Restart Services**: `sudo systemctl restart azctl-unified.service`
 
 ### Verification
 

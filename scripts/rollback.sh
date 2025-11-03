@@ -7,4 +7,4 @@ CONFIG_ROOT="/etc/azazel"
 rm -rf "$TARGET_ROOT"
 rm -rf "$CONFIG_ROOT"
 
-systemctl disable --now azctl.target || true
+systemctl disable --now azctl-unified.service || true

@@ -96,7 +96,7 @@ The `install_azazel.sh` script performs the following actions:
    - Creates `/var/log/azazel/` for operational logs
    - Configures PostgreSQL container for Mattermost
    - Sets up Nginx reverse proxy
-   - Enables but does not start the `azctl.target`
+   - Enables but does not start the `azctl-unified.service`
 
 ### 4. Configuration
 
@@ -144,10 +144,10 @@ Enable and start the Azazel system:
 
 ```bash
 # Start all Azazel services
-sudo systemctl start azctl.target
+sudo systemctl start azctl-unified.service
 
 # Verify service status
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 
 # Check individual services
 sudo systemctl status mattermost nginx docker
@@ -161,7 +161,7 @@ sudo systemctl status mattermost nginx docker
 sudo /opt/azazel/sanity_check.sh
 
 # Check system logs
-sudo journalctl -u azctl-serve.service -f
+sudo journalctl -u azctl-unified.service -f
 ```
 
 #### Web Interface Access
@@ -339,7 +339,7 @@ ip addr show <interface-name>
 
 # Update configuration with correct interface names
 sudo nano /etc/azazel/azazel.yaml
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### E-Paper Display Problems
@@ -375,7 +375,7 @@ sudo du -sh /var/log/*
 free -h
 
 # Restart services to free memory
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 
 # Consider increasing swap space
 sudo dphys-swapfile swapoff
@@ -389,7 +389,7 @@ sudo dphys-swapfile swapon
 #### Complete System Reset
 ```bash
 # Stop all Azazel services
-sudo systemctl stop azctl.target
+sudo systemctl stop azctl-unified.service
 
 # Remove installation (keeps logs)
 sudo /opt/azazel/rollback.sh
@@ -408,7 +408,7 @@ sudo rsync -a configs/ /etc/azazel/
 
 # Customize and restart
 sudo nano /etc/azazel/azazel.yaml
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### Database Reset
@@ -449,7 +449,7 @@ Edit traffic control settings:
 
 ```bash
 sudo nano /etc/azazel/tc/classes.htb
-sudo systemctl restart azctl-serve.service
+sudo systemctl restart azctl-unified.service
 ```
 
 ### Integration with External SIEM
@@ -473,7 +473,7 @@ sudo apt update && sudo apt upgrade
 sudo suricata-update
 
 # Restart services after updates
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### Log Management
@@ -498,7 +498,7 @@ sudo tar -czf azazel-backup-$(date +%Y%m%d).tar.gz \
 
 # Restore configuration
 sudo tar -xzf azazel-backup-YYYYMMDD.tar.gz -C /
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ## Next Steps

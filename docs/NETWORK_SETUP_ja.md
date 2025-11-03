@@ -54,7 +54,7 @@ network:
 
 ```bash
 # ネットワーク変更を適用するためAzazelサービスを再起動
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 
 # インターフェース設定を確認
 ip addr show
@@ -71,7 +71,7 @@ Azazel-Piがインターネット共有機能付きのWi-Fiアクセスポイン
 2. **インターフェース指定**: 
    - `ap_interface`: アクセスポイントをホストするインターフェース（例：`wlan0`）
    - `client_interface`: インターネットに接続するインターフェース（例：`wlan1`または`eth0`）
-3. **サービス再起動**: `sudo systemctl restart azctl.target`
+3. **サービス再起動**: `sudo systemctl restart azctl-unified.service`
 
 ### 検証
 

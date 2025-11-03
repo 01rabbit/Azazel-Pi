@@ -7,7 +7,7 @@ usage() {
 Usage: $0 [--start]
 
 Options:
-  --start   Start the azctl.target after provisioning completes.
+  --start   Start the azctl-unified.service after provisioning completes.
   -h, --help  Show this help message.
 USAGE
 }
@@ -296,8 +296,8 @@ if [[ ${DRY_RUN:-0} -eq 1 ]]; then
   - Install or enable Vector, OpenCanary, Mattermost and Azazel systemd units
   - Stage runtime files to $TARGET_ROOT and configs to $CONFIG_ROOT
   - Ensure /var/log/azazel exists and set permissions
-  - Enable and start azctl-serve.service (if present)
-  - Optionally start azctl.target if --start supplied
+  - Enable and start azctl-unified.service (if present)
+  - Optionally start azctl-unified.service if --start supplied
 DRY
   exit 0
 fi
@@ -445,14 +445,14 @@ install -m 755 "$REPO_ROOT/scripts/sanity_check.sh" "$TARGET_ROOT/sanity_check.s
 install -m 755 "$REPO_ROOT/scripts/rollback.sh" "$TARGET_ROOT/rollback.sh"
 
 systemctl daemon-reload
-# Enable and start the long-running azctl serve unit if present. Don't fail the
+# Enable and start the unified control daemon if present. Don't fail the
 # installer if the unit isn't available for some reason.
-if systemctl list-unit-files | grep -q '^azctl-serve.service'; then
-  systemctl enable --now azctl-serve.service || log "Failed to enable/start azctl-serve.service; continue"
+if systemctl list-unit-files | grep -q '^azctl-unified.service'; then
+  systemctl enable --now azctl-unified.service || log "Failed to enable/start azctl-unified.service; continue"
 fi
 configure_internal_network
 install_mattermost
-systemctl enable azctl.target
+# Note: azctl.target is no longer used - azctl-unified.service handles all control
 systemctl enable mattermost.service
 configure_nginx
 
@@ -497,14 +497,14 @@ fi
 log "Installer complete. Review /etc/azazel/azazel.yaml before starting services."
 
 if (( START_SERVICES )); then
-  log "Starting azctl.target"
-  systemctl start azctl.target
+  log "Starting azctl-unified.service"
+  systemctl start azctl-unified.service
 fi
 
 log "Next steps:" 
 log "  * Adjust Suricata, Vector, OpenCanary, and Mattermost configs under /etc/azazel and /opt/mattermost"
 log "  * Configure Mattermost webhooks at http://172.16.0.254:8065 (internal network gateway)"
 log "  * Update webhook URLs in /etc/azazel/monitoring/notify.yaml to match your Mattermost setup"
-log "  * Run 'systemctl restart azctl.target' after making Azazel changes"
+log "  * Run 'systemctl restart azctl-unified.service' after making Azazel changes"
 log "  * Use scripts/sanity_check.sh plus 'systemctl status mattermost nginx docker' to verify services"
 log "  * Internal network (172.16.0.0/24) is accessible via wlan0 AP, external via wlan1"

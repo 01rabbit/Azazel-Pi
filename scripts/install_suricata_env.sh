@@ -204,9 +204,9 @@ if systemctl list-unit-files | grep -q '^docker.service'; then
 fi
 
 # 12) azazel関連サービスの有効化
-if systemctl list-unit-files | grep -q '^azctl.service'; then
-  systemctl enable azctl.service || true
-  systemctl restart azctl.service || true
+if systemctl list-unit-files | grep -q '^azctl-unified.service'; then
+  systemctl enable azctl-unified.service || true
+  systemctl restart azctl-unified.service || true
 fi
 
 cat <<EOF

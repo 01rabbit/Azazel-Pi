@@ -25,7 +25,7 @@ cd /tmp/azazel-installer
 sudo bash scripts/install_azazel.sh
 ```
 
-スクリプトはリポジトリペイロードを`/opt/azazel`にコピーし、設定を`/etc/azazel`に配置し、systemdユニットをインストールして、統合`azctl.target`を有効化します。
+スクリプトはリポジトリペイロードを`/opt/azazel`にコピーし、設定を`/etc/azazel`に配置し、systemdユニットをインストールして、統合`azctl-unified.service`を有効化します。
 
 ## 3. サービスの設定
 
@@ -38,7 +38,7 @@ sudo bash scripts/install_azazel.sh
      /etc/azazel/suricata/suricata.yaml.tmpl \
      --output /etc/suricata/suricata.yaml
    ```
-3. サービスを再読み込み: `sudo systemctl restart azctl.target`
+3. サービスを再読み込み: `sudo systemctl restart azctl-unified.service`
 
 ### モードプリセット
 
@@ -58,7 +58,7 @@ sudo bash scripts/install_azazel.sh
 
 ## 5. ロールバック
 
-ホストからAzazelを削除するには、`sudo /opt/azazel/rollback.sh`を実行します。スクリプトは`/opt/azazel`を削除し、`/etc/azazel`を削除して、`azctl.target`を無効化します。
+ホストからAzazelを削除するには、`sudo /opt/azazel/rollback.sh`を実行します。スクリプトは`/opt/azazel`を削除し、`/etc/azazel`を削除して、`azctl-unified.service`を無効化します。
 
 ## 防御モードの詳細
 
@@ -117,7 +117,7 @@ python3 -m azctl.cli menu
 # - ログ監視 → アラート要約
 
 # コマンドライン（スクリプト用）
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 sudo tail -f /var/log/azazel/decisions.log
 sudo tail -f /var/log/suricata/fast.log
 ```
@@ -148,7 +148,7 @@ sudo tar -czf /backup/azazel-$(date +%Y%m%d).tar.gz /etc/azazel /opt/azazel/conf
 sudo docker system prune -f
 
 # サービス再起動（計画メンテナンス）
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### 監視とアラート
@@ -168,7 +168,7 @@ df -h
 sudo iftop
 
 # サービス稼働状況
-sudo systemctl is-active azctl.target mattermost nginx docker
+sudo systemctl is-active azctl-unified.service mattermost nginx docker
 ```
 
 #### アラート設定例
@@ -276,7 +276,7 @@ sudo rsync -av /opt/azazel/configs/ /etc/azazel/
 sudo diff -u /etc/azazel/azazel.yaml.backup /etc/azazel/azazel.yaml
 
 # 設定変更を適用
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### 環境別設定管理
@@ -348,7 +348,7 @@ sudo tar -czf azazel-config-backup-$(date +%Y%m%d).tar.gz \
 
 ```bash
 # サービス停止
-sudo systemctl stop azctl.target
+sudo systemctl stop azctl-unified.service
 
 # バックアップからリストア
 sudo tar -xzf azazel-config-backup-YYYYMMDD.tar.gz -C /
@@ -358,7 +358,7 @@ sudo chown -R root:root /etc/azazel
 sudo chmod -R 644 /etc/azazel/*.yaml
 
 # サービス再開
-sudo systemctl start azctl.target
+sudo systemctl start azctl-unified.service
 ```
 
 ## セキュリティベストプラクティス
@@ -402,10 +402,10 @@ sudo systemctl restart auditd
 sudo /opt/azazel/sanity_check.sh
 
 # サービス状態確認
-sudo systemctl status azctl.target --no-pager
+sudo systemctl status azctl-unified.service --no-pager
 
 # 最近のエラーログ確認
-sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i error
+sudo journalctl -u azctl-unified.service --since "1 hour ago" | grep -i error
 ```
 
 ## 関連ドキュメント

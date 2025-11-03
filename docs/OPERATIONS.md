@@ -29,8 +29,8 @@ sudo bash scripts/install_azazel.sh
 ```
 
 The script copies the repository payload to `/opt/azazel`, pushes configuration
-into `/etc/azazel`, installs systemd units, and enables the aggregate
-`azctl.target`.
+into `/etc/azazel`, installs systemd units, and enables the unified
+`azctl-unified.service`.
 
 ## 3. Configure services
 
@@ -62,7 +62,7 @@ python3 -m azctl.cli menu
      /etc/azazel/suricata/suricata.yaml.tmpl \
      --output /etc/suricata/suricata.yaml
    ```
-3. Reload services: `sudo systemctl restart azctl.target`.
+3. Reload services: `sudo systemctl restart azctl-unified.service`.
 
 ### Mode presets
 
@@ -92,7 +92,7 @@ state transitions and scoring decisions.
 ## 5. Rollback
 
 To remove Azazel from a host, execute `sudo /opt/azazel/rollback.sh`. The script
-deletes `/opt/azazel`, removes `/etc/azazel`, and disables the `azctl.target`.
+deletes `/opt/azazel`, removes `/etc/azazel`, and disables the `azctl-unified.service`.
 
 ## Defense Mode Details
 
@@ -144,7 +144,7 @@ python3 -m azctl.cli menu
 # - Log Monitoring → Alert summaries
 
 # Command line (for scripting)
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 sudo tail -f /var/log/azazel/decisions.log
 sudo tail -f /var/log/suricata/fast.log
 ```
@@ -175,7 +175,7 @@ sudo tar -czf /backup/azazel-$(date +%Y%m%d).tar.gz /etc/azazel /opt/azazel/conf
 sudo docker system prune -f
 
 # Service restart (planned maintenance)
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ## Incident Response
@@ -261,7 +261,7 @@ sudo rsync -av /opt/azazel/configs/ /etc/azazel/
 sudo diff -u /etc/azazel/azazel.yaml.backup /etc/azazel/azazel.yaml
 
 # Apply configuration changes
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### Environment-Specific Configuration
@@ -328,7 +328,7 @@ df -h
 sudo iftop
 
 # Service status
-sudo systemctl is-active azctl.target mattermost nginx docker
+sudo systemctl is-active azctl-unified.service mattermost nginx docker
 ```
 
 ### Alert Configuration Examples
@@ -364,7 +364,7 @@ sudo tar -czf azazel-config-backup-$(date +%Y%m%d).tar.gz \
 
 ```bash
 # Stop services
-sudo systemctl stop azctl.target
+sudo systemctl stop azctl-unified.service
 
 # Restore from backup
 sudo tar -xzf azazel-config-backup-YYYYMMDD.tar.gz -C /
@@ -374,7 +374,7 @@ sudo chown -R root:root /etc/azazel
 sudo chmod -R 644 /etc/azazel/*.yaml
 
 # Restart services
-sudo systemctl start azctl.target
+sudo systemctl start azctl-unified.service
 ```
 
 ## Security Best Practices
@@ -418,10 +418,10 @@ For common issues and solutions, refer to [`TROUBLESHOOTING.md`](TROUBLESHOOTING
 sudo /opt/azazel/sanity_check.sh
 
 # Service status check
-sudo systemctl status azctl.target --no-pager
+sudo systemctl status azctl-unified.service --no-pager
 
 # Recent error log check
-sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i error
+sudo journalctl -u azctl-unified.service --since "1 hour ago" | grep -i error
 ```
 
 ## Related Documentation

@@ -364,14 +364,14 @@ Git Repository → Release Build → Tarball → Target System
 
 ### systemd統合
 
-Azazelは統合された`azctl.target`を通じてすべてのサービスを管理：
+Azazelは統合された`azctl-unified.service`を通じてすべてのサービスを管理：
 
 ```ini
-# azctl.target
+# azctl-unified.service
 [Unit]
 Description=Azazel Control System
 Documentation=https://github.com/01rabbit/Azazel-Pi
-Wants=azctl-serve.service mattermost.service nginx.service
+Wants=azctl-unified.service mattermost.service nginx.service
 After=multi-user.target network-online.target
 
 [Install]
@@ -382,7 +382,7 @@ WantedBy=multi-user.target
 
 | サービス | 依存関係 | 説明 |
 |----------|----------|------|
-| azctl-serve.service | ネットワーク | メインコントローラー |
+| azctl-unified.service | ネットワーク | メインコントローラー |
 | suricata.service | ネットワーク | IDS/IPS |
 | opencanary.service | なし | ハニーポット |
 | vector.service | ログディレクトリ | ログ処理 |

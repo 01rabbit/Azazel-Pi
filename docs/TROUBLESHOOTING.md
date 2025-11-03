@@ -151,10 +151,10 @@ sudo visudo
 # %azazel ALL=(ALL) NOPASSWD: /bin/systemctl
 
 # Test service status manually
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 
 # Test systemctl permissions
-sudo -u azazel sudo systemctl status azctl.service
+sudo -u azazel sudo systemctl status azctl-unified.service
 ```
 
 ### Emergency Operations Issues
@@ -247,7 +247,7 @@ menu.run()
 
 ```bash
 # TUI menu related logs
-sudo journalctl -u azctl-serve.service --since "1 hour ago" | grep -i menu
+sudo journalctl -u azctl-unified.service --since "1 hour ago" | grep -i menu
 
 # Python error logs
 sudo tail -f /var/log/syslog | grep python3
@@ -267,17 +267,17 @@ Start with the built-in health check script:
 sudo /opt/azazel/sanity_check.sh
 
 # Check service status
-sudo systemctl status azctl.target
+sudo systemctl status azctl-unified.service
 
 # View recent logs
-sudo journalctl -u azctl-serve.service --since "10 minutes ago"
+sudo journalctl -u azctl-unified.service --since "10 minutes ago"
 ```
 
 ### Service Status Overview
 
 ```bash
 # Check all Azazel-related services
-sudo systemctl status azctl.target mattermost nginx docker
+sudo systemctl status azctl-unified.service mattermost nginx docker
 
 # Check security services
 sudo systemctl status suricata opencanary vector
@@ -424,7 +424,7 @@ sudo nano /etc/azazel/azazel.yaml
 # Update the 'interface' field with actual interface name
 
 # Restart services
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### Problem: Wi-Fi AP not working
@@ -561,13 +561,13 @@ sudo systemctl restart mattermost
 
 ```bash
 # Check service dependencies
-sudo systemctl list-dependencies azctl.target
+sudo systemctl list-dependencies azctl-unified.service
 
 # Start services individually
 sudo systemctl start suricata
 sudo systemctl start opencanary
 sudo systemctl start vector
-sudo systemctl start azctl-serve.service
+sudo systemctl start azctl-unified.service
 
 # Check for configuration errors
 sudo systemctl status --full <service-name>
@@ -660,7 +660,7 @@ sudo nano /etc/systemd/system/suricata.service
 
 # Restart services
 sudo systemctl daemon-reload
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 ### Network and Security Issues
@@ -953,7 +953,7 @@ sudo systemctl restart nginx
 
 ```bash
 # Stop all services
-sudo systemctl stop azctl.target
+sudo systemctl stop azctl-unified.service
 
 # Backup configuration
 sudo tar -czf /tmp/config-backup.tar.gz /etc/azazel
@@ -970,7 +970,7 @@ sudo scripts/install_azazel.sh --start
 
 # Restore configuration
 sudo tar -xzf /tmp/config-backup.tar.gz -C /
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 ```
 
 #### Selective Service Reset
@@ -993,7 +993,7 @@ sudo systemctl start <service>
 
 ```bash
 # System logs
-sudo journalctl -u azctl-serve.service
+sudo journalctl -u azctl-unified.service
 sudo journalctl -u mattermost
 sudo journalctl -u nginx
 
@@ -1040,7 +1040,7 @@ git log --oneline -n 5  # if installed from git
 sudo cat /etc/azazel/azazel.yaml
 
 # Service status
-sudo systemctl status azctl.target --no-pager
+sudo systemctl status azctl-unified.service --no-pager
 sudo /opt/azazel/sanity_check.sh
 
 # Recent logs
@@ -1067,7 +1067,7 @@ sudo journalctl --vacuum-time=7d
 # Monthly tasks
 sudo docker system prune -f
 sudo /opt/azazel/sanity_check.sh
-sudo systemctl restart azctl.target
+sudo systemctl restart azctl-unified.service
 
 # Backup configuration
 sudo tar -czf /backup/azazel-$(date +%Y%m%d).tar.gz /etc/azazel /opt/azazel/config

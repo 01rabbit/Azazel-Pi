@@ -497,8 +497,8 @@ category = module.get_category()
 Azazelシステムサービスの管理を行います。
 
 **管理対象サービス:**
-- `azctl.service` - メインデーモン
-- `azctl-serve.service` - HTTPサーバー
+- `azctl-unified.service` - 統合制御デーモン
+- `azctl-unified.service` - HTTPサーバー
 - `suricata.service` - IDS/IPS
 - `opencanary.service` - ハニーポット
 - `vector.service` - ログ収集
@@ -875,7 +875,7 @@ sudo scripts/sanity_check.sh --json
 
 **出力例:**
 ```
-[OK] azctl-serve.service is active
+[OK] azctl-unified.service is active
 [OK] suricata.service is active  
 [WARNING] opencanary.service is inactive
 [OK] vector.service is active

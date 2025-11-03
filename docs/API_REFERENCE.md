@@ -131,8 +131,8 @@ category = module.get_category()
 Manages Azazel system services.
 
 **Managed Services:**
-- `azctl.service` - Main daemon
-- `azctl-serve.service` - HTTP server
+- `azctl-unified.service` - Unified control daemon
+- `azctl-unified.service` - HTTP server
 - `suricata.service` - IDS/IPS
 - `opencanary.service` - Honeypot
 - `vector.service` - Log collection
