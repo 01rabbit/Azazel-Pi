@@ -7,8 +7,8 @@ from datetime import datetime
 from collections import defaultdict
 from pathlib import Path
 
-from azazel_core import notify_config as notice
-from utils.mattermost import send_alert_to_mattermost
+from ..core import notify_config as notice
+from ..utils.mattermost import send_alert_to_mattermost
 
 LOG_FILE          = Path(notice.OPENCANARY_LOG_PATH)
 SUPPRESS_MODE     = notice.SUPPRESS_KEY_MODE
@@ -138,6 +138,11 @@ def main():
 
         if time.time()-last_summary_time>=summary_interval:
             send_summary(); last_summary_time=time.time()
+
+def watch_opencanary():
+    """OpenCanary監視を開始（外部から呼び出し可能な関数）"""
+    return main()
+
 
 if __name__=="__main__":
     main()

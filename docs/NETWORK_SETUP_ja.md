@@ -32,12 +32,13 @@ network:
   
   # ゲートウェイモード設定（オプション）
   gateway_mode:
-    enabled: false
+    enabled: true
     ap_interface: "wlan0"
-    client_interface: "wlan1"
+    client_interface: "wlan1"  
     internal_network: "172.16.0.0/24"
-    ap_ssid: "Azazel-GW"
-    ap_passphrase: "SecurePassphrase123"
+    gateway_ip: "172.16.0.254"       # 内部ネットワークゲートウェイIP
+    ap_ssid: "Azazel_Internal"       # 内部AP SSID
+    ap_passphrase: "change-this-to-a-strong-pass"
     
   # 静的IP設定（オプション）
   static_ip:
@@ -179,9 +180,13 @@ sudo systemctl enable --now hostapd
 # DHCP用のdnsmasqを設定
 sudo tee /etc/dnsmasq.d/01-azazel.conf <<EOF
 interface=wlan0
-dhcp-range=172.16.0.100,172.16.0.200,255.255.255.0,24h
-dhcp-option=3,172.16.0.1    # ゲートウェイ
-dhcp-option=6,8.8.8.8       # DNS
+dhcp-range=172.16.0.10,172.16.0.200,255.255.255.0,24h
+dhcp-option=3,172.16.0.254  # ゲートウェイ（Azazel-Pi）
+dhcp-option=6,8.8.8.8,8.8.4.4  # DNS
+server=8.8.8.8
+domain-needed
+bogus-priv
+listen-address=127.0.0.1,172.16.0.254
 EOF
 
 # dnsmasqを再起動
@@ -194,9 +199,9 @@ sudo systemctl restart dnsmasq
 # APインターフェース用の静的IPを設定
 sudo tee -a /etc/dhcpcd.conf <<EOF
 
-# Azazel-Pi AP設定
+# Azazel-Pi AP設定（内部ゲートウェイ）
 interface wlan0
-static ip_address=172.16.0.1/24
+static ip_address=172.16.0.254/24
 nohook wpa_supplicant
 EOF
 

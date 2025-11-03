@@ -205,6 +205,10 @@ service = cfg.setdefault("ServiceSettings", {})
 if not service.get("ListenAddress"):
     service["ListenAddress"] = ":8065"
     changed = True
+# Set SiteURL to internal network gateway for Azazel-Pi
+if service.get("SiteURL") != "http://172.16.0.254:8065":
+    service["SiteURL"] = "http://172.16.0.254:8065"
+    changed = True
 
 if changed:
     cfg_path.write_text(json.dumps(cfg, indent=2) + "\n", encoding="utf-8")
@@ -228,6 +232,34 @@ configure_nginx() {
     systemctl restart nginx
   else
     error "nginx configuration validation failed; please review /etc/nginx/nginx.conf"
+  fi
+}
+
+configure_internal_network() {
+  log "Configuring internal network (wlan0 as AP with 172.16.0.254)"
+  
+  # Run the wlan0 AP setup script if it exists
+  if [[ -x "$REPO_ROOT/scripts/setup_wlan0_ap.sh" ]]; then
+    "$REPO_ROOT/scripts/setup_wlan0_ap.sh" || log "Internal network setup script failed; manual configuration may be required"
+  else
+    # Fallback: basic manual setup
+    log "Setting up wlan0 internal network manually"
+    
+    # Add static IP configuration to dhcpcd.conf if not exists
+    if ! grep -q "interface wlan0" /etc/dhcpcd.conf 2>/dev/null; then
+      cat >> /etc/dhcpcd.conf <<EOF
+
+interface wlan0
+static ip_address=172.16.0.254/24
+nohook wpa_supplicant
+EOF
+    fi
+    
+    # Configure IP forwarding
+    sysctl -w net.ipv4.ip_forward=1
+    echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-azazel.conf
+    
+    log "Manual internal network configuration complete. Full AP setup may require additional steps."
   fi
 }
 
@@ -418,6 +450,7 @@ systemctl daemon-reload
 if systemctl list-unit-files | grep -q '^azctl-serve.service'; then
   systemctl enable --now azctl-serve.service || log "Failed to enable/start azctl-serve.service; continue"
 fi
+configure_internal_network
 install_mattermost
 systemctl enable azctl.target
 systemctl enable mattermost.service
@@ -470,5 +503,8 @@ fi
 
 log "Next steps:" 
 log "  * Adjust Suricata, Vector, OpenCanary, and Mattermost configs under /etc/azazel and /opt/mattermost"
+log "  * Configure Mattermost webhooks at http://172.16.0.254:8065 (internal network gateway)"
+log "  * Update webhook URLs in /etc/azazel/monitoring/notify.yaml to match your Mattermost setup"
 log "  * Run 'systemctl restart azctl.target' after making Azazel changes"
 log "  * Use scripts/sanity_check.sh plus 'systemctl status mattermost nginx docker' to verify services"
+log "  * Internal network (172.16.0.0/24) is accessible via wlan0 AP, external via wlan1"

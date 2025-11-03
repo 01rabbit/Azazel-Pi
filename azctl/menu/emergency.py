@@ -15,7 +15,7 @@ from rich.text import Text
 from rich.prompt import Prompt, Confirm
 
 from .types import MenuCategory, MenuAction
-from ..cli import _wlan_ap_status, _wlan_link_info
+from ...utils.network_utils import get_wlan_ap_status, get_wlan_link_info
 
 
 class EmergencyModule:
@@ -263,8 +263,8 @@ country=US
                 report.write("NETWORK STATUS\n")
                 report.write("-" * 15 + "\n")
                 try:
-                    wlan0 = _wlan_ap_status(self.lan_if)
-                    wlan1 = _wlan_link_info(self.wan_if)
+                    wlan0 = get_wlan_ap_status(self.lan_if)
+                    wlan1 = get_wlan_link_info(self.wan_if)
                     
                     report.write(f"LAN Interface ({self.lan_if}):\n")
                     report.write(f"  AP Mode: {'Yes' if wlan0.get('is_ap') else 'No'}\n")

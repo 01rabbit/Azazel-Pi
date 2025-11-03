@@ -6,10 +6,11 @@ import logging
 import subprocess
 from datetime import datetime, timedelta
 
-from azazel_core import notify_config as notice
-from utils.mattermost import send_alert_to_mattermost
-import main_suricata
-import main_opencanary
+from ..core import notify_config as notice
+from ..core.enforcer.traffic_control import get_traffic_control_engine
+from ..utils.mattermost import send_alert_to_mattermost
+from . import main_suricata
+from . import main_opencanary
 
 # ログ設定（Suricata/OpenCanaryと揃える）
 logging.basicConfig(
@@ -40,26 +41,41 @@ def notify_attack_detected():
     is_normal_mode = False
 
 def reset_network_config():
-    logging.info("Flushing NAT rules and resetting basic network config...")
+    logging.info("Flushing NAT rules and resetting network config via integrated system...")
 
-    # ① NATテーブルの全ルールを一旦削除
+    # ① 統合トラフィック制御システムで全制御ルールをクリア
+    try:
+        traffic_engine = get_traffic_control_engine()
+        active_rules = traffic_engine.get_active_rules()
+        
+        cleared_count = 0
+        for src_ip in list(active_rules.keys()):
+            if traffic_engine.remove_rules_for_ip(src_ip):
+                cleared_count += 1
+                logging.info(f"Cleared traffic control rules for {src_ip}")
+        
+        if cleared_count > 0:
+            logging.info(f"Integrated system cleared {cleared_count} rule sets")
+        else:
+            logging.info("No active traffic control rules to clear")
+            
+    except Exception as e:
+        logging.error(f"Integrated system cleanup failed: {e}")
+        # フォールバック: 従来のtc直接実行
+        result = subprocess.run(["tc", "qdisc", "show", "dev", "wlan1"], capture_output=True, text=True)
+        if "prio" in result.stdout or "netem" in result.stdout:
+            subprocess.run(["tc", "qdisc", "del", "dev", "wlan1", "root"], check=False)
+            logging.info("Fallback: tc qdisc deleted directly")
+
+    # ② NATテーブルの全ルールを一旦削除
     subprocess.run(["iptables", "-t", "nat", "-F"], check=False)
 
-    # ② 内部LAN(172.16.0.0/24)からWAN出口(wlan1)へのMASQUERADEを再設定
+    # ③ 内部LAN(172.16.0.0/24)からWAN出口(wlan1)へのMASQUERADEを再設定
     subprocess.run(["iptables", "-t", "nat", "-A", "POSTROUTING",
                     "-s", "172.16.0.0/24", "-o", "wlan1", "-j", "MASQUERADE"], check=True)
 
     logging.info("Internal LAN to WAN routing re-established.")
-
-    # ③ tc設定削除 (遅滞制御は個別にリセット)
-    result = subprocess.run(["tc", "qdisc", "show", "dev", "wlan1"], capture_output=True, text=True)
-    if "prio" in result.stdout or "netem" in result.stdout:
-        subprocess.run(["tc", "qdisc", "del", "dev", "wlan1", "root"], check=False)
-        logging.info("tc qdisc deleted.")
-    else:
-        logging.info("No tc qdisc to delete.")
-
-    logging.info("Network reset completed.")
+    logging.info("Network reset completed via integrated system.")
     
     now_str = datetime.now(notice.TZ).strftime("%Y-%m-%d %H:%M:%S")
     send_alert_to_mattermost("Suricata", {

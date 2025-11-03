@@ -1,15 +1,24 @@
 # Azazel notification and monitoring settings
-# Updated for production use
+# Updated for production use with minimal Mattermost configuration
 
 # 日本時間（UTC+9）
 tz: "+09:00"
 
 # Mattermost 通知設定
+# 【運用方法】
+# 1. Mattermostで通知専用botユーザーを作成
+# 2. そのbotユーザーでWebhookを生成
+# 3. 通知先チャンネルは、Webhook作成時に指定
+# 4. 個別通知が必要なユーザーをnotify_usersに列挙
 mattermost:
-  webhook_url: "http://192.168.40.186:8065/hooks/4skkamks8pfx9xka7sd1st1uno"
-  channel: "azazel-alerts"     # 通知先チャンネル
-  username: "Azazel-Bot"       # 投稿ユーザ名
-  icon_emoji: ":shield:"       # アイコン絵文字
+  enabled: true                # 通知有効フラグ
+  webhook_url: "http://172.16.0.254:8065/hooks/w5togts4gprcjdgstjkmhotszh"
+  notify_users:                # 通知対象ユーザー（@mention）
+    - "admin"                  # 管理者ユーザー
+    - "security.team"          # セキュリティチーム
+    # 必要に応じてユーザーを追加
+    # - "oncall.engineer"      # 待機エンジニア
+  # 注意: channel, username, icon_emojiはbotユーザーの設定を使用するため不要
 
 # ログファイルパス
 paths:

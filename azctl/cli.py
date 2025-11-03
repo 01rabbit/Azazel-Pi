@@ -16,6 +16,10 @@ from datetime import datetime
 from azazel_pi.core.config import AzazelConfig
 from azazel_pi.core.scorer import ScoreEvaluator
 from azazel_pi.core.state_machine import Event, State, StateMachine, Transition
+from azazel_pi.utils.network_utils import (
+    get_wlan_ap_status, get_wlan_link_info, get_active_profile,
+    get_network_interfaces_stats, format_bytes
+)
 
 from .daemon import AzazelDaemon
 import yaml
@@ -33,11 +37,18 @@ from azazel_pi.core.display.status_collector import StatusCollector
 # State machine wiring (unchanged)
 # ---------------------------------------------------------------------------
 def build_machine() -> StateMachine:
+    # Automatic modes (system controlled)
     portal = State(name="portal", description="Nominal operations")
     shield = State(name="shield", description="Heightened monitoring")
     lockdown = State(name="lockdown", description="Full containment mode")
+    
+    # User intervention modes (manually controlled with 3-minute timer)
+    user_portal = State(name="user_portal", description="User controlled: Nominal operations")
+    user_shield = State(name="user_shield", description="User controlled: Heightened monitoring")
+    user_lockdown = State(name="user_lockdown", description="User controlled: Full containment")
 
     machine = StateMachine(initial_state=portal)
+    # Auto-mode transitions (system threat detection)
     machine.add_transition(
         Transition(
             source=portal,
@@ -78,6 +89,139 @@ def build_machine() -> StateMachine:
             source=lockdown,
             target=portal,
             condition=lambda event: event.name == "portal",
+        )
+    )
+    
+    # User intervention transitions (manual override)
+    # From auto modes to user modes
+    machine.add_transition(
+        Transition(
+            source=portal,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=portal,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=portal,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=shield,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=shield,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=shield,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=lockdown,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=lockdown,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=lockdown,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    
+    # Between user modes
+    machine.add_transition(
+        Transition(
+            source=user_portal,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_portal,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_shield,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_shield,
+            target=user_lockdown,
+            condition=lambda event: event.name == "user_lockdown",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_lockdown,
+            target=user_portal,
+            condition=lambda event: event.name == "user_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_lockdown,
+            target=user_shield,
+            condition=lambda event: event.name == "user_shield",
+        )
+    )
+    
+    # User mode timeout transitions (3-minute timer expiry)
+    machine.add_transition(
+        Transition(
+            source=user_portal,
+            target=portal,
+            condition=lambda event: event.name == "timeout_portal",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_shield,
+            target=shield,
+            condition=lambda event: event.name == "timeout_shield",
+        )
+    )
+    machine.add_transition(
+        Transition(
+            source=user_lockdown,
+            target=lockdown,
+            condition=lambda event: event.name == "timeout_lockdown",
         )
     )
     return machine
@@ -156,99 +300,7 @@ def _parse_hostapd_status(text: str) -> dict:
     return out
 
 
-def _wlan_ap_status(iface: str = "wlan0") -> dict:
-    info = {"iface": iface, "is_ap": None, "stations": None, "ssid": None, "channel": None, "bssid": None, "hostapd_cli": None}
-    if not _which("iw"):
-        return info
-    # Determine interface type
-    code, out = _run(["iw", "dev", iface, "info"])
-    if code == 0:
-        for line in out.splitlines():
-            line = line.strip()
-            if line.startswith("type "):
-                info["is_ap"] = (line.split(" ", 1)[1] == "AP")
-                break
-    # Count associated stations
-    code, out = _run(["iw", "dev", iface, "station", "dump"])
-    if code == 0:
-        stations = sum(1 for line in out.splitlines() if line.strip().startswith("Station "))
-        info["stations"] = stations
-
-    # hostapd details if available
-    info["hostapd_cli"] = bool(_which("hostapd_cli"))
-    if info["hostapd_cli"]:
-        code, out = _run(["hostapd_cli", "-i", iface, "status"])
-        if code == 0 and out:
-            hs = _parse_hostapd_status(out)
-            # If hostapd says ENABLED, we can assert AP mode
-            state = hs.get("state")
-            if state:
-                info["is_ap"] = True if state.upper() in ("ENABLED", "AUTHENTICATING", "ASSOCIATING", "ASSOCIATED", "_CONNECTED", "RUNNING") else info.get("is_ap")
-            info["ssid"] = hs.get("ssid") or info.get("ssid")
-            info["channel"] = hs.get("channel") or info.get("channel")
-            info["bssid"] = hs.get("bssid") or info.get("bssid")
-            if hs.get("num_sta") is not None:
-                info["stations"] = hs.get("num_sta")
-    return info
-
-
-def _wlan_link_info(iface: str = "wlan1") -> dict:
-    info = {"iface": iface, "connected": None, "ssid": None, "ip4": None, "signal_dbm": None, "tx_bitrate": None, "rx_bitrate": None}
-    if _which("iw"):
-        code, out = _run(["iw", "dev", iface, "link"])
-        if code == 0:
-            if "Not connected." in out:
-                info["connected"] = False
-            else:
-                info["connected"] = True
-                for line in out.splitlines():
-                    line = line.strip()
-                    if line.startswith("SSID:"):
-                        info["ssid"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("signal:"):
-                        # e.g., signal: -45 dBm
-                        parts = line.split(":", 1)[1].strip().split()
-                        try:
-                            info["signal_dbm"] = int(parts[0])
-                        except Exception:
-                            pass
-                    elif line.startswith("tx bitrate:"):
-                        info["tx_bitrate"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("rx bitrate:"):
-                        info["rx_bitrate"] = line.split(":", 1)[1].strip()
-    if _which("ip"):
-        code, out = _run(["ip", "-4", "-o", "addr", "show", "dev", iface])
-        if code == 0:
-            # Format: "3: wlan1    inet 192.168.1.10/24 brd ..."
-            for tok in out.split():
-                if tok.count("/") == 1 and tok.split("/")[0].count(".") == 3:
-                    info["ip4"] = tok
-                    break
-    return info
-
-
-def _active_profile() -> Optional[str]:
-    candidates = [
-        Path("/etc/azazel/azazel.yaml"),
-        Path("configs/network/azazel.yaml"),
-        Path("configs/profiles/lte.yaml"),
-        Path("configs/profiles/sat.yaml"),
-        Path("configs/profiles/fiber.yaml"),
-    ]
-    for p in candidates:
-        try:
-            if not p.exists():
-                continue
-            with p.open("r", encoding="utf-8") as fh:
-                data = yaml.safe_load(fh)
-            if not isinstance(data, dict):
-                continue
-            prof = data.get("profiles", {}).get("active")
-            if prof:
-                return str(prof)
-        except Exception:
-            continue
-    return None
+# レガシー関数は network_utils.py に移行し、統合関数に完全移行しました
 
 
 def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0", wan_if: str = "wlan1") -> int:
@@ -264,9 +316,9 @@ def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0
     last = _read_last_decision(decision_paths)
     defensive_mode = last.get("mode") if isinstance(last, dict) else None
 
-    wlan0 = _wlan_ap_status(lan_if)
-    wlan1 = _wlan_link_info(wan_if)
-    profile = _active_profile()
+    wlan0 = get_wlan_ap_status(lan_if)
+    wlan1 = get_wlan_link_info(wan_if)
+    profile = get_active_profile()
 
     result = {
         "defensive_mode": defensive_mode,
@@ -314,21 +366,24 @@ def _human_bytes(n: int) -> str:
         x /= 1024.0
 
 
-def _mode_style(mode: Optional[str]) -> tuple[str, str]:
-    """Return (mode_label, color) for different defensive modes.
+def _mode_style(mode: str) -> tuple[str, str]:
+    """Get display label and color for a mode."""
+    if not mode:
+        return ("UNKNOWN", "blue")
     
-    Portal: Green (normal operations)
-    Shield: Yellow (heightened monitoring) 
-    Lockdown: Red (full containment)
-    """
-    name = (mode or "unknown").lower()
-    if name == "portal":
-        return ("PORTAL", "green")
-    if name == "shield":
-        return ("SHIELD", "yellow")
-    if name == "lockdown":
-        return ("LOCKDOWN", "red")
-    return (name.upper(), "cyan")
+    mode_colors = {
+        "portal": "green",
+        "shield": "yellow", 
+        "lockdown": "red",
+        "USER_PORTAL": "green",
+        "USER_SHIELD": "yellow",
+        "USER_LOCKDOWN": "red"
+    }
+    
+    color = mode_colors.get(mode.upper(), "blue")
+    label = mode.upper()
+    
+    return (label, color)
 
 
 def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval: float, once: bool) -> int:
@@ -373,8 +428,8 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
         mode_label, color = _mode_style(defensive_mode)
 
         status = collector.collect()
-        wlan0 = _wlan_ap_status(lan_if)
-        wlan1 = _wlan_link_info(wan_if)
+        wlan0 = get_wlan_ap_status(lan_if)
+        wlan1 = get_wlan_link_info(wan_if)
 
         # Header
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
