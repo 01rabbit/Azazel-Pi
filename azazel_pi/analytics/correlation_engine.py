@@ -8,7 +8,7 @@ import logging
 # 設定・通知系は外部ファイル利用を想定
 from azazel_core import notify_config as notice
 EVENTS_JSON_PATH = notice.EVENTS_JSON_PATH
-from utils.mattermost import send_alert_to_mattermost
+from ..utils.mattermost import send_alert_to_mattermost
 
 class EventCorrelator:
     def __init__(self, events_path, score_config=None):

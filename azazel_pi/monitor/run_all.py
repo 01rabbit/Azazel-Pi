@@ -6,10 +6,10 @@ import logging
 import subprocess
 from datetime import datetime, timedelta
 
-from azazel_core import notify_config as notice
-from utils.mattermost import send_alert_to_mattermost
-import main_suricata
-import main_opencanary
+from ..core import notify_config as notice
+from ..utils.mattermost import send_alert_to_mattermost
+from . import main_suricata
+from . import main_opencanary
 
 # ログ設定（Suricata/OpenCanaryと揃える）
 logging.basicConfig(

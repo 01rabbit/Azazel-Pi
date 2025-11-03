@@ -9,9 +9,9 @@ from datetime import datetime
 from collections import defaultdict
 from pathlib import Path
 
-from azazel_core import notify_config as notice
-from utils.mattermost     import send_alert_to_mattermost
-from utils.delay_action   import divert_to_opencanary, OPENCANARY_IP
+from ..core import notify_config as notice
+from ..utils.mattermost import send_alert_to_mattermost
+from ..utils.delay_action import divert_to_opencanary, OPENCANARY_IP
 
 EVE_FILE           = Path(notice.SURICATA_EVE_JSON_PATH)
 FILTER_SIG_CATEGORY = [
@@ -171,6 +171,11 @@ def main():
         if time.time() - last_summary_time >= summary_interval:
             send_summary()
             last_summary_time = time.time()
+
+def watch_suricata():
+    """Suricata監視を開始（外部から呼び出し可能な関数）"""
+    return main()
+
 
 if __name__ == "__main__":
     main()

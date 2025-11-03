@@ -166,10 +166,17 @@ class NetworkModule:
         """Display network traffic statistics."""
         self._print_section_header("Network Traffic Statistics")
         
+        if self.status_collector is None:
+            self.console.print("[yellow]Status collector not available. Attempting to collect basic statistics...[/yellow]")
+            self._show_basic_traffic_stats()
+            return
+        
         try:
             status = self.status_collector.collect()
         except Exception as e:
             self.console.print(f"[red]Error collecting statistics: {e}[/red]")
+            self.console.print("[yellow]Falling back to basic statistics...[/yellow]")
+            self._show_basic_traffic_stats()
             return
         
         # Create main statistics table
@@ -204,6 +211,58 @@ class NetworkModule:
         from rich.panel import Panel
         panel = Panel(stats_table, title="Current Statistics", border_style="green")
         self.console.print(panel)
+        
+        self._pause()
+    
+    def _show_basic_traffic_stats(self) -> None:
+        """Display basic network traffic statistics using /proc/net/dev."""
+        try:
+            import subprocess
+            from rich.table import Table
+            from rich.panel import Panel
+            
+            # Read network statistics from /proc/net/dev
+            with open('/proc/net/dev', 'r') as f:
+                lines = f.readlines()
+            
+            stats_table = Table()
+            stats_table.add_column("Interface", style="cyan")
+            stats_table.add_column("RX Bytes", justify="right", style="green")
+            stats_table.add_column("TX Bytes", justify="right", style="blue")
+            stats_table.add_column("RX Packets", justify="right", style="green")
+            stats_table.add_column("TX Packets", justify="right", style="blue")
+            stats_table.add_column("Errors", justify="right", style="red")
+            
+            for line in lines[2:]:  # Skip header lines
+                fields = line.split()
+                if len(fields) >= 17:
+                    interface = fields[0].rstrip(':')
+                    
+                    # Only show relevant interfaces
+                    if interface in [self.lan_if, self.wan_if, 'eth0', 'lo']:
+                        rx_bytes = int(fields[1])
+                        rx_packets = int(fields[2])
+                        rx_errors = int(fields[3])
+                        tx_bytes = int(fields[9])
+                        tx_packets = int(fields[10])
+                        tx_errors = int(fields[11])
+                        
+                        total_errors = rx_errors + tx_errors
+                        
+                        stats_table.add_row(
+                            interface,
+                            self._format_bytes(rx_bytes),
+                            self._format_bytes(tx_bytes),
+                            f"{rx_packets:,}",
+                            f"{tx_packets:,}",
+                            str(total_errors) if total_errors > 0 else "0"
+                        )
+            
+            panel = Panel(stats_table, title="Network Interface Statistics", border_style="green")
+            self.console.print(panel)
+            
+        except Exception as e:
+            self.console.print(f"[red]Error reading basic statistics: {e}[/red]")
         
         self._pause()
     
