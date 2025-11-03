@@ -45,8 +45,7 @@ class ServicesModule:
         
         # Define Azazel services to monitor
         azazel_services = [
-            ("azctl.service", "Azazel Core Controller"),
-            ("azctl-serve.service", "Azazel Event Consumer"),
+            ("azctl-unified.service", "Azazel Unified Control Daemon"),
             ("suricata.service", "Suricata IDS/IPS"),
             ("opencanary.service", "OpenCanary Honeypot"),
             ("vector.service", "Vector Log Processor"),
@@ -281,8 +280,7 @@ class ServicesModule:
         self.console.print(Text("─" * len("Restarting All Azazel Services"), style="dim"))
         
         services = [
-            "azctl.service",
-            "azctl-serve.service", 
+            "azctl-unified.service",
             "suricata.service",
             "opencanary.service",
             "vector.service",

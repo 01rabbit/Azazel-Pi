@@ -124,7 +124,7 @@ sudo scripts/install_azazel.sh
 - Suricata、Vector、OpenCanary、その他のコアコンポーネントをインストール
 - コアモジュールとユーティリティを `/opt/azazel` に展開
 - 設定テンプレートを `/etc/azazel` に展開
-- `azctl.target` systemdサービスを有効化
+- `azctl-unified.service` systemdサービスを有効化
 
 サービス開始前に、`/etc/azazel/azazel.yaml` を編集して、環境に合わせてインターフェース名、QoSプロファイル、防御閾値を設定してください。
 
@@ -182,7 +182,7 @@ echo '{"mode": "lockdown"}' | azctl events --config -
 
 2. **Suricataルール生成**: `scripts/suricata_generate.py` を使用して環境固有のIDS設定をレンダリング
 
-3. **サービス再起動**: `sudo systemctl restart azctl.target` で変更を適用
+3. **サービス再起動**: `sudo systemctl restart azctl-unified.service` で変更を適用
 
 4. **ヘルスチェック**: `scripts/sanity_check.sh` でサービス状態を確認
 
