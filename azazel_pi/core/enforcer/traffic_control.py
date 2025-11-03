@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import yaml
 
-from ..actions import DelayAction, ShapeAction, BlockAction, RedirectAction
+# 統合システムでは actions モジュールは使用しない（直接tc/nftコマンド実行）
 from ...utils.delay_action import (
     load_opencanary_ip, ensure_nft_table_and_chain, 
     list_active_diversions, OPENCANARY_IP

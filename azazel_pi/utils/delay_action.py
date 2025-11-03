@@ -9,14 +9,6 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-# 統合システムインポート（必須）
-try:
-    from ..core.enforcer.traffic_control import get_traffic_control_engine
-    _USE_INTEGRATED_SYSTEM = True
-except ImportError:
-    logger.error("統合トラフィック制御システムのインポートに失敗。統合システムが必要です。")
-    _USE_INTEGRATED_SYSTEM = False
-
 # OpenCanary IP address (デフォルト値、設定ファイルから上書き可能)
 OPENCANARY_IP = "192.168.1.100"
 
@@ -121,17 +113,17 @@ def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
         logger.error("Source IP is required")
         return False
     
-    # 統合システム必須
-    if not _USE_INTEGRATED_SYSTEM:
-        logger.error("統合トラフィック制御システムが利用できません。統合システムが必要です。")
-        return False
-    
+    # 統合システムを動的にimport
     try:
+        from ..core.enforcer.traffic_control import get_traffic_control_engine
         traffic_engine = get_traffic_control_engine()
         return traffic_engine.apply_dnat_redirect(src_ip, dest_port)
+    except ImportError as e:
+        logger.error(f"統合トラフィック制御システムのimport失敗: {e}")
+        logger.warning("レガシーフォールバックは非推奨です。統合システムの修復が必要です。")
+        return _legacy_divert_to_opencanary(src_ip, dest_port)
     except Exception as e:
         logger.error(f"統合システム利用失敗: {e}")
-        # 重要: フォールバックを廃止し、統合システムを必須とする
         logger.warning("レガシーフォールバックは非推奨です。統合システムの修復が必要です。")
         return _legacy_divert_to_opencanary(src_ip, dest_port)
 
@@ -200,16 +192,13 @@ def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
     Returns:
         bool: ルール削除の成功/失敗
     """
-    # 統合システム必須
-    if not _USE_INTEGRATED_SYSTEM:
-        logger.error("統合トラフィック制御システムが利用できません。統合システムが必要です。")
-        return False
-    
+    # 統合システムを動的にimport
     try:
+        from ..core.enforcer.traffic_control import get_traffic_control_engine
         traffic_engine = get_traffic_control_engine()
         return traffic_engine.remove_rules_for_ip(src_ip)
-    except Exception as e:
-        logger.error(f"統合システム利用失敗: {e}")
+    except ImportError as e:
+        logger.error(f"統合トラフィック制御システムのimport失敗: {e}")
         # 重要: フォールバックを廃止し、統合システムを必須とする
         logger.warning("レガシーフォールバックは非推奨です。統合システムの修復が必要です。")
         return _legacy_remove_divert_rule(src_ip, dest_port)
@@ -268,19 +257,21 @@ def _legacy_remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> 
 
 def list_active_diversions() -> list:
     """現在アクティブな転送ルールのリストを取得"""
-    # 統合システムが利用可能な場合はそれを使用
-    if _USE_INTEGRATED_SYSTEM:
-        try:
-            traffic_engine = get_traffic_control_engine()
-            active_rules = traffic_engine.get_active_rules()
-            diversions = []
-            for ip, rules in active_rules.items():
-                for rule in rules:
-                    if rule.action_type == "redirect":
-                        diversions.append(f"ip saddr {ip} -> {rule.parameters}")
-            return diversions
-        except Exception as e:
-            logger.warning(f"統合システム利用失敗、フォールバック: {e}")
+    # 統合システムを動的にimport
+    try:
+        from ..core.enforcer.traffic_control import get_traffic_control_engine
+        traffic_engine = get_traffic_control_engine()
+        active_rules = traffic_engine.get_active_rules()
+        diversions = []
+        for ip, rules in active_rules.items():
+            for rule in rules:
+                if rule.action_type == "redirect":
+                    diversions.append(f"ip saddr {ip} -> {rule.parameters}")
+        return diversions
+    except ImportError as e:
+        logger.warning(f"統合システムのimport失敗、フォールバック: {e}")
+    except Exception as e:
+        logger.warning(f"統合システム利用失敗、フォールバック: {e}")
     
     # フォールバック: 従来のnftables直接実行
     return _legacy_list_active_diversions()

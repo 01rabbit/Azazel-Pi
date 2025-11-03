@@ -277,23 +277,7 @@ def get_comprehensive_network_status() -> Dict[str, Any]:
     }
 
 
-# 後方互換性のための旧関数名エイリアス
-def _wlan_ap_status(interface: str = "wlan0") -> Dict[str, Any]:
-    """後方互換性のための関数エイリアス（非推奨）"""
-    logger.warning("⚠️ _wlan_ap_status は非推奨です。get_wlan_ap_status を使用してください。")
-    return get_wlan_ap_status(interface)
-
-
-def _wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
-    """後方互換性のための関数エイリアス（非推奨）"""
-    logger.warning("⚠️ _wlan_link_info は非推奨です。get_wlan_link_info を使用してください。")
-    return get_wlan_link_info(interface)
-
-
-def _active_profile() -> Optional[str]:
-    """後方互換性のための関数エイリアス（非推奨）"""
-    logger.warning("⚠️ _active_profile は非推奨です。get_active_profile を使用してください。")
-    return get_active_profile()
+# レガシー関数は完全に統合関数に移行されました
 
 
 if __name__ == "__main__":

@@ -18,9 +18,7 @@ from azazel_pi.core.scorer import ScoreEvaluator
 from azazel_pi.core.state_machine import Event, State, StateMachine, Transition
 from azazel_pi.utils.network_utils import (
     get_wlan_ap_status, get_wlan_link_info, get_active_profile,
-    get_network_interfaces_stats, format_bytes,
-    # 後方互換性のため旧関数名も残す
-    _wlan_ap_status, _wlan_link_info, _active_profile
+    get_network_interfaces_stats, format_bytes
 )
 
 from .daemon import AzazelDaemon
@@ -302,13 +300,7 @@ def _parse_hostapd_status(text: str) -> dict:
     return out
 
 
-# _wlan_ap_status 関数は network_utils.py に移行しました
-
-
-# _wlan_link_info 関数は network_utils.py に移行しました
-
-
-# _active_profile 関数は network_utils.py に移行しました
+# レガシー関数は network_utils.py に移行し、統合関数に完全移行しました
 
 
 def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0", wan_if: str = "wlan1") -> int:
@@ -324,9 +316,9 @@ def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0
     last = _read_last_decision(decision_paths)
     defensive_mode = last.get("mode") if isinstance(last, dict) else None
 
-    wlan0 = _wlan_ap_status(lan_if)
-    wlan1 = _wlan_link_info(wan_if)
-    profile = _active_profile()
+    wlan0 = get_wlan_ap_status(lan_if)
+    wlan1 = get_wlan_link_info(wan_if)
+    profile = get_active_profile()
 
     result = {
         "defensive_mode": defensive_mode,
@@ -436,8 +428,8 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
         mode_label, color = _mode_style(defensive_mode)
 
         status = collector.collect()
-        wlan0 = _wlan_ap_status(lan_if)
-        wlan1 = _wlan_link_info(wan_if)
+        wlan0 = get_wlan_ap_status(lan_if)
+        wlan1 = get_wlan_link_info(wan_if)
 
         # Header
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

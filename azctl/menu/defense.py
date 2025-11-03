@@ -116,9 +116,9 @@ class DefenseModule:
                 color = "green" if mode == "portal" else "yellow" if mode == "shield" else "red" if mode == "lockdown" else "blue"
             mode_emoji = {"portal": "🟢", "shield": "🟡", "lockdown": "🔴"}.get(mode, "⚪")
         
-        wlan0 = _wlan_ap_status("wlan0")
+        wlan0 = get_wlan_ap_status("wlan0")
         wlan1 = get_wlan_link_info("wlan1")
-        profile = _active_profile()
+        profile = get_active_profile()
         
         try:
             status = self.status_collector.collect()

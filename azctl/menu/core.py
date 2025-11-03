@@ -24,9 +24,6 @@ from rich.prompt import Prompt
 from ..cli import (
     _read_last_decision,
     _mode_style,
-    _wlan_ap_status,
-    _wlan_link_info,
-    _active_profile,
 )
 
 # Import types
@@ -431,11 +428,12 @@ class AzazelTUIMenu:
         basic_status = self._get_current_status()
         
         # Get network profile
-        profile = _active_profile()
+        from ...utils.network_utils import get_active_profile, get_wlan_ap_status, get_wlan_link_info
+        profile = get_active_profile()
         
         # Get WLAN interface information
-        wlan0_info = _wlan_ap_status(self.lan_if)
-        wlan1_info = _wlan_link_info(self.wan_if)
+        wlan0_info = get_wlan_ap_status(self.lan_if)
+        wlan1_info = get_wlan_link_info(self.wan_if)
         
         return {
             **basic_status,
