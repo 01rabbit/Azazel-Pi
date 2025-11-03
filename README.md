@@ -125,7 +125,7 @@ The installer will:
 - Install Suricata, Vector, OpenCanary, and other core components
 - Deploy core modules and utilities to `/opt/azazel`
 - Expand configuration templates to `/etc/azazel`
-- Enable the `azctl.target` systemd service
+- Enable the unified `azctl-unified.service` systemd service
 
 Before starting services, edit `/etc/azazel/azazel.yaml` to configure interface names, QoS profiles, and defensive thresholds for your environment.
 
@@ -234,7 +234,7 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
    - Real-time threat score monitoring
 
 2. **Service Management** (`services.py`)
-   - Azazel core service control (azctl, suricata, opencanary, vector)
+   - Azazel core service control (azctl-unified, suricata, opencanary, vector)
    - Service status overview
    - Real-time log file viewing
    - Service restart and health checks
@@ -309,7 +309,7 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 
 2. **Generate Suricata Rules**: Use `scripts/suricata_generate.py` to render environment-specific IDS configurations
 
-3. **Restart Services**: Apply changes with `sudo systemctl restart azctl.target`
+3. **Restart Services**: Apply changes with `sudo systemctl restart azctl-unified.service`
 
 4. **Health Check**: Verify service status using `scripts/sanity_check.sh`
 
@@ -366,7 +366,7 @@ The core philosophy recognizes that in asymmetric cyber warfare, defenders often
 - **Traffic Control System**: tc delay injection (100ms/200ms/300ms) with integrated DNAT+QoS
 - **Threat Detection**: Suricata IDS with real-time OpenCanary traffic diversion
 - **Network Services**: WiFi AP (Azazel_Internal), DHCP/DNS, external network connectivity
-- **Core Services**: azctl-serve, vector log processing, opencanary honeypot
+- **Core Services**: azctl-unified (AI control daemon), vector log processing, opencanary honeypot
 - **Auto-startup**: All critical services automatically start on boot
 
 ### 🔧 Remaining Items

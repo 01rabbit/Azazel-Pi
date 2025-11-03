@@ -505,6 +505,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     # Serve: long-running daemon that consumes ingest streams and updates mode
     p_serve = sub.add_parser("serve", help="Run long-running daemon to consume events and auto-update mode")
+    p_serve.add_argument("--config", help="Path to Azazel configuration YAML for system initialization")
     p_serve.add_argument("--decisions-log", help="Path to decisions.log (optional)")
     p_serve.add_argument("--suricata-eve", help="Path to Suricata eve.json (defaults from configs)", default=notice.SURICATA_EVE_JSON_PATH)
     p_serve.add_argument("--lan-if", default="wlan0", help="LAN/AP interface name (default: wlan0)")
@@ -543,6 +544,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         )
     if args.command == "serve":
         return cmd_serve(
+            config=getattr(args, "config", None),
             decisions=getattr(args, "decisions_log", None),
             suricata_eve=getattr(args, "suricata_eve", notice.SURICATA_EVE_JSON_PATH),
             lan_if=getattr(args, "lan_if", "wlan0"),
@@ -585,8 +587,23 @@ def cmd_menu(decisions: Optional[str], lan_if: str, wan_if: str) -> int:
         return 1
 
 
-def cmd_serve(decisions: Optional[str], suricata_eve: str, lan_if: str, wan_if: str) -> int:
+def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str, lan_if: str, wan_if: str) -> int:
     """Run a simple long-running daemon: tail Suricata and apply scoring/modes."""
+    
+    # Initialize configuration if provided
+    if config:
+        try:
+            # Load and validate configuration file
+            config_obj = AzazelConfig.from_file(config)
+            print(f"[INFO] Loaded configuration from {config}")
+            print(f"[INFO] Node: {config_obj.get('node', 'unknown')}")
+            print(f"[INFO] Active profile: {config_obj.get('profiles', {}).get('active', 'unknown')}")
+            thresholds = config_obj.get('thresholds', {})
+            print(f"[INFO] Thresholds: Shield={thresholds.get('t1_shield', 50)}, Lockdown={thresholds.get('t2_lockdown', 80)}")
+        except Exception as e:
+            print(f"[WARN] Failed to load config {config}: {e}")
+            print("[INFO] Continuing with default configuration...")
+    
     # Prepare machine and daemon
     machine = build_machine()
     decisions_path = Path(decisions) if decisions else Path(notice._get_nested({}, "paths.decisions", "/var/log/azazel/decisions.log"))

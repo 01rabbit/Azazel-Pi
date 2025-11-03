@@ -1,0 +1,33 @@
+[Unit]
+Description=Azazel Unified Control Daemon
+Documentation=https://github.com/01rabbit/Azazel-Pi
+After=network-online.target suricata.service opencanary.service
+Wants=network-online.target
+Requires=suricata.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/azazel/Azazel-Pi
+Environment=PYTHONPATH=/home/azazel/Azazel-Pi
+
+# Ensure required directories exist (as root before switching to azazel user)
+ExecStartPre=+/bin/mkdir -p /var/log/azazel
+ExecStartPre=+/bin/chown azazel:azazel /var/log/azazel
+
+# Unified startup command combining serve mode with config file support
+ExecStart=/usr/bin/env python3 -u -m azctl.cli serve --config /etc/azazel/azazel.yaml --suricata-eve /var/log/suricata/eve.json --decisions-log /var/log/azazel/decisions.log
+
+# Service management
+User=azazel
+Group=azazel
+Restart=on-failure
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=30
+
+# Reduced security settings for initial deployment
+# TODO: Enhance security settings after verification
+
+[Install]
+WantedBy=multi-user.target
+Also=suricata.service opencanary.service vector.service
