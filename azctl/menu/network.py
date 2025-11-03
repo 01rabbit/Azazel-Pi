@@ -10,15 +10,15 @@ from typing import Optional, Any
 
 from rich.console import Console
 
-from .types import MenuCategory, MenuAction
-from .wifi import WiFiManager
-from ...utils.network_utils import (
+from azctl.menu.types import MenuCategory, MenuAction
+from azctl.menu.wifi import WiFiManager
+from azazel_pi.utils.network_utils import (
     get_wlan_ap_status, get_wlan_link_info, get_active_profile,
     get_network_interfaces_stats, format_bytes
 )
 
 try:
-    from ..core.ingest.status_collector import NetworkStatusCollector
+    from azazel_pi.core.ingest.status_collector import NetworkStatusCollector
 except ImportError:
     NetworkStatusCollector = None
 

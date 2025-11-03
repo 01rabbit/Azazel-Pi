@@ -21,7 +21,7 @@ from azazel_pi.utils.network_utils import (
     get_network_interfaces_stats, format_bytes
 )
 
-from .daemon import AzazelDaemon
+from azctl.daemon import AzazelDaemon
 import yaml
 import time
 from queue import Queue, Empty
@@ -568,7 +568,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 def cmd_menu(decisions: Optional[str], lan_if: str, wan_if: str) -> int:
     """Launch the interactive TUI menu system."""
     try:
-        from .menu import AzazelTUIMenu
+        from azctl.menu import AzazelTUIMenu
         menu = AzazelTUIMenu(
             decisions_log=decisions,
             lan_if=lan_if, 

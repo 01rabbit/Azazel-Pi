@@ -17,12 +17,12 @@ from rich.panel import Panel
 from rich.prompt import Prompt, Confirm
 from rich.text import Text
 
-from .types import MenuCategory, MenuAction
-from ..cli import _read_last_decision, _mode_style
-from ...utils.network_utils import get_wlan_ap_status, get_wlan_link_info, get_active_profile
+from azctl.menu.types import MenuCategory, MenuAction
+from azctl.cli import _read_last_decision, _mode_style
+from azazel_pi.utils.network_utils import get_wlan_ap_status, get_wlan_link_info, get_active_profile
 
 try:
-    from ..core.ingest.status_collector import NetworkStatusCollector
+    from azazel_pi.core.ingest.status_collector import NetworkStatusCollector
 except ImportError:
     NetworkStatusCollector = None
 

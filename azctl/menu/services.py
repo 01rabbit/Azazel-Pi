@@ -14,7 +14,7 @@ from rich.table import Table
 from rich.text import Text
 from rich.prompt import Prompt, Confirm
 
-from .types import MenuCategory, MenuAction
+from azctl.menu.types import MenuCategory, MenuAction
 
 
 class ServicesModule:

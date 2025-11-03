@@ -12,7 +12,7 @@ from rich.console import Console
 from rich.text import Text
 from rich.prompt import Prompt
 
-from .types import MenuCategory, MenuAction
+from azctl.menu.types import MenuCategory, MenuAction
 
 
 class MonitoringModule:

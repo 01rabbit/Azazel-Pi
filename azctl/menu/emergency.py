@@ -14,8 +14,8 @@ from rich.console import Console
 from rich.text import Text
 from rich.prompt import Prompt, Confirm
 
-from .types import MenuCategory, MenuAction
-from ...utils.network_utils import get_wlan_ap_status, get_wlan_link_info
+from azctl.menu.types import MenuCategory, MenuAction
+from azazel_pi.utils.network_utils import get_wlan_ap_status, get_wlan_link_info
 
 
 class EmergencyModule:
@@ -245,7 +245,7 @@ country=US
                 report.write("AZAZEL STATUS\n")
                 report.write("-" * 15 + "\n")
                 try:
-                    from ..cli import _read_last_decision
+                    from azctl.cli import _read_last_decision
                     decision_paths = [Path("/var/log/azazel/decisions.log")]
                     current = _read_last_decision(decision_paths)
                     if current:

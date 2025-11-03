@@ -5,15 +5,15 @@ Modular TUI Menu System for Azazel-Pi
 This module provides a modular terminal user interface for managing the Azazel-Pi system.
 """
 
-from .core import AzazelTUIMenu
-from .types import MenuAction, MenuCategory
-from .wifi import WiFiManager
-from .network import NetworkModule
-from .defense import DefenseModule
-from .services import ServicesModule
-from .monitoring import MonitoringModule
-from .system import SystemModule
-from .emergency import EmergencyModule
+from azctl.menu.core import AzazelTUIMenu
+from azctl.menu.types import MenuAction, MenuCategory
+from azctl.menu.wifi import WiFiManager
+from azctl.menu.network import NetworkModule
+from azctl.menu.defense import DefenseModule
+from azctl.menu.services import ServicesModule
+from azctl.menu.monitoring import MonitoringModule
+from azctl.menu.system import SystemModule
+from azctl.menu.emergency import EmergencyModule
 
 __all__ = [
     'AzazelTUIMenu', 

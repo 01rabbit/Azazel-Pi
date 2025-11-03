@@ -13,10 +13,10 @@ from rich.table import Table
 from rich.text import Text
 from rich.prompt import Prompt
 
-from .types import MenuCategory, MenuAction
+from azctl.menu.types import MenuCategory, MenuAction
 
 try:
-    from ..core.ingest.status_collector import NetworkStatusCollector
+    from azazel_pi.core.ingest.status_collector import NetworkStatusCollector
 except ImportError:
     NetworkStatusCollector = None
 

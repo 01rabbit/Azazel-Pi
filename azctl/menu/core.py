@@ -21,17 +21,17 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 
 # Import CLI functions
-from ..cli import (
+from azctl.cli import (
     _read_last_decision,
     _mode_style,
 )
 
 # Import types
-from .types import MenuAction, MenuCategory
+from azctl.menu.types import MenuAction, MenuCategory
 
 # Import status collector
 try:
-    from ..core.ingest.status_collector import NetworkStatusCollector
+    from azazel_pi.core.ingest.status_collector import NetworkStatusCollector
 except ImportError:
     NetworkStatusCollector = None
 
@@ -54,12 +54,12 @@ class AzazelTUIMenu:
                 pass
         
         # Initialize all modules (import here to avoid circular imports)
-        from .network import NetworkModule
-        from .defense import DefenseModule 
-        from .services import ServicesModule
-        from .monitoring import MonitoringModule
-        from .system import SystemModule
-        from .emergency import EmergencyModule
+        from azctl.menu.network import NetworkModule
+        from azctl.menu.defense import DefenseModule 
+        from azctl.menu.services import ServicesModule
+        from azctl.menu.monitoring import MonitoringModule
+        from azctl.menu.system import SystemModule
+        from azctl.menu.emergency import EmergencyModule
         
         self.network_module = NetworkModule(self.console, self.lan_if, self.wan_if)
         self.defense_module = DefenseModule(self.console)
@@ -428,7 +428,7 @@ class AzazelTUIMenu:
         basic_status = self._get_current_status()
         
         # Get network profile
-        from ...utils.network_utils import get_active_profile, get_wlan_ap_status, get_wlan_link_info
+        from azazel_pi.utils.network_utils import get_active_profile, get_wlan_ap_status, get_wlan_link_info
         profile = get_active_profile()
         
         # Get WLAN interface information
