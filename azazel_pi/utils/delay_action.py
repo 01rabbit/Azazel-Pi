@@ -2,12 +2,19 @@
 # coding: utf-8
 """
 遅滞行動機能: 不審なトラフィックをOpenCanaryに転送
+[統合システムへの後方互換ラッパー]
 """
 
 import logging
-import subprocess
 from pathlib import Path
 from typing import Optional
+
+# 統合システムインポート
+try:
+    from ..core.enforcer.traffic_control import get_traffic_control_engine
+    _USE_INTEGRATED_SYSTEM = True
+except ImportError:
+    _USE_INTEGRATED_SYSTEM = False
 
 # OpenCanary IP address (デフォルト値、設定ファイルから上書き可能)
 OPENCANARY_IP = "192.168.1.100"
@@ -53,6 +60,7 @@ def load_opencanary_ip() -> str:
 def check_nft_table_exists(table_name: str = "azazel") -> bool:
     """nftablesテーブルが存在するかチェック"""
     try:
+        import subprocess
         result = subprocess.run(
             ["nft", "list", "table", "inet", table_name],
             capture_output=True, text=True, timeout=10
@@ -66,6 +74,7 @@ def check_nft_table_exists(table_name: str = "azazel") -> bool:
 def ensure_nft_table_and_chain():
     """必要なnftablesテーブルとチェーンを作成"""
     try:
+        import subprocess
         # テーブル作成（既存の場合は無視）
         subprocess.run(
             ["nft", "add", "table", "inet", "azazel"],
@@ -89,6 +98,7 @@ def ensure_nft_table_and_chain():
 def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
     """
     指定されたIPアドレスからのトラフィックをOpenCanaryに転送
+    [統合システムラッパー関数]
     
     Args:
         src_ip: 転送対象の送信元IPアドレス
@@ -101,6 +111,20 @@ def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
         logger.error("Source IP is required")
         return False
     
+    # 統合システムが利用可能な場合はそれを使用
+    if _USE_INTEGRATED_SYSTEM:
+        try:
+            traffic_engine = get_traffic_control_engine()
+            return traffic_engine.apply_dnat_redirect(src_ip, dest_port)
+        except Exception as e:
+            logger.warning(f"統合システム利用失敗、フォールバック: {e}")
+    
+    # フォールバック: 従来のnftables直接実行
+    return _legacy_divert_to_opencanary(src_ip, dest_port)
+
+
+def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
+    """従来のDNAT転送実装（フォールバック用）"""
     # OpenCanary IPを読み込み
     canary_ip = load_opencanary_ip()
     
@@ -109,6 +133,8 @@ def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
         return False
     
     try:
+        import subprocess
+        
         # DNATルールを構築
         if dest_port:
             # 特定ポートのみ転送
@@ -128,7 +154,7 @@ def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
         
         if result.returncode == 0:
-            logger.info(f"DNAT rule added: {src_ip} -> {canary_ip}" + 
+            logger.info(f"[Legacy] DNAT rule added: {src_ip} -> {canary_ip}" + 
                        (f":{dest_port}" if dest_port else ""))
             return True
         else:
@@ -146,6 +172,7 @@ def divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -> bool:
 def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
     """
     指定されたIPアドレスの転送ルールを削除
+    [統合システムラッパー関数]
     
     Args:
         src_ip: 削除対象の送信元IPアドレス
@@ -154,7 +181,23 @@ def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
     Returns:
         bool: ルール削除の成功/失敗
     """
+    # 統合システムが利用可能な場合はそれを使用
+    if _USE_INTEGRATED_SYSTEM:
+        try:
+            traffic_engine = get_traffic_control_engine()
+            return traffic_engine.remove_rules_for_ip(src_ip)
+        except Exception as e:
+            logger.warning(f"統合システム利用失敗、フォールバック: {e}")
+    
+    # フォールバック: 従来のnftables直接実行
+    return _legacy_remove_divert_rule(src_ip, dest_port)
+
+
+def _legacy_remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
+    """従来のルール削除実装（フォールバック用）"""
     try:
+        import subprocess
+        
         # 該当するルールのハンドルを検索して削除
         if dest_port:
             search_pattern = f"ip saddr {src_ip} tcp dport {dest_port}"
@@ -184,7 +227,7 @@ def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
                     delete_result = subprocess.run(delete_cmd, capture_output=True, timeout=10)
                     
                     if delete_result.returncode == 0:
-                        logger.info(f"DNAT rule removed: {src_ip}")
+                        logger.info(f"[Legacy] DNAT rule removed: {src_ip}")
                         return True
         
         logger.warning(f"No matching DNAT rule found for {src_ip}")
@@ -197,7 +240,29 @@ def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
 
 def list_active_diversions() -> list:
     """現在アクティブな転送ルールのリストを取得"""
+    # 統合システムが利用可能な場合はそれを使用
+    if _USE_INTEGRATED_SYSTEM:
+        try:
+            traffic_engine = get_traffic_control_engine()
+            active_rules = traffic_engine.get_active_rules()
+            diversions = []
+            for ip, rules in active_rules.items():
+                for rule in rules:
+                    if rule.action_type == "redirect":
+                        diversions.append(f"ip saddr {ip} -> {rule.parameters}")
+            return diversions
+        except Exception as e:
+            logger.warning(f"統合システム利用失敗、フォールバック: {e}")
+    
+    # フォールバック: 従来のnftables直接実行
+    return _legacy_list_active_diversions()
+
+
+def _legacy_list_active_diversions() -> list:
+    """従来のアクティブ転送リスト取得（フォールバック用）"""
     try:
+        import subprocess
+        
         result = subprocess.run([
             "nft", "list", "table", "inet", "azazel"
         ], capture_output=True, text=True, timeout=10)

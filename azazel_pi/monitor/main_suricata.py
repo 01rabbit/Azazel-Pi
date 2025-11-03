@@ -12,8 +12,8 @@ from pathlib import Path
 from ..core import notify_config as notice
 from ..core.state_machine import StateMachine, State, Event, Transition
 from ..core.scorer import ScoreEvaluator
+from ..core.enforcer.traffic_control import get_traffic_control_engine
 from ..utils.mattermost import send_alert_to_mattermost
-from ..utils.delay_action import divert_to_opencanary, remove_divert_rule, OPENCANARY_IP
 
 EVE_FILE           = Path(notice.SURICATA_EVE_JSON_PATH)
 FILTER_SIG_CATEGORY = [
@@ -247,8 +247,10 @@ def evaluate_threat_level():
 
 def mode_transition_action(new_mode: str, evaluation: dict):
     """モード遷移時のアクション実行"""
+    traffic_engine = get_traffic_control_engine()
+    
     if new_mode == "portal":
-        # 通常モード復帰：すべてのDNAT転送を停止
+        # 通常モード復帰：すべての制御ルールを停止
         restore_normal_mode()
         send_alert_to_mattermost("Azazel", {
             "timestamp": datetime.now().isoformat(),
@@ -270,25 +272,31 @@ def mode_transition_action(new_mode: str, evaluation: dict):
             "src_ip": "-",
             "dest_ip": "-",
             "proto": "-", 
-            "details": f"高脅威レベルにより封鎖モードを発動。(スコア: {evaluation.get('average', 0):.1f})",
+            "details": f"高脅威レベルにより封鎖モードを発動。(スコア: {evaluation.get('average', 0):.1f}) 最大遅延300ms適用",
             "confidence": "High"
         })
         logging.info("🔴 [モード遷移] 封鎖モード発動")
 
 def restore_normal_mode():
-    """通常モード復帰：すべてのDNAT転送を停止"""
-    removed_count = 0
-    for src_ip, port in list(active_diversions.items()):
-        try:
-            if remove_divert_rule(src_ip, port):
-                removed_count += 1
-                logging.info(f"🟢 DNAT解除: {src_ip}:{port}")
-        except Exception as e:
-            logging.error(f"DNAT解除エラー {src_ip}:{port}: {e}")
+    """通常モード復帰：すべての制御ルールを停止"""
+    traffic_engine = get_traffic_control_engine()
+    active_rules = traffic_engine.get_active_rules()
     
-    active_diversions.clear()
+    removed_count = 0
+    for src_ip in list(active_rules.keys()):
+        try:
+            if traffic_engine.remove_rules_for_ip(src_ip):
+                removed_count += 1
+                logging.info(f"🟢 制御解除: {src_ip}")
+        except Exception as e:
+            logging.error(f"制御解除エラー {src_ip}: {e}")
+    
+    # 従来のactive_diversions辞書もクリア（後方互換性）
+    if 'active_diversions' in globals():
+        active_diversions.clear()
+    
     if removed_count > 0:
-        logging.info(f"✅ 通常モード復帰: {removed_count}件のDNAT転送を解除")
+        logging.info(f"✅ 通常モード復帰: {removed_count}件の制御ルールを解除")
 
 def main():
     global last_summary_time, last_evaluation_time
@@ -328,27 +336,42 @@ def main():
                 logging.info(f"Notify & DNAT: {sig}")
 
                 try:
-                    # DNAT転送実行
-                    if divert_to_opencanary(src_ip, dport):
+                    # 統合トラフィック制御実行
+                    traffic_engine = get_traffic_control_engine()
+                    current_mode = state_machine.current_state.name
+                    
+                    if traffic_engine.apply_combined_action(src_ip, current_mode):
+                        # 後方互換性のためactive_diversions更新
+                        if 'active_diversions' not in globals():
+                            global active_diversions
+                            active_diversions = {}
                         active_diversions[src_ip] = dport
                         
                         if 'NOTIFY_CALLBACK' in globals():
                             NOTIFY_CALLBACK()
 
+                        # モード別の詳細メッセージ
+                        config = traffic_engine._load_config()
+                        actions = config.get("actions", {})
+                        preset = actions.get(current_mode, {})
+                        delay_info = f"遅延{preset.get('delay_ms', 0)}ms"
+                        shape_info = f"帯域{preset.get('shape_kbps', 'unlimited')}kbps" if preset.get('shape_kbps') else ""
+                        mode_details = f"{delay_info} {shape_info}".strip()
+
                         send_alert_to_mattermost("Suricata",{
                             "timestamp": alert["timestamp"],
-                            "signature": "🛡️ 遅滞行動発動（DNAT）",
+                            "signature": f"🛡️ 遅滞行動発動（{current_mode.upper()}）",
                             "severity": 2,
                             "src_ip": src_ip,
-                            "dest_ip": f"{OPENCANARY_IP}:{dport}",
+                            "dest_ip": f"OpenCanary:{dport}",
                             "proto": alert["proto"],
-                            "details": "攻撃元の通信を OpenCanary へ転送しました。",
+                            "details": f"攻撃元に統合制御を適用: DNAT転送 + {mode_details}",
                             "confidence": "High"
                         })
-                        logging.info(f"[遅滞行動] {src_ip}:{dport} -> {OPENCANARY_IP}:{dport}")
+                        logging.info(f"[統合制御] {src_ip}:{dport} -> {current_mode}モード適用")
 
                 except Exception as e:
-                    logging.error(f"DNAT error: {e}")
+                    logging.error(f"統合制御エラー: {e}")
             else:
                 suppressed_alerts[sig] += 1
             continue
