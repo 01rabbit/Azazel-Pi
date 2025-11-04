@@ -1,8 +1,8 @@
 [Unit]
-Description=Azazel Unified Control Daemon
+Description=Azazel Unified Control Daemon with AI Edge Computing
 Documentation=https://github.com/01rabbit/Azazel-Pi
-After=network-online.target suricata.service opencanary.service
-Wants=network-online.target
+After=network-online.target suricata.service opencanary.service azazel-ai-services.service
+Wants=network-online.target azazel-ai-services.service
 Requires=suricata.service
 
 [Service]

@@ -49,3 +49,18 @@ network:
   delay:
     base_ms: 500              # 基本遅延時間
     jitter_ms: 100            # 揺らぎ
+
+# AI脅威評価設定
+ai:
+  enabled: true                # AI評価機能の有効/無効
+  ollama_url: "http://127.0.0.1:11434/api/generate"
+  model: "phi3:mini"           # 使用するLLMモデル
+  timeout: 30                  # API呼び出しタイムアウト（秒）
+  max_payload_chars: 400       # ペイロード最大文字数
+  fallback_on_error: true      # エラー時のフォールバック有効
+  model_alternatives:          # 代替モデル候補
+    - "qwen2.5:3b"
+    - "tinyllama"
+  policy_scripts:              # AI判定によるポリシー適用スクリプト
+    delay: "/home/azazel/Azazel-Pi/scripts/ai_policy_delay.sh"
+    block: "/home/azazel/Azazel-Pi/scripts/ai_policy_block.sh"

@@ -112,6 +112,10 @@ class TrafficControlEngine:
     def apply_delay(self, target_ip: str, delay_ms: int) -> bool:
         """指定IPに遅延を適用"""
         try:
+            # 既存の同種ルールがあれば再適用しない（冪等化）
+            if target_ip in self.active_rules and any(r.action_type == "delay" for r in self.active_rules[target_ip]):
+                logger.info(f"Delay already applied to {target_ip}, skip")
+                return True
             # netem遅延qdisc作成
             classid = "1:41"  # 遅延専用クラス
             
@@ -138,7 +142,7 @@ class TrafficControlEngine:
             rule = TrafficControlRule(
                 target_ip=target_ip,
                 action_type="delay", 
-                parameters={"delay_ms": delay_ms, "classid": classid}
+                parameters={"delay_ms": delay_ms, "classid": classid, "prio": 1}
             )
             
             if target_ip not in self.active_rules:
@@ -155,6 +159,10 @@ class TrafficControlEngine:
     def apply_shaping(self, target_ip: str, rate_kbps: int) -> bool:
         """指定IPに帯域制限を適用"""
         try:
+            # 既存の同種ルールがあれば再適用しない（冪等化）
+            if target_ip in self.active_rules and any(r.action_type == "shape" for r in self.active_rules[target_ip]):
+                logger.info(f"Shaping already applied to {target_ip}, skip")
+                return True
             classid = "1:42"  # シェーピング専用クラス
             
             # シェーピングクラス作成
@@ -175,7 +183,7 @@ class TrafficControlEngine:
             rule = TrafficControlRule(
                 target_ip=target_ip,
                 action_type="shape",
-                parameters={"rate_kbps": rate_kbps, "classid": classid}
+                parameters={"rate_kbps": rate_kbps, "classid": classid, "prio": 2}
             )
             
             if target_ip not in self.active_rules:
@@ -192,6 +200,10 @@ class TrafficControlEngine:
     def apply_dnat_redirect(self, target_ip: str, dest_port: Optional[int] = None) -> bool:
         """指定IPをOpenCanaryにDNAT転送"""
         try:
+            # 既存の同種ルールがあれば再適用しない（冪等化）
+            if target_ip in self.active_rules and any(r.action_type == "redirect" for r in self.active_rules[target_ip]):
+                logger.info(f"DNAT already applied to {target_ip}, skip")
+                return True
             canary_ip = load_opencanary_ip()
             
             # nftablesテーブル確保
@@ -319,11 +331,12 @@ class TrafficControlEngine:
                 if rule.action_type in ["delay", "shape"]:
                     # tcルール削除（個別クラス）
                     classid = rule.parameters.get("classid")
+                    prio = str(rule.parameters.get("prio", 1 if rule.action_type=="delay" else 2))
                     if classid and classid not in ["1:40"]:  # suspectクラスではない場合のみ削除
                         # フィルタ削除
                         subprocess.run([
                             "tc", "filter", "del", "dev", self.interface, 
-                            "protocol", "ip", "parent", "1:", "prio", "1"
+                            "protocol", "ip", "parent", "1:", "prio", prio
                         ], capture_output=True, timeout=10)
                         
                         # クラス削除

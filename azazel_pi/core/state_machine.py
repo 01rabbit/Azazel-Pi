@@ -154,9 +154,13 @@ class StateMachine:
                 if alt.exists():
                     path = alt
                 else:
+                    # repo では configs/network/azazel.yaml にあるケースを追加で探索
                     cwd_conf = Path.cwd() / "configs" / "azazel.yaml"
+                    net_conf = Path.cwd() / "configs" / "network" / "azazel.yaml"
                     if cwd_conf.exists():
                         path = cwd_conf
+                    elif net_conf.exists():
+                        path = net_conf
                     else:
                         # No configuration file found; use empty defaults
                         self._config_cache = {}

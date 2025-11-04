@@ -1,0 +1,27 @@
+{
+  "ai_system": {
+    "primary_evaluator": "enhanced_offline",
+    "enable_mock_llm": true,
+    "fallback_enabled": true,
+    "ollama_integration": false,
+    "settings": {
+      "confidence_threshold": 0.7,
+      "risk_scaling": true,
+      "ensemble_weights": {
+        "pattern_matching": 0.4,
+        "payload_analysis": 0.15,
+        "target_analysis": 0.15,
+        "reputation_analysis": 0.1,
+        "temporal_analysis": 0.1,
+        "protocol_analysis": 0.1
+      }
+    }
+  },
+  "mock_llm": {
+    "enabled": true,
+    "response_templates": true,
+    "conversation_history": 10,
+    "realistic_variation": true
+  },
+  "_note": "Ollama configuration removed - Mock LLM provides superior edge performance"
+}
