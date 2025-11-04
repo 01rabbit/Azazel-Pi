@@ -148,6 +148,22 @@ sudo systemctl enable --now azazel-epd.service
 
 See [`docs/EPD_SETUP.md`](docs/EPD_SETUP.md) for complete E-Paper configuration instructions.
 
+### Optional: Front Mattermost with Nginx
+
+To serve Mattermost via Nginx reverse proxy (recommended), use the provided template and setup script:
+
+```bash
+sudo scripts/setup_nginx_mattermost.sh
+```
+
+This will:
+- Install Nginx (if missing)
+- Deploy the reverse proxy config from `deploy/nginx-site.conf`
+- Enable the site and reload Nginx
+
+Afterwards, Mattermost should be reachable at `http://<device-ip>/` (port 80) and proxied to `127.0.0.1:8065`.
+For HTTPS, add your TLS server block or use Certbot.
+
 ### Modular TUI Menu System
 
 The interactive Terminal User Interface (TUI) menu provides comprehensive system management through a modular architecture designed for maintainability and extensibility:
@@ -305,7 +321,8 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 
 ### Configuration Workflow
 
-1. **Edit Core Configuration**: Modify `/etc/azazel/azazel.yaml` to adjust delay values, bandwidth controls, and lockdown allowlists (template at `configs/network/azazel.yaml`)
+1. **Edit Core Configuration**: Modify `/etc/azazel/azazel.yaml` to adjust delay values, bandwidth controls, and lockdown allowlists (template at `configs/network/azazel.yaml`).
+   - By default, `wlan0` is treated as the internal LAN (AP), and both `wlan1` and `eth0` are considered external (WAN/uplink) interfaces. See `interfaces.external: ["eth0", "wlan1"]` in `configs/network/azazel.yaml` and adjust as needed.
 
 2. **Generate Suricata Rules**: Use `scripts/suricata_generate.py` to render environment-specific IDS configurations
 
@@ -325,7 +342,6 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 
 ## Documentation
 
-### English Documentation
 - [`docs/INSTALLATION.md`](docs/INSTALLATION.md) — Complete installation and setup guide
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — Operational procedures and maintenance
 - [`docs/NETWORK_SETUP.md`](docs/NETWORK_SETUP.md) — Network configuration and gateway setup
@@ -333,16 +349,6 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 - [`docs/EPD_SETUP.md`](docs/EPD_SETUP.md) — E-Paper display configuration
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System architecture and component relationships
 - [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — Python modules and script reference
-
-### Japanese Documentation (日本語ドキュメント)
-- [`README_ja.md`](README_ja.md) — 日本語版README
-- [`docs/INSTALLATION_ja.md`](docs/INSTALLATION_ja.md) — インストール・セットアップガイド
-- [`docs/OPERATIONS_ja.md`](docs/OPERATIONS_ja.md) — 運用手順とメンテナンス
-- [`docs/NETWORK_SETUP_ja.md`](docs/NETWORK_SETUP_ja.md) — ネットワーク設定ガイド
-- [`docs/TROUBLESHOOTING_ja.md`](docs/TROUBLESHOOTING_ja.md) — トラブルシューティングガイド
-- [`docs/EPD_SETUP_ja.md`](docs/EPD_SETUP_ja.md) — E-Paperディスプレイ設定
-- [`docs/ARCHITECTURE_ja.md`](docs/ARCHITECTURE_ja.md) — システムアーキテクチャ
-- [`docs/API_REFERENCE_ja.md`](docs/API_REFERENCE_ja.md) — APIリファレンス
 
 ## Development Background
 
