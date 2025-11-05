@@ -1,20 +1,42 @@
 #!/usr/bin/env python3
 """
-Hybrid Threat Evaluator - Legacy + Mock LLM Integration
-Combines rule-based legacy logic with AI-enhanced Mock LLM for optimal threat assessment
+Hybrid Threat Evaluator - Legacy + Mock LLM + Ollama Integration
+Combines rule-based legacy logic with AI-enhanced Mock LLM for known threats,
+and uses Ollama for unknown/uncertain threats
 """
 
 import logging
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from azazel_pi.core.offline_ai_evaluator import evaluate_with_offline_ai
 
 logger = logging.getLogger(__name__)
 
+# Ollama evaluator (遅延インポート)
+_ollama_evaluator = None
+
+def _get_ollama_evaluator(config: Optional[Dict[str, Any]] = None):
+    """Ollama評価器を取得（初回のみインポート）"""
+    global _ollama_evaluator
+    if _ollama_evaluator is None:
+        try:
+            from azazel_pi.core.ai_evaluator import get_ai_evaluator
+            _ollama_evaluator = get_ai_evaluator(config)
+            logger.info("Ollama evaluator initialized for unknown threat analysis")
+        except Exception as e:
+            logger.warning(f"Ollama evaluator initialization failed: {e}")
+            _ollama_evaluator = False  # 失敗をマーク
+    return _ollama_evaluator if _ollama_evaluator is not False else None
+
 class HybridThreatEvaluator:
-    """統合脅威評価システム - Legacy Logic + Mock LLM"""
+    """統合脅威評価システム - Legacy Logic + Mock LLM + Ollama（未知の脅威用）"""
     
-    def __init__(self):
+    def __init__(self, ollama_config: Optional[Dict[str, Any]] = None):
         self.logger = logging.getLogger(__name__)
+        self.ollama_config = ollama_config or {}
+        
+        # 未知の脅威検出のしきい値
+        self.unknown_confidence_threshold = 0.7  # 信頼度がこれ以下ならOllama使用
+        self.unknown_categories = {"unknown", "benign"}  # これらのカテゴリでもOllama検討
         
         # カテゴリ別基準スコア (Legacy準拠で調整)
         self.category_base_scores = {
@@ -48,89 +70,141 @@ class HybridThreatEvaluator:
         ]
     
     def evaluate_threat_hybrid(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
-        """ハイブリッド脅威評価 - Legacy + Mock LLM統合"""
+        """ハイブリッド脅威評価 - Legacy + Mock LLM + Ollama（未知の脅威用）"""
         
         signature = alert_data.get("signature", "")
         
-        # 1. Mock LLM評価を取得
+        # 1. Mock LLM評価を取得（高速・軽量）
         try:
             mock_result = evaluate_with_offline_ai(alert_data)
             mock_risk = mock_result["risk"]
             mock_category = mock_result["category"]
+            mock_confidence = mock_result.get("confidence", 0.5)
             
-            self.logger.debug(f"Mock LLM: risk={mock_risk}, category={mock_category}")
+            self.logger.debug(f"Mock LLM: risk={mock_risk}, category={mock_category}, confidence={mock_confidence}")
         except Exception as e:
             self.logger.warning(f"Mock LLM evaluation failed: {e}")
-            # フォールバック: Legacy のみ
             return self._legacy_only_evaluation(alert_data)
         
-        # 2. Legacy ルールベース評価
+        # 2. 未知の脅威検出: 信頼度が低い or unknownカテゴリ
+        is_unknown_threat = (
+            mock_confidence < self.unknown_confidence_threshold or
+            mock_category in self.unknown_categories or
+            mock_risk <= 2  # 低リスクだが確証がない場合
+        )
+        
+        # 3. 未知の脅威の場合、Ollamaで再評価
+        ollama_result = None
+        if is_unknown_threat:
+            self.logger.info(f"未知の脅威の可能性 (confidence={mock_confidence}, category={mock_category}) - Ollama評価を実行")
+            ollama_evaluator = _get_ollama_evaluator(self.ollama_config)
+            
+            if ollama_evaluator:
+                try:
+                    ollama_result = ollama_evaluator.evaluate_threat(alert_data)
+                    if ollama_result.get("ai_used", False):
+                        self.logger.info(f"Ollama評価成功: risk={ollama_result['risk']}, category={ollama_result['category']}")
+                        
+                        # Ollamaの評価を優先（未知の脅威に強い）
+                        ollama_score = (ollama_result["risk"] - 1) * 25  # 1-5 → 0-100
+                        
+                        # Mock LLMとOllamaの統合（Ollama優先度高め: 70%）
+                        mock_score = (mock_risk - 1) * 25
+                        integrated_score = int(ollama_score * 0.7 + mock_score * 0.3)
+                        
+                        return self._finalize_evaluation(
+                            integrated_score,
+                            ollama_result["category"],
+                            f"Ollama深堀り分析: {ollama_result['reason'][:50]}...",
+                            ollama_result,
+                            evaluation_method="ollama_unknown_threat"
+                        )
+                except Exception as e:
+                    self.logger.warning(f"Ollama評価エラー、Mock LLMにフォールバック: {e}")
+        
+        # 4. Legacy ルールベース評価
         legacy_score = self._calculate_legacy_score(alert_data, signature)
         self.logger.debug(f"Legacy score: {legacy_score}")
         
-        # 3. 正常トラフィック判定 (Legacy重視)
+        # 5. 正常トラフィック判定 (Legacy重視)
         if self._is_benign_traffic(signature, alert_data):
             return {
                 "risk": 1,
                 "reason": "正常トラフィックとして判定",
                 "category": "benign",
-                "score": min(legacy_score, 15),  # 正常トラフィックは15点以下
+                "score": min(legacy_score, 15),
                 "ai_used": True,
                 "model": "hybrid_legacy+mock_llm",
                 "confidence": 0.9,
                 "evaluation_method": "benign_override"
             }
         
-        # 4. カテゴリ別基準スコアの適用
+        # 6. カテゴリ別基準スコアの適用
         base_score = self.category_base_scores.get(mock_category, 30)
         
-        # 5. Legacy とMock LLMの統合スコア計算
+        # 7. Legacy とMock LLMの統合スコア計算
         # Legacy 60% + Mock LLM 40% の重み付け
         mock_score_100 = (mock_risk - 1) * 25  # 1-5 → 0-100
         integrated_score = int(legacy_score * 0.6 + mock_score_100 * 0.4)
         
-        # 6. カテゴリベース較正
+        # 8. カテゴリベース較正
         if mock_category in ["exploit", "malware", "sqli"]:
-            # 高危険カテゴリは最低60点保証
             final_score = max(integrated_score, 60)
         elif mock_category in ["dos", "bruteforce"]:
-            # 中危険カテゴリは最低40点保証
             final_score = max(integrated_score, 40)
         else:
             final_score = integrated_score
         
-        # 7. 最終リスクレベル計算 (1-5スケール)
-        if final_score >= 80:
-            final_risk = 5
-        elif final_score >= 60:
-            final_risk = 4
-        elif final_score >= 40:
-            final_risk = 3
-        elif final_score >= 20:
-            final_risk = 2
-        else:
-            final_risk = 1
-        
-        # 8. 統合理由生成
+        # 9. 統合理由生成
         legacy_contribution = f"Legacy評価: {legacy_score}点"
         mock_contribution = f"Mock LLM評価: {mock_result['reason'][:50]}"
         integrated_reason = f"{legacy_contribution} + {mock_contribution}"
         
-        return {
-            "risk": final_risk,
-            "reason": integrated_reason,
-            "category": mock_category,
-            "score": final_score,
-            "ai_used": True,
-            "model": "hybrid_legacy+mock_llm",
-            "confidence": mock_result.get("confidence", 0.8),
-            "evaluation_method": "hybrid_integration",
-            "components": {
+        return self._finalize_evaluation(
+            final_score,
+            mock_category,
+            integrated_reason,
+            mock_result,
+            evaluation_method="hybrid_integration",
+            components={
                 "legacy_score": legacy_score,
                 "mock_llm_score": mock_score_100,
                 "integration_weight": "legacy_60%_mock_40%"
             }
+        )
+    
+    
+    def _finalize_evaluation(self, score: int, category: str, reason: str, 
+                            ai_result: Dict[str, Any], evaluation_method: str,
+                            components: Optional[Dict] = None) -> Dict[str, Any]:
+        """最終評価結果の作成"""
+        # スコアを1-5リスクレベルに変換
+        if score >= 80:
+            final_risk = 5
+        elif score >= 60:
+            final_risk = 4
+        elif score >= 40:
+            final_risk = 3
+        elif score >= 20:
+            final_risk = 2
+        else:
+            final_risk = 1
+        
+        result = {
+            "risk": final_risk,
+            "reason": reason,
+            "category": category,
+            "score": score,
+            "ai_used": True,
+            "model": ai_result.get("model", "hybrid_legacy+mock_llm"),
+            "confidence": ai_result.get("confidence", 0.8),
+            "evaluation_method": evaluation_method
         }
+        
+        if components:
+            result["components"] = components
+        
+        return result
     
     def _calculate_legacy_score(self, alert_data: Dict[str, Any], signature: str) -> int:
         """従来のルールベーススコア計算"""
@@ -228,18 +302,23 @@ class HybridThreatEvaluator:
 
 
 # グローバルハイブリッド評価インスタンス
-_hybrid_evaluator: HybridThreatEvaluator = None
+_hybrid_evaluator: Optional[HybridThreatEvaluator] = None
 
-def get_hybrid_evaluator() -> HybridThreatEvaluator:
+def get_hybrid_evaluator(config: Optional[Dict[str, Any]] = None) -> HybridThreatEvaluator:
     """ハイブリッド評価インスタンスの取得"""
     global _hybrid_evaluator
     
     if _hybrid_evaluator is None:
-        _hybrid_evaluator = HybridThreatEvaluator()
+        # 設定ファイルからOllama設定を読み込み
+        ollama_config = None
+        if config:
+            ollama_config = config.get("ai", {})
+        _hybrid_evaluator = HybridThreatEvaluator(ollama_config)
     
     return _hybrid_evaluator
 
-def evaluate_with_hybrid_system(alert_data: Dict[str, Any]) -> Dict[str, Any]:
+def evaluate_with_hybrid_system(alert_data: Dict[str, Any], 
+                                config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """ハイブリッド脅威評価の実行"""
-    evaluator = get_hybrid_evaluator()
+    evaluator = get_hybrid_evaluator(config)
     return evaluator.evaluate_threat_hybrid(alert_data)

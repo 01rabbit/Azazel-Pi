@@ -15,10 +15,10 @@ class AIConfig:
         """Get AI configuration"""
         return {
             "ai_system": {
-                "primary_evaluator": "enhanced_offline",
-                "enable_mock_llm": True,
+                "primary_evaluator": "ollama_enhanced",
+                "enable_mock_llm": False,
                 "fallback_enabled": True,
-                "ollama_integration": False,  # Disabled due to network issues
+                "ollama_integration": True,  # Enabled with Qwen2.5-1.5B
                 "settings": {
                     "confidence_threshold": 0.7,
                     "risk_scaling": True,
@@ -39,11 +39,14 @@ class AIConfig:
                 "realistic_variation": True
             },
             "ollama": {
-                "enabled": False,
+                "enabled": True,
                 "container_name": "azazel_ollama",
-                "model": "llama3.2:1b",
+                "model": "threatjudge",
+                "base_url": "http://127.0.0.1:11434",
                 "timeout_seconds": 30,
-                "retry_attempts": 3
+                "retry_attempts": 3,
+                "model_file": "qwen2.5-1.5b-instruct-q4_K_M.gguf",
+                "host_model_path": "/opt/models/qwen"
             }
         }
     
