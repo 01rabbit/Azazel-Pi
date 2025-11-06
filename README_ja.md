@@ -183,6 +183,22 @@ azctl/menu/
 - **拡張可能**: モジュールシステムを通じた新機能の簡単な追加
 - **リアルタイム監視**: 自動更新付きライブステータス表示
 
+### オプション: Nginx を介して Mattermost を公開
+
+リバースプロキシとして Nginx を利用する場合は、用意済みテンプレートとセットアップスクリプトを使用できます:
+
+```bash
+sudo scripts/setup_nginx_mattermost.sh
+```
+
+このスクリプトは以下を実行します:
+- Nginx のインストール（未導入の場合）
+- `deploy/nginx-site.conf` の配置（sites-available へ）
+- サイト有効化と Nginx の再起動
+
+適用後は `http://<デバイスIP>/`（80番）で Mattermost に到達できます（裏側は `127.0.0.1:8065` へプロキシ）。
+HTTPS を利用する場合は、TLS 用の server ブロックを追加するか Certbot を利用してください。
+
 ## 使用方法
 
 ### コマンドラインインターフェース
@@ -226,7 +242,8 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 
 **メニュー機能：**
 
-1. **コア設定の編集**: `/etc/azazel/azazel.yaml` を修正して遅延値、帯域制御、ロックダウン許可リストを調整（テンプレートは `configs/network/azazel.yaml`）
+1. **コア設定の編集**: `/etc/azazel/azazel.yaml` を修正して遅延値、帯域制御、ロックダウン許可リストを調整（テンプレートは `configs/network/azazel.yaml`）。
+   - 既定では `wlan0` を内部LAN（AP）、`wlan1` と `eth0` を外部（WAN/アップリンク）として扱います。`configs/network/azazel.yaml` の `interfaces.external` に `["eth0", "wlan1"]` を定義済みです（必要に応じて変更可能）。
 
 2. **Suricataルール生成**: `scripts/suricata_generate.py` を使用して環境固有のIDS設定をレンダリング
 

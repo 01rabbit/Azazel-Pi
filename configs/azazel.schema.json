@@ -19,7 +19,12 @@
       "required": ["lan", "wan"],
       "properties": {
         "lan": {"type": "string"},
-        "wan": {"type": "string"}
+        "wan": {"type": "string"},
+        "external": {
+          "description": "外部（WAN/アップリンク）として扱うインターフェース名の配列",
+          "type": "array",
+          "items": {"type": "string"}
+        }
       }
     },
     "profiles": {

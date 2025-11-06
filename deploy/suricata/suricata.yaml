@@ -18,8 +18,15 @@ rule-files:
   - suricata.rules      # suricata-updateで取得したルール＋自作ルール（Emerging Threats推奨）
 
 af-packet:
+  # 外部ネットワーク接続インターフェース（WAN）として wlan1 と eth0 の両方を監視
   - interface: wlan1
     cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    disable-promisc: no
+  - interface: eth0
+    cluster-id: 100
     cluster-type: cluster_flow
     defrag: yes
     use-mmap: yes

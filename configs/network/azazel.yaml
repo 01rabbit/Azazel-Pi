@@ -1,5 +1,9 @@
 node: azazel-pi-01
-interfaces: { lan: lan0, wan: wlan1 }
+interfaces:
+  lan: wlan0
+  wan: wlan1
+  # 外部（アップリンク）として扱うインターフェースの明示（複数可）
+  external: ["eth0", "wlan1"]
 profiles:
   active: lte
   sat:   { uplink_kbps: 2000, rtt_ms: 700 }
