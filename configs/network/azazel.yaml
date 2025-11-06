@@ -16,11 +16,19 @@ qos:
 soc:
   suricata_ruleset: balanced
   canary_services: ["ssh", "http", "pgsql"]
+  denylist_ips: []  # 即時遮断対象IP（例: ["1.2.3.4", "5.6.7.8"]）
+  critical_signatures:  # 即時遮断対象シグネチャ
+    - "ET EXPLOIT"
+    - "ET MALWARE"
+    - "ET TROJAN"
+    - "Critical Infrastructure Attack"
 actions:
+  normal:   { delay_ms: 0,   shape_kbps: null, block: false }
   portal:   { delay_ms: 100, shape_kbps: null, block: false }
   shield:   { delay_ms: 200, shape_kbps: 128,  block: false }
   lockdown: { delay_ms: 300, shape_kbps: 64,   block: true  }
 thresholds:
+  t0_normal: 20
   t1_shield: 50
   t2_lockdown: 80
   unlock_wait_secs: { shield: 600, portal: 1800 }

@@ -6,13 +6,15 @@ Suricata eve.json を監視し Mattermost へ通知、必要に応じ DNAT 遅�
 
 import json, time, logging, sys
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, deque
 from pathlib import Path
 
 from ..core import notify_config as notice
 from ..core.state_machine import StateMachine, State, Event, Transition
 from ..core.scorer import ScoreEvaluator
 from ..core.enforcer.traffic_control import get_traffic_control_engine
+from ..core.offline_ai_evaluator import evaluate_with_offline_ai
+from ..core.hybrid_threat_evaluator import evaluate_with_hybrid_system
 from ..utils.mattermost import send_alert_to_mattermost
 
 EVE_FILE           = Path(notice.SURICATA_EVE_JSON_PATH)
@@ -23,6 +25,43 @@ FILTER_SIG_CATEGORY = [
 ]
 NOTIFY_CALLBACK = None
 
+# 設定読込（allow/denyカテゴリ）
+def _load_main_config() -> dict:
+    import yaml
+    candidates = [
+        Path("/etc/azazel/azazel.yaml"),
+        Path.cwd() / "configs" / "network" / "azazel.yaml",
+        Path.cwd() / "configs" / "azazel.yaml",
+    ]
+    for p in candidates:
+        try:
+            if p.exists():
+                return yaml.safe_load(p.read_text()) or {}
+        except Exception:
+            continue
+    return {}
+
+_cfg = _load_main_config()
+_soc = _cfg.get("soc", {}) if isinstance(_cfg, dict) else {}
+_allow = _soc.get("allowed_categories")
+_deny = _soc.get("denied_categories")
+
+# Denylist と Critical Signatures の読み込み
+DENYLIST_IPS = set(_soc.get("denylist_ips", []))
+CRITICAL_SIGNATURES = _soc.get("critical_signatures", [])
+
+# allow/deny は正規化（lower/underscore→space）。allowがNoneなら全許可（denyのみ適用）
+def _norm_cat(x: str) -> str:
+    return x.replace("_", " ").lower()
+
+ALLOWED_SIG_CATEGORIES = None if not _allow else { _norm_cat(c) for c in _allow }
+DENIED_SIG_CATEGORIES = set()
+if _deny:
+    DENIED_SIG_CATEGORIES = { _norm_cat(c) for c in _deny }
+if ALLOWED_SIG_CATEGORIES is None:
+    # 既定は既存リストを許可（後方互換）
+    ALLOWED_SIG_CATEGORIES = { _norm_cat(c) for c in FILTER_SIG_CATEGORY }
+
 cooldown_seconds   = 60          # 同一シグネチャ抑止時間
 summary_interval   = 60          # サマリ送信間隔
 evaluation_interval = 30         # 脅威レベル評価間隔
@@ -31,19 +70,68 @@ last_alert_times  = {}
 suppressed_alerts = defaultdict(int)
 last_summary_time = time.time()
 last_evaluation_time = time.time()
+last_cleanup_time = time.time()
+
+# 独立した頻度カウンタ: signature×src_ip の時系列（epoch秒）
+recent_events = defaultdict(lambda: deque(maxlen=1000))
+
+def record_event(signature: str, src_ip: str, ts: float | None = None):
+    if ts is None:
+        ts = time.time()
+    key = f"{signature}:{src_ip}"
+    recent_events[key].append(ts)
+
+def count_recent(signature: str, src_ip: str, within_seconds: int = 300) -> int:
+    key = f"{signature}:{src_ip}"
+    now = time.time()
+    dq = recent_events.get(key, deque())
+    # 古いものを落としながらカウント
+    while dq and (now - dq[0]) > within_seconds:
+        dq.popleft()
+    return len(dq)
+
+def check_exception_block(alert: dict) -> bool:
+    """
+    例外遮断チェック: denylistまたはcritical signatureに該当するか
+    
+    Returns:
+        True if should be immediately blocked
+    """
+    src_ip = alert.get("src_ip", "")
+    signature = alert.get("signature", "")
+    
+    # Denylist IP チェック
+    if src_ip in DENYLIST_IPS:
+        logging.warning(f"[EXCEPTION BLOCK] Denylist IP detected: {src_ip}")
+        return True
+    
+    # Critical Signature チェック
+    for critical_pattern in CRITICAL_SIGNATURES:
+        if critical_pattern.upper() in signature.upper():
+            logging.warning(f"[EXCEPTION BLOCK] Critical signature detected: {signature}")
+            return True
+    
+    return False
 
 # 状態管理とスコアリング
-portal_state = State("portal", "通常モード")
+normal_state = State("normal", "通常モード（制御なし）")
+portal_state = State("portal", "監視モード")
 shield_state = State("shield", "警戒モード（遅延適用）")
 lockdown_state = State("lockdown", "封鎖モード（DNAT転送）")
 
 state_machine = StateMachine(
-    initial_state=portal_state,
+    initial_state=normal_state,
     transitions=[
+        Transition(normal_state, portal_state, lambda e: e.name == "portal"),
+        Transition(normal_state, shield_state, lambda e: e.name == "shield"),
+        Transition(normal_state, lockdown_state, lambda e: e.name == "lockdown"),
+        Transition(portal_state, normal_state, lambda e: e.name == "normal"),
         Transition(portal_state, shield_state, lambda e: e.name == "shield"),
         Transition(portal_state, lockdown_state, lambda e: e.name == "lockdown"),
+        Transition(shield_state, normal_state, lambda e: e.name == "normal"),
         Transition(shield_state, portal_state, lambda e: e.name == "portal"),
         Transition(shield_state, lockdown_state, lambda e: e.name == "lockdown"),
+        Transition(lockdown_state, normal_state, lambda e: e.name == "normal"),
         Transition(lockdown_state, shield_state, lambda e: e.name == "shield"),
         Transition(lockdown_state, portal_state, lambda e: e.name == "portal"),
     ]
@@ -89,20 +177,26 @@ def parse_alert(line: str):
 
         alert      = data["alert"]
         signature  = alert["signature"]
-        category   = signature.split(" ", 2)[1] if signature.startswith("ET ") else None
+        raw_cat    = signature.split(" ", 2)[1] if signature.startswith("ET ") else None
+        category_norm = raw_cat.replace("_", " ").lower() if raw_cat else None
 
-        if category and category in FILTER_SIG_CATEGORY:
-            return {
-                "timestamp" : data["timestamp"],
-                "signature" : signature,
-                "severity"  : alert.get("severity", 3),
-                "src_ip"    : data.get("src_ip",""),
-                "dest_ip"   : data.get("dest_ip",""),
-                "proto"     : data.get("proto",""),
-                "dest_port" : data.get("dest_port"),
-                "details"   : alert,
-                "confidence": alert.get("metadata",{}).get("confidence",["Unknown"])[0],
-            }
+        # deny優先→allow（allow不在時は後方互換の既定を使用）
+        if category_norm and category_norm in DENIED_SIG_CATEGORIES:
+            return None
+        if category_norm and (ALLOWED_SIG_CATEGORIES and category_norm not in ALLOWED_SIG_CATEGORIES):
+            return None
+        # 上記を通過したら通す
+        return {
+            "timestamp" : data["timestamp"],
+            "signature" : signature,
+            "severity"  : alert.get("severity", 3),
+            "src_ip"    : data.get("src_ip",""),
+            "dest_ip"   : data.get("dest_ip",""),
+            "proto"     : data.get("proto",""),
+            "dest_port" : data.get("dest_port"),
+            "details"   : alert,
+            "confidence": alert.get("metadata",{}).get("confidence",["Unknown"])[0],
+        }
     except json.JSONDecodeError:
         pass
     return None
@@ -116,23 +210,50 @@ def should_notify(key: str) -> bool:
         return True
     return False
 
-def calculate_threat_score(alert: dict, signature: str) -> int:
+def calculate_threat_score(alert: dict, signature: str, use_ai: bool = True) -> tuple[int, dict]:
     """
-    Suricataルールと詳細情報に基づく動的脅威スコア計算
+    AI強化型脅威スコア計算 (既存のルールベース + LLM評価)
     
     Args:
         alert: Suricataアラート情報
         signature: シグネチャ文字列
+        use_ai: AI評価を使用するかどうか
     
     Returns:
-        int: 脅威スコア (0-100)
+        tuple: (脅威スコア (0-100), AI評価詳細)
     """
-    base_score = 0
     
-    # 1. Suricata severity (1=最高危険, 4=低危険) を基準スコアに変換
-    suricata_severity = alert.get("severity", 3)
-    severity_mapping = {1: 25, 2: 15, 3: 8, 4: 3}
-    base_score = severity_mapping.get(suricata_severity, 5)
+    # ハイブリッドAI評価の実行 (Legacy + Mock LLM統合)
+    ai_result = {"ai_used": False}
+    if use_ai:
+        try:
+            # ハイブリッドシステムを使用
+            ai_result = evaluate_with_hybrid_system(alert)
+            ai_score = ai_result["score"]  # 直接0-100スケールで取得
+            logging.info(f"Hybrid評価: risk={ai_result['risk']}, score={ai_score}, category={ai_result['category']}, method={ai_result.get('evaluation_method', 'unknown')}")
+            
+            # ハイブリッド評価が利用可能な場合、そのスコアを使用
+            base_score = ai_score
+        except Exception as e:
+            logging.warning(f"Hybrid AI評価エラー、Mock LLMフォールバック: {e}")
+            try:
+                # フォールバック: Mock LLMのみ
+                ai_result = evaluate_with_offline_ai(alert)
+                ai_score = (ai_result["risk"] - 1) * 25
+                base_score = ai_score
+                logging.info(f"Mock LLM評価 (フォールバック): risk={ai_result['risk']}, score={ai_score}")
+            except Exception as e2:
+                logging.warning(f"Mock LLM評価もエラー、Legacyフォールバック: {e2}")
+                use_ai = False
+    
+    if not use_ai or not ai_result.get("ai_used", False):
+        # 従来のルールベース評価
+        base_score = 0
+        
+        # 1. Suricata severity (1=最高危険, 4=低危険) を基準スコアに変換
+        suricata_severity = alert.get("severity", 3)
+        severity_mapping = {1: 25, 2: 15, 3: 8, 4: 3}
+        base_score = severity_mapping.get(suricata_severity, 5)
     
     # 2. シグネチャパターンベースのスコア加算
     sig_lower = signature.lower()
@@ -177,10 +298,8 @@ def calculate_threat_score(alert: dict, signature: str) -> int:
             base_score += 10
     
     # 6. 頻度ベースの動的調整
-    now = time.time()
-    recent_threshold = now - 300  # 5分以内
-    recent_same_sig = sum(1 for t in last_alert_times.values() 
-                         if isinstance(t, datetime) and t.timestamp() > recent_threshold)
+    # 独立カウンタに基づく頻度評価（5分）
+    recent_same_sig = count_recent(signature, alert.get("src_ip", ""), within_seconds=300)
     
     if recent_same_sig > 5:  # 5分以内に同じシグネチャが5回以上
         base_score += 15  # 集中攻撃の可能性
@@ -191,11 +310,10 @@ def calculate_threat_score(alert: dict, signature: str) -> int:
     final_score = min(max(base_score, 0), 100)
     
     logging.debug(f"脅威スコア計算: {signature[:50]}... -> {final_score} "
-                 f"(base:{severity_mapping.get(suricata_severity, 5)}, "
-                 f"pattern:+{base_score-severity_mapping.get(suricata_severity, 5)}, "
+                 f"(AI:{ai_result.get('ai_used', False)}, "
                  f"port:{dest_port}, freq:{recent_same_sig})")
     
-    return final_score
+    return final_score, ai_result
 
 def send_summary():
     if not suppressed_alerts:
@@ -314,18 +432,46 @@ def main():
         sig, src_ip, dport = alert["signature"], alert["src_ip"], alert["dest_port"]
         key = f"{sig}:{src_ip}"
 
-        trigger = ("nmap" in sig.lower()) or (
-            alert["proto"] == "TCP" and dport in (22, 80, 5432)
-        )
+        # ── 例外遮断チェック（評価前に即時ブロック） ──────────────────
+        if check_exception_block(alert):
+            try:
+                traffic_engine = get_traffic_control_engine()
+                # 即時ブロック適用（block=True, delay_ms=0）
+                if traffic_engine.apply_block(src_ip):
+                    logging.warning(f"[EXCEPTION BLOCK] Immediate block applied: {src_ip}")
+                    send_alert_to_mattermost("Suricata",{
+                        **alert,
+                        "signature":"🚨 例外遮断発動",
+                        "severity":1,
+                        "details":f"Denylist/Critical signature detected: {sig}",
+                        "confidence":"Critical"
+                    })
+            except Exception as e:
+                logging.error(f"例外遮断エラー: {e}")
+            # 例外遮断したIPは通常評価をスキップ
+            continue
+
+        # 通知可否に関係なく頻度カウンタに記録
+        try:
+            # timestamp がISOの可能性もあるため、現在時刻で代替
+            record_event(sig, src_ip)
+        except Exception:
+            pass
+
+        # まずAI強化スコアを算出し、状態機械へ反映
+        threat_score, ai_detail = calculate_threat_score(alert, sig)
+        state_machine.apply_score(threat_score)
+
+        # リスク起点でトリガ判定（t1以上でアクション）。後方互換としてnmap検知も許容
+        thresholds = state_machine.get_thresholds()
+        risk_trigger = threat_score >= max(thresholds.get("t1", 50), 1)
+        legacy_hint = ("nmap" in sig.lower())
+        trigger = risk_trigger or legacy_hint
 
         # ── 攻撃検知時の処理 ──────────────────
         if trigger:
+            # 通知はクールダウン制御、制御発動はクールダウン非依存
             if should_notify(key):
-                # インテリジェントスコアリング
-                threat_score = calculate_threat_score(alert, sig)
-                threat_event = Event(name="attack_detected", severity=threat_score)
-                state_machine.dispatch(threat_event)
-                
                 send_alert_to_mattermost("Suricata",{
                     **alert,
                     "signature":"⚠️ 偵察／攻撃を検知",
@@ -333,20 +479,21 @@ def main():
                     "details":sig,
                     "confidence":"High"
                 })
-                logging.info(f"Notify & DNAT: {sig}")
+                logging.info(f"Notify attack: {sig}")
 
-                try:
-                    # 統合トラフィック制御実行
-                    traffic_engine = get_traffic_control_engine()
-                    current_mode = state_machine.current_state.name
-                    
+            try:
+                traffic_engine = get_traffic_control_engine()
+                current_mode = state_machine.current_state.name
+
+                active_ips = set(traffic_engine.get_active_rules().keys())
+                if src_ip not in active_ips:
                     if traffic_engine.apply_combined_action(src_ip, current_mode):
-                        # 後方互換性のためactive_diversions更新
+                        # 後方互換用の active_diversions にも反映
                         if 'active_diversions' not in globals():
                             global active_diversions
                             active_diversions = {}
                         active_diversions[src_ip] = dport
-                        
+
                         if 'NOTIFY_CALLBACK' in globals():
                             NOTIFY_CALLBACK()
 
@@ -358,30 +505,28 @@ def main():
                         shape_info = f"帯域{preset.get('shape_kbps', 'unlimited')}kbps" if preset.get('shape_kbps') else ""
                         mode_details = f"{delay_info} {shape_info}".strip()
 
-                        send_alert_to_mattermost("Suricata",{
-                            "timestamp": alert["timestamp"],
-                            "signature": f"🛡️ 遅滞行動発動（{current_mode.upper()}）",
-                            "severity": 2,
-                            "src_ip": src_ip,
-                            "dest_ip": f"OpenCanary:{dport}",
-                            "proto": alert["proto"],
-                            "details": f"攻撃元に統合制御を適用: DNAT転送 + {mode_details}",
-                            "confidence": "High"
-                        })
+                        if should_notify(key + ":action"):
+                            send_alert_to_mattermost("Suricata",{
+                                "timestamp": alert["timestamp"],
+                                "signature": f"🛡️ 遅滞行動発動（{current_mode.upper()}）",
+                                "severity": 2,
+                                "src_ip": src_ip,
+                                "dest_ip": f"OpenCanary:{dport}",
+                                "proto": alert["proto"],
+                                "details": f"攻撃元に統合制御を適用: DNAT転送 + {mode_details}",
+                                "confidence": "High"
+                            })
                         logging.info(f"[統合制御] {src_ip}:{dport} -> {current_mode}モード適用")
+                else:
+                    logging.debug(f"Control already active for {src_ip}, skip re-apply")
 
-                except Exception as e:
-                    logging.error(f"統合制御エラー: {e}")
-            else:
-                suppressed_alerts[sig] += 1
+            except Exception as e:
+                logging.error(f"統合制御エラー: {e}")
             continue
 
         # ── 通常通知 ──────────────────
         if should_notify(key):
-            # 通常のアラートも詳細スコアリング
-            normal_score = calculate_threat_score(alert, sig)
-            normal_event = Event(name="alert", severity=normal_score)
-            state_machine.dispatch(normal_event)
+            # 通常のアラート: 既にスコア反映済みのため通知のみ
             send_alert_to_mattermost("Suricata", alert)
         else:
             suppressed_alerts[sig] += 1
@@ -395,6 +540,16 @@ def main():
         if now - last_summary_time >= summary_interval:
             send_summary()
             last_summary_time = now
+
+        # 定期クリーンアップ（10分毎）
+        global last_cleanup_time
+        if now - last_cleanup_time >= 600:
+            try:
+                engine = get_traffic_control_engine()
+                engine.cleanup_expired_rules(max_age_seconds=3600)
+            except Exception:
+                pass
+            last_cleanup_time = now
 
 def watch_suricata():
     """Suricata監視を開始（外部から呼び出し可能な関数）"""

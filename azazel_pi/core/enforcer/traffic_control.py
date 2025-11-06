@@ -112,6 +112,10 @@ class TrafficControlEngine:
     def apply_delay(self, target_ip: str, delay_ms: int) -> bool:
         """指定IPに遅延を適用"""
         try:
+            # 既存の同種ルールがあれば再適用しない（冪等化）
+            if target_ip in self.active_rules and any(r.action_type == "delay" for r in self.active_rules[target_ip]):
+                logger.info(f"Delay already applied to {target_ip}, skip")
+                return True
             # netem遅延qdisc作成
             classid = "1:41"  # 遅延専用クラス
             
@@ -138,7 +142,7 @@ class TrafficControlEngine:
             rule = TrafficControlRule(
                 target_ip=target_ip,
                 action_type="delay", 
-                parameters={"delay_ms": delay_ms, "classid": classid}
+                parameters={"delay_ms": delay_ms, "classid": classid, "prio": 1}
             )
             
             if target_ip not in self.active_rules:
@@ -155,6 +159,10 @@ class TrafficControlEngine:
     def apply_shaping(self, target_ip: str, rate_kbps: int) -> bool:
         """指定IPに帯域制限を適用"""
         try:
+            # 既存の同種ルールがあれば再適用しない（冪等化）
+            if target_ip in self.active_rules and any(r.action_type == "shape" for r in self.active_rules[target_ip]):
+                logger.info(f"Shaping already applied to {target_ip}, skip")
+                return True
             classid = "1:42"  # シェーピング専用クラス
             
             # シェーピングクラス作成
@@ -175,7 +183,7 @@ class TrafficControlEngine:
             rule = TrafficControlRule(
                 target_ip=target_ip,
                 action_type="shape",
-                parameters={"rate_kbps": rate_kbps, "classid": classid}
+                parameters={"rate_kbps": rate_kbps, "classid": classid, "prio": 2}
             )
             
             if target_ip not in self.active_rules:
@@ -192,6 +200,10 @@ class TrafficControlEngine:
     def apply_dnat_redirect(self, target_ip: str, dest_port: Optional[int] = None) -> bool:
         """指定IPをOpenCanaryにDNAT転送"""
         try:
+            # 既存の同種ルールがあれば再適用しない（冪等化）
+            if target_ip in self.active_rules and any(r.action_type == "redirect" for r in self.active_rules[target_ip]):
+                logger.info(f"DNAT already applied to {target_ip}, skip")
+                return True
             canary_ip = load_opencanary_ip()
             
             # nftablesテーブル確保
@@ -267,6 +279,52 @@ class TrafficControlEngine:
             logger.error(f"Failed to apply suspect classification to {target_ip}: {e}")
             return False
 
+    def apply_block(self, target_ip: str) -> bool:
+        """
+        即時ブロック適用（例外遮断用）
+        delay_ms=0, block=True相当の動作をnftablesで実現
+        """
+        try:
+            # nftables drop ルール追加
+            handle_check = subprocess.run(
+                ["nft", "-a", "list", "chain", "inet", "azazel", "prerouting"],
+                capture_output=True, text=True, timeout=10
+            )
+            
+            # 既にブロックルールが存在する場合はスキップ（冪等性）
+            if f"ip saddr {target_ip} drop" in handle_check.stdout:
+                logger.info(f"Block rule already exists for {target_ip}")
+                return True
+            
+            # dropルールを追加（最優先プライオリティ）
+            subprocess.run([
+                "nft", "add", "rule", "inet", "azazel", "prerouting",
+                "ip", "saddr", target_ip, "drop"
+            ], check=True, timeout=10)
+            
+            logger.info(f"Exception block applied: {target_ip} (nft drop)")
+            
+            # アクティブルール記録
+            if target_ip not in self.active_rules:
+                self.active_rules[target_ip] = []
+            
+            self.active_rules[target_ip].append(
+                TrafficRule(
+                    action_type="block",
+                    target_ip=target_ip,
+                    parameters={"method": "nft_drop"}
+                )
+            )
+            
+            return True
+        
+        except subprocess.CalledProcessError as e:
+            logger.error(f"nft block failed for {target_ip}: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error in apply_block for {target_ip}: {e}")
+            return False
+
     def apply_combined_action(self, target_ip: str, mode: str) -> bool:
         """モードに応じた複合アクションを適用"""
         config = self._load_config()
@@ -276,6 +334,11 @@ class TrafficControlEngine:
         if not preset:
             logger.warning(f"No action preset for mode: {mode}")
             return False
+        
+        # normal モードの場合は全ルールを削除
+        if mode == "normal":
+            logger.info(f"Normal mode: removing all rules for {target_ip}")
+            return self.remove_rules_for_ip(target_ip)
         
         success = True
         
@@ -319,11 +382,12 @@ class TrafficControlEngine:
                 if rule.action_type in ["delay", "shape"]:
                     # tcルール削除（個別クラス）
                     classid = rule.parameters.get("classid")
+                    prio = str(rule.parameters.get("prio", 1 if rule.action_type=="delay" else 2))
                     if classid and classid not in ["1:40"]:  # suspectクラスではない場合のみ削除
                         # フィルタ削除
                         subprocess.run([
                             "tc", "filter", "del", "dev", self.interface, 
-                            "protocol", "ip", "parent", "1:", "prio", "1"
+                            "protocol", "ip", "parent", "1:", "prio", prio
                         ], capture_output=True, timeout=10)
                         
                         # クラス削除
@@ -342,6 +406,10 @@ class TrafficControlEngine:
                 elif rule.action_type == "redirect":
                     # nftables DNAT削除
                     self._remove_nft_dnat_rule(target_ip, rule.parameters.get("dest_port"))
+                
+                elif rule.action_type == "block":
+                    # nftables drop ルール削除
+                    self._remove_nft_drop_rule(target_ip)
                 
             except Exception as e:
                 logger.error(f"Failed to remove rule {rule.action_type} for {target_ip}: {e}")
@@ -386,6 +454,41 @@ class TrafficControlEngine:
             
         except Exception as e:
             logger.error(f"Failed to remove nft DNAT rule: {e}")
+            return False
+    
+    def _remove_nft_drop_rule(self, target_ip: str) -> bool:
+        """nftables dropルールを削除（例外遮断解除用）"""
+        try:
+            search_pattern = f"ip saddr {target_ip} drop"
+            
+            # ルール一覧取得
+            result = subprocess.run([
+                "nft", "-a", "list", "chain", "inet", "azazel", "prerouting"
+            ], capture_output=True, text=True, timeout=10)
+            
+            if result.returncode != 0:
+                logger.warning(f"nft chain prerouting not found (may not exist)")
+                return False
+            
+            # 該当ルールのハンドルを探す
+            for line in result.stdout.split('\n'):
+                if search_pattern in line and "handle" in line:
+                    handle = line.split("handle")[-1].strip()
+                    if handle.isdigit():
+                        # ルール削除
+                        delete_cmd = [
+                            "nft", "delete", "rule", "inet", "azazel", "prerouting", 
+                            "handle", handle
+                        ]
+                        subprocess.run(delete_cmd, check=True, timeout=10)
+                        logger.info(f"Removed nft drop rule for {target_ip} (handle {handle})")
+                        return True
+            
+            logger.info(f"No drop rule found for {target_ip}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Failed to remove nft drop rule for {target_ip}: {e}")
             return False
     
     def cleanup_expired_rules(self, max_age_seconds: int = 3600) -> int:

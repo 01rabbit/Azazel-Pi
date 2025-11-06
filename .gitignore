@@ -2,3 +2,20 @@
 __pycache__/
 dist/
 build/
+
+# Python venv and caches
+.venv/
+.pytest_cache/
+
+# Local artifacts
+AI_IMPLEMENTATION_REPORT.json
+
+# Large model files
+models/
+
+# Environment files
+deploy/.env
+
+# OS/editor noise
+.DS_Store
+*.swp

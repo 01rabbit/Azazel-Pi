@@ -6,10 +6,32 @@ services:
     container_name: azazel_postgres
     restart: always
     environment:
-      POSTGRES_DB: ${MATTERMOST_DB_NAME}
-      POSTGRES_USER: ${MATTERMOST_DB_USER}
-      POSTGRES_PASSWORD: ${MATTERMOST_DB_PASSWORD}
+      POSTGRES_DB: ${MATTERMOST_DB_NAME:-mattermost}
+      POSTGRES_USER: ${MATTERMOST_DB_USER:-mmuser}
+      POSTGRES_PASSWORD: ${MATTERMOST_DB_PASSWORD:-securepassword}
     volumes:
       - /opt/azazel/data/postgres:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: azazel_ollama
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:11434:11434"
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - ollama_data:/root/.ollama
+      - /opt/models:/models:ro
+    healthcheck:
+      test: ["CMD", "ollama", "ps"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  ollama_data:

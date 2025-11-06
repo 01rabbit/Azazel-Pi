@@ -128,7 +128,7 @@ sudo scripts/install_azazel.sh
 
 サービス開始前に、`/etc/azazel/azazel.yaml` を編集して、環境に合わせてインターフェース名、QoSプロファイル、防御閾値を設定してください。
 
-完全なインストール手順、トラブルシューティング、E-Paperセットアップについては、[`docs/INSTALLATION_ja.md`](docs/INSTALLATION_ja.md) を参照してください。
+完全なインストール手順、トラブルシューティング、E-Paperセットアップについては、[`docs/ja/INSTALLATION.md`](docs/ja/INSTALLATION.md) を参照してください。
 
 ### E-Paperディスプレイセットアップ（オプション）
 
@@ -145,7 +145,43 @@ sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
 sudo systemctl enable --now azazel-epd.service
 ```
 
-完全なE-Paper設定手順については、[`docs/EPD_SETUP_ja.md`](docs/EPD_SETUP_ja.md) を参照してください。
+完全なE-Paper設定手順については、[`docs/ja/EPD_SETUP.md`](docs/ja/EPD_SETUP.md) を参照してください。
+
+### モジュラーTUIメニューシステム
+
+インタラクティブなターミナルユーザーインターフェース（TUI）メニューは、保守性と拡張性を考慮したモジュラーアーキテクチャを通じて包括的なシステム管理を提供します：
+
+```bash
+# TUIメニューを起動
+python3 -m azctl.cli menu
+
+# 特定のインターフェース設定で起動
+python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+```
+
+**モジュラーアーキテクチャ：**
+
+Azazel-Piのメニューシステムは、保守性向上のために機能分離を採用したモジュラー設計を採用しています：
+
+```
+azctl/menu/
+├── core.py          # メインフレームワーク
+├── types.py         # データ型定義
+├── defense.py       # 防御制御モジュール
+├── services.py      # サービス管理モジュール
+├── network.py       # ネットワーク情報モジュール
+├── wifi.py          # WiFi管理モジュール
+├── monitoring.py    # ログ監視モジュール
+├── system.py        # システム情報モジュール
+└── emergency.py     # 緊急操作モジュール
+```
+
+**主要機能：**
+- **モジュラー設計**: 保守性向上のための機能別モジュール
+- **Rich UI**: 色分けされたパネル、表、プログレスバー
+- **安全性優先**: 危険な操作には多段階確認
+- **拡張可能**: モジュールシステムを通じた新機能の簡単な追加
+- **リアルタイム監視**: 自動更新付きライブステータス表示
 
 ### オプション: Nginx を介して Mattermost を公開
 
@@ -192,7 +228,19 @@ echo '{"mode": "shield"}' | azctl events --config -
 echo '{"mode": "lockdown"}' | azctl events --config -
 ```
 
-### 設定ワークフロー
+#### インタラクティブTUIメニュー
+
+モジュラーTUIメニューは包括的なシステム管理を提供します：
+
+```bash
+# モジュラーTUIメニューを起動
+python3 -m azctl.cli menu
+
+# カスタムインターフェースを指定
+python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+```
+
+**メニュー機能：**
 
 1. **コア設定の編集**: `/etc/azazel/azazel.yaml` を修正して遅延値、帯域制御、ロックダウン許可リストを調整（テンプレートは `configs/network/azazel.yaml`）。
    - 既定では `wlan0` を内部LAN（AP）、`wlan1` と `eth0` を外部（WAN/アップリンク）として扱います。`configs/network/azazel.yaml` の `interfaces.external` に `["eth0", "wlan1"]` を定義済みです（必要に応じて変更可能）。
@@ -307,16 +355,16 @@ azctl/menu/
 - `q`: 終了
 - `Ctrl+C`: いつでも安全に中断可能
 
-## ドキュメント
+### 設定ワークフロー
 
-- [`docs/INSTALLATION_ja.md`](docs/INSTALLATION_ja.md) — 完全インストール・セットアップガイド
-- [`docs/OPERATIONS_ja.md`](docs/OPERATIONS_ja.md) — 運用手順とメンテナンス
-- [`docs/NETWORK_SETUP_ja.md`](docs/NETWORK_SETUP_ja.md) — ネットワーク設定とゲートウェイセットアップ
-- [`docs/TROUBLESHOOTING_ja.md`](docs/TROUBLESHOOTING_ja.md) — 包括的問題解決ガイド
-- [`docs/EPD_SETUP_ja.md`](docs/EPD_SETUP_ja.md) — E-Paperディスプレイ設定
-- [`docs/ARCHITECTURE_ja.md`](docs/ARCHITECTURE_ja.md) — システムアーキテクチャとコンポーネント関係
-- [`docs/API_REFERENCE_ja.md`](docs/API_REFERENCE_ja.md) — Pythonモジュールとスクリプトリファレンス
-- [`docs/SURICATA_INSTALLER_ja.md`](docs/SURICATA_INSTALLER_ja.md) — Suricataインストールと設定詳細
+- [`docs/ja/INSTALLATION.md`](docs/ja/INSTALLATION.md) — 完全インストール・セットアップガイド
+- [`docs/ja/OPERATIONS.md`](docs/ja/OPERATIONS.md) — 運用手順とメンテナンス
+- [`docs/ja/NETWORK_SETUP.md`](docs/ja/NETWORK_SETUP.md) — ネットワーク設定とゲートウェイセットアップ
+- [`docs/ja/TROUBLESHOOTING.md`](docs/ja/TROUBLESHOOTING.md) — 包括的問題解決ガイド
+- [`docs/ja/EPD_SETUP.md`](docs/ja/EPD_SETUP.md) — E-Paperディスプレイ設定
+- [`docs/ja/ARCHITECTURE.md`](docs/ja/ARCHITECTURE.md) — システムアーキテクチャとコンポーネント関係
+- [`docs/ja/API_REFERENCE.md`](docs/ja/API_REFERENCE.md) — Pythonモジュールとスクリプトリファレンス
+- [`docs/ja/SURICATA_INSTALLER.md`](docs/ja/SURICATA_INSTALLER.md) — Suricataインストールと設定詳細
 
 ## 開発の背景
 

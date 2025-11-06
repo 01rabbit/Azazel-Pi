@@ -129,7 +129,7 @@ The installer will:
 
 Before starting services, edit `/etc/azazel/azazel.yaml` to configure interface names, QoS profiles, and defensive thresholds for your environment.
 
-For complete installation instructions, troubleshooting, and E-Paper setup, see [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
+For complete installation instructions, troubleshooting, and E-Paper setup, see [`docs/en/INSTALLATION.md`](docs/en/INSTALLATION.md).
 
 ### E-Paper Display Setup (Optional)
 
@@ -146,7 +146,7 @@ sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
 sudo systemctl enable --now azazel-epd.service
 ```
 
-See [`docs/EPD_SETUP.md`](docs/EPD_SETUP.md) for complete E-Paper configuration instructions.
+See [`docs/en/EPD_SETUP.md`](docs/en/EPD_SETUP.md) for complete E-Paper configuration instructions.
 
 ### Optional: Front Mattermost with Nginx
 
@@ -342,13 +342,24 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 
 ## Documentation
 
-- [`docs/INSTALLATION.md`](docs/INSTALLATION.md) — Complete installation and setup guide
-- [`docs/OPERATIONS.md`](docs/OPERATIONS.md) — Operational procedures and maintenance
-- [`docs/NETWORK_SETUP.md`](docs/NETWORK_SETUP.md) — Network configuration and gateway setup
-- [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — Comprehensive problem resolution guide
-- [`docs/EPD_SETUP.md`](docs/EPD_SETUP.md) — E-Paper display configuration
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — System architecture and component relationships
-- [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) — Python modules and script reference
+### English Documentation
+- [`docs/en/INSTALLATION.md`](docs/en/INSTALLATION.md) — Complete installation and setup guide
+- [`docs/en/OPERATIONS.md`](docs/en/OPERATIONS.md) — Operational procedures and maintenance
+- [`docs/en/NETWORK_SETUP.md`](docs/en/NETWORK_SETUP.md) — Network configuration and gateway setup
+- [`docs/en/TROUBLESHOOTING.md`](docs/en/TROUBLESHOOTING.md) — Comprehensive problem resolution guide
+- [`docs/en/EPD_SETUP.md`](docs/en/EPD_SETUP.md) — E-Paper display configuration
+- [`docs/en/ARCHITECTURE.md`](docs/en/ARCHITECTURE.md) — System architecture and component relationships
+- [`docs/en/API_REFERENCE.md`](docs/en/API_REFERENCE.md) — Python modules and script reference
+
+### Japanese Documentation (日本語ドキュメント)
+- [`README_ja.md`](README_ja.md) — 日本語版README
+- [`docs/ja/INSTALLATION.md`](docs/ja/INSTALLATION.md) — インストール・セットアップガイド
+- [`docs/ja/OPERATIONS.md`](docs/ja/OPERATIONS.md) — 運用手順とメンテナンス
+- [`docs/ja/NETWORK_SETUP.md`](docs/ja/NETWORK_SETUP.md) — ネットワーク設定ガイド
+- [`docs/ja/TROUBLESHOOTING.md`](docs/ja/TROUBLESHOOTING.md) — トラブルシューティングガイド
+- [`docs/ja/EPD_SETUP.md`](docs/ja/EPD_SETUP.md) — E-Paperディスプレイ設定
+- [`docs/ja/ARCHITECTURE.md`](docs/ja/ARCHITECTURE.md) — システムアーキテクチャ
+- [`docs/ja/API_REFERENCE.md`](docs/ja/API_REFERENCE.md) — APIリファレンス
 
 ## Development Background
 

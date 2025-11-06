@@ -1,0 +1,21 @@
+{
+  "ai": {
+    "ollama_url": "http://127.0.0.1:11434/api/generate",
+    "model": "threatjudge",
+    "timeout": 30,
+    "max_payload_chars": 400,
+    "unknown_threat_detection": {
+      "enabled": true,
+      "confidence_threshold": 0.7,
+      "trigger_categories": ["unknown", "benign"],
+      "trigger_low_risk": true
+    }
+  },
+  "hybrid": {
+    "legacy_weight": 0.6,
+    "mock_llm_weight": 0.4,
+    "ollama_weight": 0.7,
+    "unknown_detection_enabled": true
+  },
+  "_note": "Simplified Ollama integration: Mock LLM (fast) for known threats, Ollama (deep analysis) for unknown threats"
+}
