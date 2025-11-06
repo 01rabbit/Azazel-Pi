@@ -3,6 +3,14 @@
 [English](README.md) | 日本語
 
 ![Azazel-Pi_image](images/azazel-pi-prototype.jpg)
+![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
+![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
+![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
+![BSidesTokyo](https://img.shields.io/badge/BSidesTokyo-2025-lightgreen)
+![BSidesLV](https://img.shields.io/badge/BSidesLV-2025-lightgreen)
+![BHUSA](https://img.shields.io/badge/BlackHat%20USA%20Arsenal-2025-black)
+![SecTor](https://img.shields.io/badge/SecTor%20Arsenal-2025-red)
+![bluebox](https://img.shields.io/badge/CODE%20BLUE%20bluebox-2025-blue)
 
 ## コンセプト
 

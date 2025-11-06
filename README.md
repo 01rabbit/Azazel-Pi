@@ -3,6 +3,14 @@
 English | [日本語](README_ja.md)
 
 ![Azazel-Pi_image](images/azazel-pi-prototype.jpg)
+![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
+![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
+![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
+![BSidesTokyo](https://img.shields.io/badge/BSidesTokyo-2025-lightgreen)
+![BSidesLV](https://img.shields.io/badge/BSidesLV-2025-lightgreen)
+![BHUSA](https://img.shields.io/badge/BlackHat%20USA%20Arsenal-2025-black)
+![SecTor](https://img.shields.io/badge/SecTor%20Arsenal-2025-red)
+![bluebox](https://img.shields.io/badge/CODE%20BLUE%20bluebox-2025-blue)
 
 ## Concept
 
@@ -27,6 +35,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 ## Implementation
 
 ### Base Platform
+
 - **Raspberry Pi 5 Model B** (Portable Security Gateway)
 - Optimized for field deployment and temporary network protection
 - Low-cost solution for small-scale network defense
@@ -46,16 +55,19 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 ### Core Defense Functions
 
 #### Real-Time Threat Detection & Response
+
 - **Suricata IDS/IPS**: Intrusion detection and prevention system
 - **OpenCanary**: Honeypot services for attacker misdirection
 - **Dynamic Traffic Control**: `tc` and `iptables/nftables` for tactical delay
 
 #### Defensive Modes
+
 - **Portal Mode** (Green): Normal operations with minimal restrictions
 - **Shield Mode** (Yellow): Heightened monitoring with traffic shaping and QoS controls
 - **Lockdown Mode** (Red): Full containment with strict firewall rules and allowlist-only communication
 
 #### Status Display & Monitoring
+
 - **E-Paper Display**: Real-time status visualization showing current defensive mode, threat score, network status, and alert counters
 - **Interactive TUI Menu**: Comprehensive terminal-based control interface with keyboard navigation and safety features
 - **Rich CLI Interface**: Terminal-based status monitoring with color-coded mode indicators
@@ -77,17 +89,21 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 ## Features
 
 ### Tactical Delaying Implementation
+
 Applies the military concept of "delaying action" to cyberspace—permitting intrusion while strategically controlling its progression through traffic shaping and misdirection.
 
 ### Scapegoat Decoy System
+
 Leverages OpenCanary and custom services to mislead and isolate attackers rather than merely observing them, without affecting legitimate users.
 
 ### Adaptive Response System
+
 - **Portal → Shield**: Activates traffic control and enhanced monitoring
 - **Shield → Lockdown**: Implements strict firewall rules with medical FQDN allowlists
 - **Dynamic Scoring**: Continuous threat assessment with automatic mode transitions
 
 ### Portable Deployment
+
 Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment in disaster recovery, field operations, or temporary network setups.
 
 ## Technology Stack
@@ -104,6 +120,7 @@ Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment 
 ## Installation
 
 ### Requirements
+
 - Raspberry Pi 5 Model B (recommended) or compatible ARM64 device
 - Raspberry Pi OS (64-bit Lite) or Debian-based distribution  
 - Internet connection for dependency installation
@@ -122,6 +139,7 @@ sudo scripts/install_azazel.sh
 ```
 
 The installer will:
+
 - Install Suricata, Vector, OpenCanary, and other core components
 - Deploy core modules and utilities to `/opt/azazel`
 - Expand configuration templates to `/etc/azazel`
@@ -157,6 +175,7 @@ sudo scripts/setup_nginx_mattermost.sh
 ```
 
 This will:
+
 - Install Nginx (if missing)
 - Deploy the reverse proxy config from `deploy/nginx-site.conf`
 - Enable the site and reload Nginx
@@ -180,7 +199,7 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 
 Azazel-Pi's menu system employs a modular design with functional separation for improved maintainability:
 
-```
+``` text
 azctl/menu/
 ├── core.py          # Main framework
 ├── types.py         # Data type definitions
@@ -194,6 +213,7 @@ azctl/menu/
 ```
 
 **Key Features:**
+
 - **Modular Design**: Function-specific modules for enhanced maintainability
 - **Rich UI**: Color-coded panels, tables, and progress bars
 - **Safety-First**: Multi-stage confirmation for dangerous operations
@@ -205,6 +225,7 @@ azctl/menu/
 ### Command Line Interface
 
 #### Status Monitoring
+
 ```bash
 # Basic status (text output)
 python3 -m azctl.cli status
@@ -220,6 +241,7 @@ python3 -m azctl.cli status --watch --interval 2
 ```
 
 #### Mode Management
+
 ```bash
 # Long-running daemon (automatic mode switching)
 python3 -m azctl.cli serve
@@ -286,6 +308,7 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
    - Factory reset (requires confirmation)
 
 **Technical Features:**
+
 - **Modular Design**: Each function implemented as independent module
 - **Rich UI**: Color-coded panels, tables, progress bars
 - **Error Handling**: Robust error processing and recovery
@@ -293,6 +316,7 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 - **Extensible**: Easy addition of new functionality
 
 **Safety Features:**
+
 - Confirmation dialogs for dangerous operations
 - Automatic root permission verification
 - Automatic operation logging
@@ -300,6 +324,7 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 - Emergency operations require multiple confirmations
 
 **Keyboard Navigation:**
+
 - `Number keys`: Select menu items
 - `r`: Refresh screen
 - `b`: Return to previous menu
@@ -307,12 +332,14 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 - `Ctrl+C`: Safe interruption anytime
 
 **Safety Features:**
+
 - Confirmation dialogs for dangerous operations
 - Root permission validation for privileged actions
 - Automatic operation logging
 - Error handling and recovery procedures
 
 **Navigation:**
+
 - `Number keys`: Select menu items
 - `r`: Refresh screen
 - `b`: Back to previous menu
@@ -343,6 +370,7 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 ## Documentation
 
 ### English Documentation
+
 - [`docs/en/INSTALLATION.md`](docs/en/INSTALLATION.md) — Complete installation and setup guide
 - [`docs/en/OPERATIONS.md`](docs/en/OPERATIONS.md) — Operational procedures and maintenance
 - [`docs/en/NETWORK_SETUP.md`](docs/en/NETWORK_SETUP.md) — Network configuration and gateway setup
@@ -350,16 +378,6 @@ Mode transitions are logged to `/var/log/azazel/decisions.log` with timestamps, 
 - [`docs/en/EPD_SETUP.md`](docs/en/EPD_SETUP.md) — E-Paper display configuration
 - [`docs/en/ARCHITECTURE.md`](docs/en/ARCHITECTURE.md) — System architecture and component relationships
 - [`docs/en/API_REFERENCE.md`](docs/en/API_REFERENCE.md) — Python modules and script reference
-
-### Japanese Documentation (日本語ドキュメント)
-- [`README_ja.md`](README_ja.md) — 日本語版README
-- [`docs/ja/INSTALLATION.md`](docs/ja/INSTALLATION.md) — インストール・セットアップガイド
-- [`docs/ja/OPERATIONS.md`](docs/ja/OPERATIONS.md) — 運用手順とメンテナンス
-- [`docs/ja/NETWORK_SETUP.md`](docs/ja/NETWORK_SETUP.md) — ネットワーク設定ガイド
-- [`docs/ja/TROUBLESHOOTING.md`](docs/ja/TROUBLESHOOTING.md) — トラブルシューティングガイド
-- [`docs/ja/EPD_SETUP.md`](docs/ja/EPD_SETUP.md) — E-Paperディスプレイ設定
-- [`docs/ja/ARCHITECTURE.md`](docs/ja/ARCHITECTURE.md) — システムアーキテクチャ
-- [`docs/ja/API_REFERENCE.md`](docs/ja/API_REFERENCE.md) — APIリファレンス
 
 ## Development Background
 
@@ -380,6 +398,7 @@ The core philosophy recognizes that in asymmetric cyber warfare, defenders often
 **Current Status**: **95% Combat Ready** 🚀
 
 ### ✅ Operational Components
+
 - **Traffic Control System**: tc delay injection (100ms/200ms/300ms) with integrated DNAT+QoS
 - **Threat Detection**: Suricata IDS with real-time OpenCanary traffic diversion
 - **Network Services**: WiFi AP (Azazel_Internal), DHCP/DNS, external network connectivity
@@ -387,6 +406,7 @@ The core philosophy recognizes that in asymmetric cyber warfare, defenders often
 - **Auto-startup**: All critical services automatically start on boot
 
 ### 🔧 Remaining Items
+
 - E-Paper display functionality (hardware-dependent, tracked in issues)
 
 The system is **field-deployable** and provides complete malicious traffic delay capabilities with automatic threat detection and response.
