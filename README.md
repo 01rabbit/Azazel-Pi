@@ -1,4 +1,4 @@
-# Azazel-Pi - The Cyber Scapegoat Gateway
+# AZ-01X Azazel-Pi - The Cyber Scapegoat Gateway
 
 English | [日本語](README_ja.md)
 
