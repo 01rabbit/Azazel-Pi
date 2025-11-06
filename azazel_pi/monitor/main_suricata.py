@@ -46,6 +46,10 @@ _soc = _cfg.get("soc", {}) if isinstance(_cfg, dict) else {}
 _allow = _soc.get("allowed_categories")
 _deny = _soc.get("denied_categories")
 
+# Denylist と Critical Signatures の読み込み
+DENYLIST_IPS = set(_soc.get("denylist_ips", []))
+CRITICAL_SIGNATURES = _soc.get("critical_signatures", [])
+
 # allow/deny は正規化（lower/underscore→space）。allowがNoneなら全許可（denyのみ適用）
 def _norm_cat(x: str) -> str:
     return x.replace("_", " ").lower()
@@ -86,18 +90,48 @@ def count_recent(signature: str, src_ip: str, within_seconds: int = 300) -> int:
         dq.popleft()
     return len(dq)
 
+def check_exception_block(alert: dict) -> bool:
+    """
+    例外遮断チェック: denylistまたはcritical signatureに該当するか
+    
+    Returns:
+        True if should be immediately blocked
+    """
+    src_ip = alert.get("src_ip", "")
+    signature = alert.get("signature", "")
+    
+    # Denylist IP チェック
+    if src_ip in DENYLIST_IPS:
+        logging.warning(f"[EXCEPTION BLOCK] Denylist IP detected: {src_ip}")
+        return True
+    
+    # Critical Signature チェック
+    for critical_pattern in CRITICAL_SIGNATURES:
+        if critical_pattern.upper() in signature.upper():
+            logging.warning(f"[EXCEPTION BLOCK] Critical signature detected: {signature}")
+            return True
+    
+    return False
+
 # 状態管理とスコアリング
-portal_state = State("portal", "通常モード")
+normal_state = State("normal", "通常モード（制御なし）")
+portal_state = State("portal", "監視モード")
 shield_state = State("shield", "警戒モード（遅延適用）")
 lockdown_state = State("lockdown", "封鎖モード（DNAT転送）")
 
 state_machine = StateMachine(
-    initial_state=portal_state,
+    initial_state=normal_state,
     transitions=[
+        Transition(normal_state, portal_state, lambda e: e.name == "portal"),
+        Transition(normal_state, shield_state, lambda e: e.name == "shield"),
+        Transition(normal_state, lockdown_state, lambda e: e.name == "lockdown"),
+        Transition(portal_state, normal_state, lambda e: e.name == "normal"),
         Transition(portal_state, shield_state, lambda e: e.name == "shield"),
         Transition(portal_state, lockdown_state, lambda e: e.name == "lockdown"),
+        Transition(shield_state, normal_state, lambda e: e.name == "normal"),
         Transition(shield_state, portal_state, lambda e: e.name == "portal"),
         Transition(shield_state, lockdown_state, lambda e: e.name == "lockdown"),
+        Transition(lockdown_state, normal_state, lambda e: e.name == "normal"),
         Transition(lockdown_state, shield_state, lambda e: e.name == "shield"),
         Transition(lockdown_state, portal_state, lambda e: e.name == "portal"),
     ]
@@ -397,6 +431,25 @@ def main():
 
         sig, src_ip, dport = alert["signature"], alert["src_ip"], alert["dest_port"]
         key = f"{sig}:{src_ip}"
+
+        # ── 例外遮断チェック（評価前に即時ブロック） ──────────────────
+        if check_exception_block(alert):
+            try:
+                traffic_engine = get_traffic_control_engine()
+                # 即時ブロック適用（block=True, delay_ms=0）
+                if traffic_engine.apply_block(src_ip):
+                    logging.warning(f"[EXCEPTION BLOCK] Immediate block applied: {src_ip}")
+                    send_alert_to_mattermost("Suricata",{
+                        **alert,
+                        "signature":"🚨 例外遮断発動",
+                        "severity":1,
+                        "details":f"Denylist/Critical signature detected: {sig}",
+                        "confidence":"Critical"
+                    })
+            except Exception as e:
+                logging.error(f"例外遮断エラー: {e}")
+            # 例外遮断したIPは通常評価をスキップ
+            continue
 
         # 通知可否に関係なく頻度カウンタに記録
         try:

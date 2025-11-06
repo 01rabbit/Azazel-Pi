@@ -178,14 +178,15 @@ class StateMachine:
         self._config_cache = None
 
     def get_thresholds(self) -> Dict[str, Any]:
-        """Return shield/lockdown thresholds and unlock windows."""
+        """Return normal/shield/lockdown thresholds and unlock windows."""
 
         config = self._load_config()
         thresholds = config.get("thresholds", {})
         unlock = thresholds.get("unlock_wait_secs", {})
         return {
-            "t1": int(thresholds.get("t1_shield", 0) or 0),
-            "t2": int(thresholds.get("t2_lockdown", 0) or 0),
+            "t0": int(thresholds.get("t0_normal", 20) or 20),
+            "t1": int(thresholds.get("t1_shield", 50) or 50),
+            "t2": int(thresholds.get("t2_lockdown", 80) or 80),
             "unlock_wait_secs": {
                 "shield": int(unlock.get("shield", 0) or 0),
                 "portal": int(unlock.get("portal", 0) or 0),
@@ -217,11 +218,17 @@ class StateMachine:
         self._score_window.append(max(int(severity), 0))
         average = sum(self._score_window) / len(self._score_window)
         thresholds = self.get_thresholds()
-        desired_mode = "portal"
+        
+        # 閾値判定: t0_normal=20の場合、score<20がnormal, 20<=score<50がportal
+        desired_mode = "normal"
         if average >= thresholds["t2"]:
             desired_mode = "lockdown"
         elif average >= thresholds["t1"]:
             desired_mode = "shield"
+        elif average >= thresholds["t0"]:
+            desired_mode = "portal"
+        # average < t0 の場合、desired_mode = "normal" のまま
+        
         return {"average": average, "desired_mode": desired_mode}
 
     def apply_score(self, severity: int) -> Dict[str, Any]:
@@ -245,7 +252,9 @@ class StateMachine:
             return evaluation
         
         target_mode = desired_mode
-        if desired_mode == "portal":
+        if desired_mode == "normal":
+            target_mode = self._target_for_normal(now)
+        elif desired_mode == "portal":
             target_mode = self._target_for_portal(now)
         elif desired_mode == "shield":
             target_mode = self._target_for_shield(now)
@@ -296,6 +305,12 @@ class StateMachine:
             if now < unlock_at:
                 return "lockdown"
         return "shield"
+
+    def _target_for_normal(self, now: float) -> str:
+        """Target state when desired mode is normal - handles step-down from higher modes."""
+        # Normal mode can be reached from any mode when score is low enough
+        # No unlock delays apply when going to normal
+        return "normal"
 
     def _target_for_portal(self, now: float) -> str:
         if self.current_state.name == "lockdown":
