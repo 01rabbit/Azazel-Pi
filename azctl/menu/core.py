@@ -111,21 +111,59 @@ class AzazelTUIMenu:
     
     def _show_banner(self) -> None:
         """Display the application banner."""
-        banner_content = Text.assemble(
-            ("🛡️  AZAZEL-PI CONTROL INTERFACE", "bold white"), ("\n\n", ""),
-            ("The Cyber Scapegoat Gateway", "dim white")
-        )
+        # バージョン取得
+        version = None
+        pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+        if pyproject_path.exists():
+            try:
+                # まずtomlで試みる
+                try:
+                    import toml
+                    pyproject = toml.load(pyproject_path)
+                    # poetry用とPEP 621用両方対応
+                    version = pyproject.get("tool", {}).get("poetry", {}).get("version")
+                    if not version:
+                        version = pyproject.get("project", {}).get("version")
+                except ImportError:
+                    # tomlがなければ正規表現で取得
+                    import re
+                    with open(pyproject_path, "r") as f:
+                        content = f.read()
+                        m = re.search(r"^version\s*=\s*['\"]([^'\"]+)['\"]", content, re.MULTILINE)
+                        if m:
+                            version = m.group(1)
+            except Exception:
+                pass
+        version_str = f"v{version}" if version else ""
+
+        # バナーを複数行で構築
+        from rich.table import Table
+        banner_table = Table.grid(padding=0)
+        banner_table.add_column(justify="center", width=55)
         
+        # 1行目: タイトル（センター）
+        banner_table.add_row(Text("🛡️  AZ-01X Azazel-Pi CONTROL INTERFACE", style="bold white"))
+        
+        # 2行目: バージョン（右揃え）
+        if version_str:
+            banner_table.add_row(Align.right(Text(version_str, style="dim white")))
+        
+        # 3行目: 空行
+        banner_table.add_row("")
+        
+        # 4行目: サブタイトル（センター）
+        banner_table.add_row(Text("The Cyber Scapegoat Gateway", style="dim white"))
+
         banner_panel = Panel(
-            Align.center(banner_content),
+            banner_table,
             border_style="cyan",
             padding=(1, 2),
             width=59
         )
-        
+
         self.console.print(Align.center(banner_panel))
         self.console.print()
-        
+
         # Show current status summary
         try:
             status = self._get_enhanced_status()
@@ -149,12 +187,12 @@ class AzazelTUIMenu:
                     color = "white"
             else:
                 mode_label, color = _mode_style(status.get("mode"))
-            
+
             # Create multi-line status display
             status_lines = [
                 f"Mode: [{color}]{mode_label}[/{color}] | Profile: [cyan]{status.get('profile', 'N/A')}[/cyan] | Services: {status.get('services_active', 0)}/{status.get('services_total', 0)} active"
             ]
-            
+
             # Add network information if available
             if status.get('wlan0_info'):
                 wlan0 = status['wlan0_info']
@@ -162,7 +200,7 @@ class AzazelTUIMenu:
                     status_lines.append(f"AP ({self.lan_if}): [green]Active[/green] | Clients: {wlan0['stations']}")
                 else:
                     status_lines.append(f"AP ({self.lan_if}): [red]Inactive[/red]")
-            
+
             if status.get('wlan1_info'):
                 wlan1 = status['wlan1_info']
                 if wlan1.get('connected') and wlan1.get('ssid'):
@@ -171,9 +209,9 @@ class AzazelTUIMenu:
                     status_lines.append(f"WAN ({self.wan_if}): [green]{wlan1['ssid']}[/green] | IP: [cyan]{ip_info}[/cyan] | Signal: {signal_info}")
                 else:
                     status_lines.append(f"WAN ({self.wan_if}): [red]Disconnected[/red]")
-            
+
             status_lines.append(f"Updated: {datetime.now().strftime('%H:%M:%S')}")
-            
+
             status_panel = Panel(
                 "\n".join(status_lines),
                 title="System Status",

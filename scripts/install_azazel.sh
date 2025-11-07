@@ -267,6 +267,7 @@ APT_PACKAGES=(
   nftables
   python3
   python3-pip
+  python3-toml
   python3-venv
   python3-yaml
   rsync
