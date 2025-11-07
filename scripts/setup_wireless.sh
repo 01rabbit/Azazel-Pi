@@ -241,6 +241,28 @@ EOF
   # Apply nftables rules
   nft -f /etc/nftables.conf || warn "nftables rules may have issues"
   
+  # Exclude wlan0 from NetworkManager management
+  log "Configuring NetworkManager to ignore $WLAN_AP..."
+  mkdir -p /etc/NetworkManager/conf.d
+  cat > /etc/NetworkManager/conf.d/unmanaged-wlan0.conf <<EOF
+[keyfile]
+unmanaged-devices=interface-name:$WLAN_AP
+EOF
+  systemctl reload NetworkManager 2>/dev/null || true
+  
+  # Configure systemd-networkd for persistent IP on wlan0
+  log "Configuring systemd-networkd for persistent IP..."
+  mkdir -p /etc/systemd/network
+  cat > /etc/systemd/network/10-${WLAN_AP}.network <<EOF
+[Match]
+Name=$WLAN_AP
+
+[Network]
+Address=$AP_IP/24
+EOF
+  systemctl enable systemd-networkd || true
+  systemctl start systemd-networkd || true
+  
   # Enable and start services
   log "Starting AP services..."
   systemctl unmask hostapd || true

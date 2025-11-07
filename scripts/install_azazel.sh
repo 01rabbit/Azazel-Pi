@@ -238,28 +238,17 @@ configure_nginx() {
 configure_internal_network() {
   log "Configuring internal network (wlan0 as AP with 172.16.0.254)"
   
-  # Run the wlan0 AP setup script if it exists
-  if [[ -x "$REPO_ROOT/scripts/setup_wlan0_ap.sh" ]]; then
-    "$REPO_ROOT/scripts/setup_wlan0_ap.sh" || log "Internal network setup script failed; manual configuration may be required"
+  # Run the unified wireless setup script
+  if [[ -x "$REPO_ROOT/scripts/setup_wireless.sh" ]]; then
+    log "Running setup_wireless.sh for AP configuration"
+    "$REPO_ROOT/scripts/setup_wireless.sh" --ap-only --skip-confirm || {
+      log "ERROR: Wireless setup script failed; manual configuration required"
+      return 1
+    }
   else
-    # Fallback: basic manual setup
-    log "Setting up wlan0 internal network manually"
-    
-    # Add static IP configuration to dhcpcd.conf if not exists
-    if ! grep -q "interface wlan0" /etc/dhcpcd.conf 2>/dev/null; then
-      cat >> /etc/dhcpcd.conf <<EOF
-
-interface wlan0
-static ip_address=172.16.0.254/24
-nohook wpa_supplicant
-EOF
-    fi
-    
-    # Configure IP forwarding
-    sysctl -w net.ipv4.ip_forward=1
-    echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-azazel.conf
-    
-    log "Manual internal network configuration complete. Full AP setup may require additional steps."
+    log "ERROR: setup_wireless.sh not found at $REPO_ROOT/scripts/setup_wireless.sh"
+    log "Please run: sudo $REPO_ROOT/scripts/setup_wireless.sh --ap-only"
+    return 1
   fi
 }
 
