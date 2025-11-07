@@ -17,7 +17,7 @@ EnvironmentFile=-/etc/default/azazel-epd
 ExecStart=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py \
     --interval=${UPDATE_INTERVAL:-10} \
     --events-log=${EVENTS_LOG:-/var/log/azazel/events.json} \
-    --mode=daemon
+    --mode=daemon ${EPD_OPTS:-}
 # Graceful shutdown
 ExecStop=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
 # Logging

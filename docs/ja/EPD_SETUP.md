@@ -69,17 +69,29 @@ gpio readall | grep -E "(10|11|8|25|17|24)"
 
 ## ソフトウェアインストール
 
-### 自動インストール
+### 統合インストール (推奨)
 
-Azazelインストーラーに含まれるE-Paper設定スクリプトを使用：
+完全インストーラーにE-Paper統合が追加されました。ハードウェア未接続でもライブラリとサービスを準備できます。
 
 ```bash
-# E-Paperライブラリをインストール
-sudo /opt/azazel/scripts/install_epd.sh
+# E-Paper統合を含む完全インストール
+sudo scripts/install_azazel_complete.sh --enable-epd --start
 
-# システム設定を確認
-ls -l /dev/spidev0.0
+# ハードウェア未接続でエミュレーションのみ行いたい場合
+sudo scripts/install_azazel_complete.sh --enable-epd --epd-emulate --start
 ```
+
+インストール後 `/etc/default/azazel-epd` に設定ファイルが配置され、EPD_OPTS=--emulate を指定することでサービスをエミュレーションモードで動作させられます。
+
+```bash
+sudo sed -i '/^EPD_OPTS=/d' /etc/default/azazel-epd
+echo 'EPD_OPTS=--emulate' | sudo tee -a /etc/default/azazel-epd
+sudo systemctl restart azazel-epd.service
+```
+
+### 旧スタンドアロンインストール (廃止)
+
+`scripts/install_epd.sh` は統合により廃止されました。代わりに `--enable-epd` フラグを使用してください。
 
 ### 手動インストール
 
@@ -182,13 +194,10 @@ GENTLE_UPDATES=1
 ### サービス有効化
 
 ```bash
-# systemdサービスを有効化
+# 完全インストーラーで --start を使った場合は自動有効化済み
+# 手動で有効化する場合:
 sudo systemctl enable azazel-epd.service
-
-# サービスを開始
 sudo systemctl start azazel-epd.service
-
-# 状態を確認
 sudo systemctl status azazel-epd.service
 ```
 
@@ -262,11 +271,11 @@ Delay: 300ms | Limit: 64kbps
 
 ## 手動操作
 
-### テスト表示
+### テスト表示 (ハードウェア未接続時は --emulate)
 
 ```bash
 # テストパターンを表示
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test
+sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test --emulate
 
 # 起動アニメーションを表示
 sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=boot

@@ -13,3 +13,9 @@ EVENTS_LOG=/var/log/azazel/events.json
 
 # Enable debug logging (default: 0)
 # DEBUG=1
+
+# Optional extra options passed to epd_daemon.py
+# Example: enable emulation (no hardware required)
+# EPD_OPTS=--emulate
+# Or disable gentle updates:
+# EPD_OPTS=--no-gentle

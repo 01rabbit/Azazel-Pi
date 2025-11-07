@@ -61,19 +61,29 @@ ls /dev/spidev0.0
 # Should exist after reboot
 ```
 
-### 2. Install E-Paper Library
+### 2. Integrated Installation (Recommended)
 
-Run the automated installer:
+E-Paper setup is now integrated into the complete installer. You can prepare the library and service even without the hardware attached.
 
 ```bash
-cd /path/to/Azazel-Pi
-sudo scripts/install_epd.sh
+# Install with E-Paper integration
+sudo scripts/install_azazel_complete.sh --enable-epd --start
+
+# If hardware is not connected, enable emulation mode
+sudo scripts/install_azazel_complete.sh --enable-epd --epd-emulate --start
 ```
 
-This script will:
-- Install required Python packages (`python3-pil`, `python3-spidev`, etc.)
-- Clone the Waveshare E-Paper library to `/opt/waveshare-epd`
-- Enable SPI interface if not already enabled
+After installation, an env file is placed at `/etc/default/azazel-epd`. You can pass extra flags via `EPD_OPTS` (for example to enable emulation):
+
+```bash
+sudo sed -i '/^EPD_OPTS=/d' /etc/default/azazel-epd
+echo 'EPD_OPTS=--emulate' | sudo tee -a /etc/default/azazel-epd
+sudo systemctl restart azazel-epd.service
+```
+
+### 2b. Legacy standalone script (deprecated)
+
+`scripts/install_epd.sh` is deprecated. Use `--enable-epd` instead.
 
 ### 3. Install systemd Service
 
@@ -119,13 +129,9 @@ If using a different E-Paper model, you may need to adjust the driver:
 ### Enable and Start Service
 
 ```bash
-# Enable auto-start on boot
+# If you used --start, the service may already be enabled
 sudo systemctl enable azazel-epd.service
-
-# Start service
 sudo systemctl start azazel-epd.service
-
-# Check status
 sudo systemctl status azazel-epd.service
 ```
 
@@ -134,8 +140,8 @@ sudo systemctl status azazel-epd.service
 Test the display without running the full daemon:
 
 ```bash
-# Test mode: single status update
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test
+# Test mode: single status update (use --emulate if no hardware)
+sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test --emulate
 
 # Boot animation only
 sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=boot

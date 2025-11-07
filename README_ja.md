@@ -119,22 +119,44 @@ Raspberry Piに最適化された軽量設定により、災害復旧、フィ�
 
 ### クイックセットアップ
 
-リポジトリをクローンまたはリリースをダウンロードした後、自動インストーラーをrootとして実行：
+リポジトリをクローンまたはリリースをダウンロードした後、完全自動インストーラーを実行：
 
 ```bash
 cd Azazel-Pi
+# 全依存関係と設定を含む完全インストール
+sudo scripts/install_azazel_complete.sh --start
+
+# または段階的インストール:
+# 1. 基本インストール
 sudo scripts/install_azazel.sh
-# インストール後にサービスを自動開始する場合:
-# sudo scripts/install_azazel.sh --start
+
+# 2. 完全設定セットアップ (推奨)
+sudo scripts/install_azazel_complete.sh --start
+
+# 3. Ollama AIモデルセットアップ
+sudo scripts/setup_ollama_model.sh
 ```
 
-インストーラーは以下を実行します：
-- Suricata、Vector、OpenCanary、その他のコアコンポーネントをインストール
-- コアモジュールとユーティリティを `/opt/azazel` に展開
-- 設定テンプレートを `/etc/azazel` に展開
-- `azctl-unified.service` systemdサービスを有効化
+**完全インストーラー (`install_azazel_complete.sh`) に含まれるもの：**
+- 基本依存関係 (Suricata, Vector, OpenCanary, Docker)
+- E-Paperディスプレイサポート (Pillow, NumPy)
+- PostgreSQLとOllamaコンテナ
+- 全設定ファイルの配置
+- Nginxリバースプロキシセットアップ
+- systemdサービス設定
+- Ollamaモデルセットアップ手順
 
-サービス開始前に、`/etc/azazel/azazel.yaml` を編集して、環境に合わせてインターフェース名、QoSプロファイル、防御閾値を設定してください。
+**Ollamaモデルセットアップ：**
+インストーラーがAIモデルファイルのダウンロードを促します：
+```bash
+wget -O /opt/models/Qwen2.5-1.5B-Instruct-uncensored.Q4_K_M.gguf \
+  https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-uncensored.Q4_K_M.gguf
+```
+
+または自動モデルセットアップスクリプトを使用：
+```bash
+sudo scripts/setup_ollama_model.sh
+```
 
 完全なインストール手順、トラブルシューティング、E-Paperセットアップについては、[`docs/ja/INSTALLATION.md`](docs/ja/INSTALLATION.md) を参照してください。
 
@@ -143,13 +165,16 @@ sudo scripts/install_azazel.sh
 Waveshare E-Paperディスプレイを使用する場合：
 
 ```bash
-# E-Paper依存関係をインストール
-sudo scripts/install_epd.sh
+# 完全インストーラーでE-Paper統合を有効化
+sudo scripts/install_azazel_complete.sh --enable-epd --start
 
-# ディスプレイをテスト
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+# ハードウェア未接続でテストしたい場合（エミュレーション）
+sudo scripts/install_azazel_complete.sh --enable-epd --epd-emulate --start
 
-# E-Paperサービスを有効化
+# テスト表示（未接続の場合は --emulate 推奨）
+sudo python3 -m azazel_pi.core.display.epd_daemon --mode test --emulate
+
+# E-Paperサービスを有効化（--startを使っていない場合）
 sudo systemctl enable --now azazel-epd.service
 ```
 
