@@ -1,0 +1,11 @@
+[Unit]
+Description=Azazel Priority Daemon
+After=azazel-traffic-init.service
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/azazel/services/azazel_priorityd.py
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

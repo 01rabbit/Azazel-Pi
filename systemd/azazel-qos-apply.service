@@ -1,0 +1,12 @@
+[Unit]
+Description=Azazel QoS Apply from CSV
+After=azazel-traffic-init.service
+
+[Service]
+Type=oneshot
+Environment=MODE=verify
+ExecStart=/usr/bin/env bash /opt/azazel/bin/azazel-qos-apply.sh /opt/azazel/configs/network/privileged.csv
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
