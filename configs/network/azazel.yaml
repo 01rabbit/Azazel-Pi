@@ -36,3 +36,26 @@ thresholds:
 notify: { level: warn }
 storage: { log_dir: "/var/log/azazel", retain_days: 14 }
 privacy: { pii_minimize: true, hash_fields: ["src.ip", "dst.ip", "username"] }
+
+# QoS internal network control (premium/standard/best_effort/restricted)
+wan_iface: "eth0"     # shaping target interface (can mirror 'interfaces.wan')
+lan_iface: "br0"      # LAN bridge for ARP pinning when MODE=lock
+mark_map:
+  premium:    0x10
+  standard:   0x20
+  best_effort: 0x30
+  restricted: 0x40
+classes:
+  premium:     { rate_kbps: 50000, ceil_kbps: 50000 }
+  standard:    { rate_kbps: 20000, ceil_kbps: 40000 }
+  best_effort: { rate_kbps:  5000, ceil_kbps: 10000 }
+  restricted:  { rate_kbps:  1000, ceil_kbps:  2000 }
+thresholds:
+  ge_90: premium
+  ge_60: standard
+  ge_30: best_effort
+  lt_30: restricted
+dynamic_bias:
+  factor: 0.5
+  max_delta: 80
+  min_priority: 10

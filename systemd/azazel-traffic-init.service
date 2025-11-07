@@ -1,0 +1,12 @@
+[Unit]
+Description=Azazel Traffic Shaping Init
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/env bash /opt/azazel/bin/azazel-traffic-init.sh /opt/azazel/configs/network/azazel.yaml
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
