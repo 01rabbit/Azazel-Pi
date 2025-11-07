@@ -111,8 +111,9 @@ if [[ $ENABLE_EPD -eq 1 ]]; then
     python3-dev \
     python3-spidev \
     python3-rpi.gpio \
-    libopenjp2-7 \
-    libtiff5 \
+  libopenjp2-7 \
+  libtiff6 \
+  libtiff-tools \
     git || warn "One or more E-Paper dependency packages failed to install"
 
   # Enable SPI if not already enabled (both legacy + Pi5 path)
