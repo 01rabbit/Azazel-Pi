@@ -102,6 +102,19 @@ Leverages OpenCanary and custom services to mislead and isolate attackers rather
 - **Shield → Lockdown**: Implements strict firewall rules with medical FQDN allowlists
 - **Dynamic Scoring**: Continuous threat assessment with automatic mode transitions
 
+### Internal Network QoS Control (New in v2.2.0)
+
+Privilege-based traffic shaping and security enforcement for LAN devices:
+
+- **Mark-Based Classification**: Premium, standard, best effort, and restricted traffic classes with HTB bandwidth shaping
+- **MAC Verification**: Three security modes (none/verify/lock) for preventing ARP spoofing and IP/MAC mismatch attacks
+- **Dynamic Priority**: Optional score-based automatic class adjustment for adaptive bandwidth allocation
+- **CSV Registry**: Simple CSV-based management of privileged hosts with IP/MAC whitelisting
+- **Interactive TUI**: Command-line menu for privileged host management and mode switching
+- **Safe Testing**: DRY_RUN mode for verifying configurations without network modification
+
+See [`docs/INTERNAL_NETWORK_CONTROL.md`](docs/INTERNAL_NETWORK_CONTROL.md) for architecture and [`docs/QOS_TESTING.md`](docs/QOS_TESTING.md) for testing guide.
+
 ### Portable Deployment
 
 Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment in disaster recovery, field operations, or temporary network setups.
