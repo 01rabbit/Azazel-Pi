@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "azazel-pi"
-version = "2.0.0"
+version = "2.1.0"
 description = "Network Security Monitoring and Response System"
 readme = "README.md"
 license = { file = "LICENSE" }
