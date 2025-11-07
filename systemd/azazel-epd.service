@@ -14,10 +14,11 @@ ConditionPathExists=/dev/spidev0.0
 Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/etc/default/azazel-epd
 # Main daemon process
-ExecStart=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py \
+# Use /bin/sh -c so shell parameter expansion with defaults (e.g. ${UPDATE_INTERVAL:-10}) works
+ExecStart=/bin/sh -c '/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py \
     --interval=${UPDATE_INTERVAL:-10} \
     --events-log=${EVENTS_LOG:-/var/log/azazel/events.json} \
-    --mode=daemon ${EPD_OPTS:-}
+    --mode=daemon ${EPD_OPTS:-}'
 # Graceful shutdown
 ExecStop=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
 # Logging
