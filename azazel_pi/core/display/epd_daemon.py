@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import logging
 import signal
 import sys
@@ -29,6 +30,7 @@ class EPaperDaemon:
         gentle_updates: bool = True,
         debug: bool = False,
         emulate: bool = False,
+        rotation: int = 0,
     ):
         """Initialize the daemon.
 
@@ -73,8 +75,12 @@ class EPaperDaemon:
             events_log=events_log,
         )
 
-        # Initialize renderer
-        self.renderer = EPaperRenderer(debug=debug, emulate=emulate)
+        # Initialize renderer (support rotation)
+        try:
+            self.rotation = int(rotation) if rotation is not None else 0
+        except Exception:
+            self.rotation = 0
+        self.renderer = EPaperRenderer(debug=debug, emulate=emulate, rotation=self.rotation)
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -94,17 +100,21 @@ class EPaperDaemon:
         self.logger.info("E-Paper daemon starting...")
         self.running = True
 
-        # Show boot animation
-        try:
-            self.logger.info("Displaying boot animation...")
-            self.renderer.render_boot_animation(steps=8, frame_delay=0.2)
-            time.sleep(1)
-        except Exception as e:
-            self.logger.error(f"Boot animation failed: {e}")
-            if self.debug:
-                import traceback
+        # Show boot animation unless explicitly disabled via environment
+        skip_boot = os.getenv("EPD_SKIP_BOOT_ANIM", os.getenv("AZAZEL_EPD_SKIP_BOOT", "0"))
+        if str(skip_boot).lower() in ("1", "true", "yes"):
+            self.logger.info("Skipping boot animation (EPD_SKIP_BOOT_ANIM set)")
+        else:
+            try:
+                self.logger.info("Displaying boot animation...")
+                self.renderer.render_boot_animation(steps=8, frame_delay=0.2)
+                time.sleep(1)
+            except Exception as e:
+                self.logger.error(f"Boot animation failed: {e}")
+                if self.debug:
+                    import traceback
 
-                traceback.print_exc()
+                    traceback.print_exc()
 
         # Main update loop
         update_count = 0
@@ -206,34 +216,57 @@ def main() -> int:
         action="store_true",
         help="Emulation mode (no physical E-Paper required)",
     )
+    parser.add_argument(
+        "--rotate",
+        type=int,
+        default=int(os.getenv("EPD_ROTATION", "0")),
+        help="Rotate display output in degrees (0,90,180,270). Can also be set via EPD_ROTATION env var.",
+    )
 
     args = parser.parse_args()
 
     # Quick mode handlers
     if args.mode == "boot":
-        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate)
+        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         renderer.render_boot_animation(steps=10, frame_delay=0.25)
         return 0
 
     if args.mode == "shutdown":
-        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate)
+        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         renderer.render_shutdown_animation(hold_seconds=1.5)
         return 0
 
     if args.mode == "test":
         collector = StatusCollector(events_log=args.events_log)
-        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate)
+        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         status = collector.collect()
         image = renderer.render_status(status)
+
+        # Display (which will apply rotation internally), then sleep
         renderer.display(image, gentle=False)
         renderer.sleep()
-        
-        # In emulation mode, save image to file for verification
+
+        # In emulation mode, save the image as it would appear on the display
+        # (apply the renderer rotation before saving so test output matches
+        # what hardware would receive).
         if args.emulate:
             output_path = "/tmp/azazel_epd_test.png"
-            image.save(output_path)
-            print(f"Emulation mode: Image saved to {output_path}")
-        
+            try:
+                rot = getattr(renderer, "rotation", 0)
+                if rot:
+                    save_img = image.rotate(rot, expand=False)
+                else:
+                    save_img = image
+                save_img.save(output_path)
+                print(f"Emulation mode: Image saved to {output_path} (rotation={rot})")
+            except Exception as e:
+                # Best-effort fallback — save the original image
+                try:
+                    image.save(output_path)
+                    print(f"Emulation mode: Image saved to {output_path} (fallback, error: {e})")
+                except Exception:
+                    print(f"Emulation mode: failed to save image: {e}")
+
         return 0
 
     # Daemon mode
@@ -244,6 +277,7 @@ def main() -> int:
         gentle_updates=not args.no_gentle,
         debug=args.debug,
         emulate=args.emulate,
+        rotation=args.rotate,
     )
     return daemon.run()
 
