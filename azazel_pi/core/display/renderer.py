@@ -250,6 +250,16 @@ class EPaperRenderer:
         """
         self._init_driver()
 
+        # Ensure the driver is initialized (wake from sleep) before attempting display.
+        if not self.emulate and getattr(self, "_epd", None) is not None:
+            try:
+                if hasattr(self._epd, "init"):
+                    # Some drivers support re-init to wake the module from sleep.
+                    self._epd.init()
+            except Exception:
+                # If re-init fails, we'll rely on the retry logic below to recreate the driver.
+                if self.debug:
+                    print("EPD re-init failed; will attempt reinit on retry.", file=sys.stderr)
         # Check for partial update capability
         partial_update = None
         if gentle:
