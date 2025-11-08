@@ -418,7 +418,10 @@ class EPaperRenderer:
             self.display(img, gentle=(i > 0))
             time.sleep(frame_delay)
 
-        self.sleep()
+        # Do not put the module to sleep after the boot animation; keep it initialized
+        # so the daemon can perform further updates without reinitializing the hardware.
+        if self.debug:
+            print("Boot animation complete; keeping E-Paper module initialized.", file=sys.stderr)
 
     def render_shutdown_animation(self, hold_seconds: float = 1.0) -> None:
         """Display a shutdown message and clear.
