@@ -31,8 +31,9 @@ class EPaperDaemon:
         debug: bool = False,
         emulate: bool = False,
         rotation: int = 0,
+        power_save: bool = False,
     ):
-        """Initialize the daemon.
+        """Initialize the EPaperDaemon.
 
         Args:
             update_interval: Seconds between display updates
@@ -41,12 +42,15 @@ class EPaperDaemon:
             gentle_updates: Use partial updates to reduce flicker
             debug: Enable debug logging
             emulate: Emulation mode (no physical display required)
+            rotation: Display rotation in degrees (0/90/180/270)
+            power_save: If True, put the EPD to sleep after each update
         """
         self.update_interval = update_interval
         self.gentle_updates = gentle_updates
         self.debug = debug
         self.emulate = emulate
         self.running = False
+        self.power_save = power_save
 
         # Set up logging
         log_level = logging.DEBUG if debug else logging.INFO
@@ -88,6 +92,14 @@ class EPaperDaemon:
 
     def _signal_handler(self, signum: int, frame) -> None:
         """Handle shutdown signals gracefully."""
+        # Power-save mode: if True, put the EPD to sleep after each update.
+        # Controlled by CLI flag --power-save or environment EPD_POWER_SAVE.
+        env_ps = os.getenv("EPD_POWER_SAVE", os.getenv("AZAZEL_EPD_POWER_SAVE", "0"))
+        try:
+            env_ps_bool = str(env_ps).lower() in ("1", "true", "yes")
+        except Exception:
+            env_ps_bool = False
+        self.power_save = power_save or env_ps_bool
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.running = False
 
@@ -100,21 +112,10 @@ class EPaperDaemon:
         self.logger.info("E-Paper daemon starting...")
         self.running = True
 
-        # Show boot animation unless explicitly disabled via environment
-        skip_boot = os.getenv("EPD_SKIP_BOOT_ANIM", os.getenv("AZAZEL_EPD_SKIP_BOOT", "0"))
-        if str(skip_boot).lower() in ("1", "true", "yes"):
-            self.logger.info("Skipping boot animation (EPD_SKIP_BOOT_ANIM set)")
-        else:
-            try:
-                self.logger.info("Displaying boot animation...")
-                self.renderer.render_boot_animation(steps=8, frame_delay=0.2)
-                time.sleep(1)
-            except Exception as e:
-                self.logger.error(f"Boot animation failed: {e}")
-                if self.debug:
-                    import traceback
-
-                    traceback.print_exc()
+        # Boot animation intentionally disabled by default to reduce SPI/GPIO activity
+        # and avoid timing races during early boot. The renderer's boot helper now
+        # performs a simple clear-to-white; do not run animated sequences here.
+        self.logger.debug("Boot animation suppressed (static clear-only behavior)")
 
         # Main update loop
         update_count = 0
@@ -135,8 +136,25 @@ class EPaperDaemon:
                 
                 # Use gentle updates after the first one
                 gentle = self.gentle_updates and update_count > 1
+                # Display (keep module initialized). Putting the module to
+                # sleep after every update causes the driver to call
+                # epdconfig.module_exit() (closing the SPI device) which can
+                # race with subsequent updates and produce "Bad file descriptor".
+                # Keep the display initialized and only sleep on shutdown.
                 self.renderer.display(image, gentle=gentle)
-                self.renderer.sleep()
+
+                # Optionally put the module to sleep after each update when
+                # power-save mode is enabled. Disabled by default to avoid
+                # module_exit / SPI.close() races; enabling this will trade
+                # lower power consumption for a higher chance of races.
+                if self.power_save:
+                    try:
+                        self.renderer.sleep()
+                    except Exception:
+                        if self.debug:
+                            import traceback
+
+                            traceback.print_exc()
 
                 # Wait for next update (with early exit on shutdown)
                 for _ in range(self.update_interval):
@@ -217,6 +235,11 @@ def main() -> int:
         help="Emulation mode (no physical E-Paper required)",
     )
     parser.add_argument(
+        "--power-save",
+        action="store_true",
+        help="Enable per-update EPD sleep (power saving). Default: disabled; can also be set via EPD_POWER_SAVE env var.",
+    )
+    parser.add_argument(
         "--rotate",
         type=int,
         default=int(os.getenv("EPD_ROTATION", "0")),
@@ -272,6 +295,7 @@ def main() -> int:
     # Daemon mode
     daemon = EPaperDaemon(
         update_interval=args.interval,
+        power_save=args.power_save,
         state_machine_path=args.state_config,
         events_log=args.events_log,
         gentle_updates=not args.no_gentle,

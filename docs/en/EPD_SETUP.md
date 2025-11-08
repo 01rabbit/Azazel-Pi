@@ -12,6 +12,7 @@ The E-Paper display integration provides:
 - **Alert counters** for recent and total security events
 - **Service monitoring** for Suricata and OpenCanary
 - **Boot/shutdown animations** for system state feedback
+ - Boot/shutdown animations were removed to improve stability; boot now clears to a clean white screen and shutdown clears then sleeps the display
 - **Low power consumption** with partial update support to reduce flicker
 
 ## Hardware Requirements
@@ -143,10 +144,10 @@ Test the display without running the full daemon:
 # Test mode: single status update (use --emulate if no hardware)
 sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test --emulate
 
-# Boot animation only
+# Boot performs a non-animated clear-to-white (no long animation)
 sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=boot
 
-# Shutdown animation and clear
+# Shutdown clears the display and puts the hardware to sleep
 sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
 
 # Run daemon in foreground with debug output
