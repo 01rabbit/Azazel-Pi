@@ -35,6 +35,7 @@ class EPaperRenderer:
         width: int = 250,
         height: int = 122,
         driver_name: str = "epd2in13_V4",
+        rotation: int = 0,
         debug: bool = False,
         emulate: bool = False,
     ):
@@ -50,6 +51,11 @@ class EPaperRenderer:
         self.width = width
         self.height = height
         self.driver_name = driver_name
+        # Rotation in degrees (0, 90, 180, 270). Applied to final image before sending.
+        try:
+            self.rotation = int(rotation) % 360
+        except Exception:
+            self.rotation = 0
         self.debug = debug
         self.emulate = emulate
         self._epd = None
@@ -252,25 +258,75 @@ class EPaperRenderer:
                     partial_update = getattr(self._epd, method_name)
                     break
 
-        # Convert to buffer
-        buffer = self._epd.getbuffer(image)
+        # Apply rotation if requested (handle 180° flip for upside-down displays)
+        if getattr(self, "rotation", 0):
+            try:
+                # Use expand=False to keep target dimensions; 180° is safe for same-size
+                image = image.rotate(self.rotation, expand=False)
+            except Exception as e:
+                if self.debug:
+                    print(f"Rotation error: {e}", file=sys.stderr)
 
-        # Display
-        try:
+        def _do_display():
+            """Internal helper to perform the actual display call."""
+            buf = self._epd.getbuffer(image)
             if partial_update and gentle:
-                partial_update(buffer)
+                partial_update(buf)
             elif self._bicolor:
                 # Bicolor display needs red buffer (all white for status display)
                 red_buffer = self._epd.getbuffer(Image.new("1", (self.width, self.height), 255))
-                self._epd.display(buffer, red_buffer)
+                self._epd.display(buf, red_buffer)
             else:
-                self._epd.display(buffer)
+                self._epd.display(buf)
+
+        # Try display, on SPI/OS errors attempt one reinit+retry
+        try:
+            _do_display()
+            return
         except Exception as e:
+            # Detect common SPI/GPIO issues and attempt recovery once
+            is_spi_error = isinstance(e, OSError) or "Bad file descriptor" in str(e) or "GPIO busy" in str(e)
             if self.debug:
-                print(f"Display error: {e}", file=sys.stderr)
+                print(f"Display error (first attempt): {e}", file=sys.stderr)
                 traceback.print_exc()
-            # Fallback to basic display
-            self._epd.display(buffer)
+
+            if is_spi_error:
+                if self.debug:
+                    print("Attempting to reinitialize E-Paper driver and retry display...", file=sys.stderr)
+                # Best-effort cleanup
+                try:
+                    if hasattr(self._epd, "sleep"):
+                        try:
+                            self._epd.sleep()
+                        except Exception:
+                            pass
+                finally:
+                    # Drop reference so _init_driver will recreate it
+                    self._epd = None
+
+                # Short backoff before retry
+                try:
+                    import time
+
+                    time.sleep(0.25)
+                except Exception:
+                    pass
+
+                # Reinit and retry once
+                try:
+                    self._init_driver()
+                    _do_display()
+                    if self.debug:
+                        print("Retry successful.", file=sys.stderr)
+                    return
+                except Exception as e2:
+                    if self.debug:
+                        print(f"Retry failed: {e2}", file=sys.stderr)
+                        traceback.print_exc()
+                    # Fall through to raise the original exception
+
+            # If not a SPI-related error or retry failed, re-raise
+            raise
 
     def clear(self) -> None:
         """Clear the display."""
