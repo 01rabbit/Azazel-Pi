@@ -27,7 +27,8 @@ class EPaperDaemon:
         update_interval: int = 10,
         state_machine_path: Path | None = None,
         events_log: Path | None = None,
-        gentle_updates: bool = True,
+    gentle_updates: bool = True,
+    full_refresh_minutes: int = 30,
         debug: bool = False,
         emulate: bool = False,
         rotation: int = 0,
@@ -51,6 +52,13 @@ class EPaperDaemon:
         self.emulate = emulate
         self.running = False
         self.power_save = power_save
+        # Periodic full-refresh interval in minutes. If > 0, the daemon will
+        # perform a full (non-gentle) refresh every `full_refresh_minutes`
+        # minutes to reduce E-Paper ghosting from repeated partial updates.
+        try:
+            self.full_refresh_minutes = int(full_refresh_minutes)
+        except Exception:
+            self.full_refresh_minutes = 0
 
         # Set up logging
         log_level = logging.DEBUG if debug else logging.INFO
@@ -136,6 +144,21 @@ class EPaperDaemon:
                 
                 # Use gentle updates after the first one
                 gentle = self.gentle_updates and update_count > 1
+
+                # If periodic full-refresh is enabled, compute whether this
+                # update should be a full refresh. We convert the minutes
+                # interval into an update-frequency based on update_interval
+                # (in seconds). If the current update_count hits that
+                # frequency, force a full refresh (gentle=False).
+                if self.full_refresh_minutes and self.update_interval > 0:
+                    try:
+                        secs_per_full = max(1, int(self.full_refresh_minutes) * 60)
+                        updates_per_full = max(1, secs_per_full // self.update_interval)
+                        if update_count % updates_per_full == 0:
+                            gentle = False
+                    except Exception:
+                        # On any error, keep existing gentle selection
+                        pass
                 # Display (keep module initialized). Putting the module to
                 # sleep after every update causes the driver to call
                 # epdconfig.module_exit() (closing the SPI device) which can
@@ -245,6 +268,12 @@ def main() -> int:
         default=int(os.getenv("EPD_ROTATION", "0")),
         help="Rotate display output in degrees (0,90,180,270). Can also be set via EPD_ROTATION env var.",
     )
+    parser.add_argument(
+        "--full-refresh-minutes",
+        type=int,
+        default=int(os.getenv("EPD_FULL_REFRESH_MINUTES", "30")),
+        help="Perform a full (non-partial) refresh every N minutes to reduce e-paper ghosting. Set 0 to disable (default: 30)",
+    )
 
     args = parser.parse_args()
 
@@ -302,6 +331,7 @@ def main() -> int:
         debug=args.debug,
         emulate=args.emulate,
         rotation=args.rotate,
+        full_refresh_minutes=args.full_refresh_minutes,
     )
     return daemon.run()
 
