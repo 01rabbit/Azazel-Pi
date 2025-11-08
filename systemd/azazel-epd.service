@@ -4,12 +4,12 @@ Documentation=https://github.com/01rabbit/Azazel-Pi
 After=multi-user.target network-online.target azctl.service
 Wants=network-online.target
 Before=poweroff.target halt.target shutdown.target
+ConditionPathExists=/dev/spidev0.0
 
 [Service]
 Type=simple
 User=root
-# Ensure SPI device is available
-ConditionPathExists=/dev/spidev0.0
+# Ensure SPI device is available (moved to [Unit] for correctness)
 # Environment
 Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/etc/default/azazel-epd
