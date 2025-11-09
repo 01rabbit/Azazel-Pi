@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from ..core import notify_config as notice
 from ..core.enforcer.traffic_control import get_traffic_control_engine
 from ..utils.mattermost import send_alert_to_mattermost
+import os
+from ..utils.wan_state import get_active_wan_interface
 from . import main_suricata
 from . import main_opencanary
 
@@ -42,6 +44,8 @@ def notify_attack_detected():
 
 def reset_network_config():
     logging.info("Flushing NAT rules and resetting network config via integrated system...")
+    # Prefer explicit environment override, then runtime WAN manager helper, then fallback
+    wan_iface = os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
 
     # ① 統合トラフィック制御システムで全制御ルールをクリア
     try:
@@ -62,9 +66,9 @@ def reset_network_config():
     except Exception as e:
         logging.error(f"Integrated system cleanup failed: {e}")
         # フォールバック: 従来のtc直接実行
-        result = subprocess.run(["tc", "qdisc", "show", "dev", "wlan1"], capture_output=True, text=True)
+        result = subprocess.run(["tc", "qdisc", "show", "dev", wan_iface], capture_output=True, text=True)
         if "prio" in result.stdout or "netem" in result.stdout:
-            subprocess.run(["tc", "qdisc", "del", "dev", "wlan1", "root"], check=False)
+            subprocess.run(["tc", "qdisc", "del", "dev", wan_iface, "root"], check=False)
             logging.info("Fallback: tc qdisc deleted directly")
 
     # ② NATテーブルの全ルールを一旦削除
@@ -72,7 +76,7 @@ def reset_network_config():
 
     # ③ 内部LAN(172.16.0.0/24)からWAN出口(wlan1)へのMASQUERADEを再設定
     subprocess.run(["iptables", "-t", "nat", "-A", "POSTROUTING",
-                    "-s", "172.16.0.0/24", "-o", "wlan1", "-j", "MASQUERADE"], check=True)
+                    "-s", "172.16.0.0/24", "-o", wan_iface, "-j", "MASQUERADE"], check=True)
 
     logging.info("Internal LAN to WAN routing re-established.")
     logging.info("Network reset completed via integrated system.")

@@ -1,0 +1,15 @@
+[Unit]
+Description=Azazel dynamic WAN manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/azazel/Azazel-Pi
+Environment=PYTHONPATH=/home/azazel/Azazel-Pi
+ExecStart=/usr/bin/env python3 -m azctl.cli wan-manager --config /etc/azazel/azazel.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

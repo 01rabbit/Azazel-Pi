@@ -1,4 +1,9 @@
 node: azazel-fiber-hub
+# Interface examples: these values are examples for this profile.
+# You can override them at runtime using environment variables:
+#   export AZAZEL_LAN_IF=${AZAZEL_LAN_IF:-wlan0}
+#   export AZAZEL_WAN_IF=${AZAZEL_WAN_IF:-wlan1}
+# Or set AZAZEL_WAN_CANDIDATES for a prioritized candidate list (comma-separated).
 interfaces: { lan: lan0, wan: wlan1 }
 profiles:
   active: fiber

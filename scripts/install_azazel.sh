@@ -236,11 +236,11 @@ configure_nginx() {
 }
 
 configure_internal_network() {
-  log "Configuring internal network (wlan0 as AP with 172.16.0.254)"
+  log "Configuring internal network (AP interface: ${AZAZEL_LAN_IF:-wlan0} — WAN interface: ${AZAZEL_WAN_IF:-wlan1})"
   
   # Run the unified wireless setup script
   if [[ -x "$REPO_ROOT/scripts/setup_wireless.sh" ]]; then
-    log "Running setup_wireless.sh for AP configuration"
+  log "Running setup_wireless.sh for AP configuration (AP: ${AZAZEL_LAN_IF:-wlan0})"
     "$REPO_ROOT/scripts/setup_wireless.sh" --ap-only --skip-confirm || {
       log "ERROR: Wireless setup script failed; manual configuration required"
       return 1
@@ -497,4 +497,6 @@ log "  * Configure Mattermost webhooks at http://172.16.0.254:8065 (internal net
 log "  * Update webhook URLs in /etc/azazel/monitoring/notify.yaml to match your Mattermost setup"
 log "  * Run 'systemctl restart azctl-unified.service' after making Azazel changes"
 log "  * Use scripts/sanity_check.sh plus 'systemctl status mattermost nginx docker' to verify services"
-log "  * Internal network (172.16.0.0/24) is accessible via wlan0 AP, external via wlan1"
+LAN_IF=${AZAZEL_LAN_IF:-wlan0}
+WAN_IF=${AZAZEL_WAN_IF:-wlan1}
+log "  * Internal network (172.16.0.0/24) is accessible via ${LAN_IF} AP, external via ${WAN_IF}"

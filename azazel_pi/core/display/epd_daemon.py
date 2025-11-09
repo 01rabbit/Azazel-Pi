@@ -25,33 +25,43 @@ class EPaperDaemon:
     def __init__(
         self,
         update_interval: int = 10,
+        *,
         state_machine_path: Path | None = None,
         events_log: Path | None = None,
-    gentle_updates: bool = True,
-    full_refresh_minutes: int = 30,
+        wan_state_path: Path | None = None,
+        gentle_updates: bool = True,
+        full_refresh_minutes: int = 30,
         debug: bool = False,
         emulate: bool = False,
         rotation: int = 0,
         power_save: bool = False,
-    ):
+    ) -> None:
         """Initialize the EPaperDaemon.
 
-        Args:
-            update_interval: Seconds between display updates
-            state_machine_path: Optional path to state machine config
-            events_log: Path to events.json log file
-            gentle_updates: Use partial updates to reduce flicker
-            debug: Enable debug logging
-            emulate: Emulation mode (no physical display required)
-            rotation: Display rotation in degrees (0/90/180/270)
-            power_save: If True, put the EPD to sleep after each update
+        Keyword args (aside from positional `update_interval`):
+            update_interval: Seconds between display updates (positional)
+            state_machine_path: Optional path to a state-machine config used
+                to construct an internal StateMachine instance (if present).
+            events_log: Path to events.json for alert counting (defaults to
+                /var/log/azazel/events.json when not provided to StatusCollector).
+            wan_state_path: Optional explicit path to the WAN state JSON file
+                (overrides $AZAZEL_WAN_STATE_PATH and other fallbacks).
+            gentle_updates: Use partial/fast updates to reduce flicker (default True).
+            full_refresh_minutes: Perform a non-partial full refresh every N minutes
+                to reduce E-Paper ghosting. Set 0 to disable.
+            debug: Enable debug-level logging and additional trace output.
+            emulate: Emulation mode (does not require physical E-Paper hardware).
+            rotation: Display rotation in degrees (0, 90, 180, 270).
+            power_save: If True, attempt to sleep the EPD after each update
+                (may increase chance of SPI/device races; default False).
         """
-        self.update_interval = update_interval
-        self.gentle_updates = gentle_updates
-        self.debug = debug
-        self.emulate = emulate
+        # Core runtime configuration
+        self.update_interval = int(update_interval)
+        self.gentle_updates = bool(gentle_updates)
+        self.debug = bool(debug)
+        self.emulate = bool(emulate)
         self.running = False
-        self.power_save = power_save
+        self.power_save = bool(power_save)
         # Periodic full-refresh interval in minutes. If > 0, the daemon will
         # perform a full (non-gentle) refresh every `full_refresh_minutes`
         # minutes to reduce E-Paper ghosting from repeated partial updates.
@@ -69,7 +79,7 @@ class EPaperDaemon:
         )
         self.logger = logging.getLogger(__name__)
 
-        # Initialize state machine (optional, for mode/score tracking)
+    # Initialize state machine (optional, for mode/score tracking).
         self.state_machine = None
         if state_machine_path and Path(state_machine_path).exists():
             try:
@@ -81,11 +91,23 @@ class EPaperDaemon:
             except Exception as e:
                 self.logger.warning(f"Could not load state machine: {e}")
 
-        # Initialize status collector
-        self.collector = StatusCollector(
-            state_machine=self.state_machine,
-            events_log=events_log,
-        )
+    # Initialize status collector (allow explicit wan_state_path for testing).
+        # Some installed copies of StatusCollector may not accept the
+        # wan_state_path kwarg (older deployments). Attempt to pass the
+        # argument but fall back to calling without it for compatibility.
+        try:
+            self.collector = StatusCollector(
+                state_machine=self.state_machine,
+                events_log=events_log,
+                wan_state_path=wan_state_path,
+            )
+        except TypeError:
+            # Backwards-compatible fallback for older StatusCollector API
+            self.logger.debug("StatusCollector.__init__ does not accept wan_state_path; using fallback call")
+            self.collector = StatusCollector(
+                state_machine=self.state_machine,
+                events_log=events_log,
+            )
 
         # Initialize renderer (support rotation)
         try:
@@ -93,6 +115,16 @@ class EPaperDaemon:
         except Exception:
             self.rotation = 0
         self.renderer = EPaperRenderer(debug=debug, emulate=emulate, rotation=self.rotation)
+        # Track last seen WAN state so we can detect interface-driven
+        # transitions (e.g. when WAN manager sets status to "reconfiguring").
+        # On such transitions we clear the E-Paper to a clean white state
+        # before rendering the next update to avoid flicker/ghosting.
+        self._last_wan_state: str | None = None
+        # Track last seen active interface so we can detect when the
+        # active WAN interface switches (e.g. eth0 -> wlan1). When this
+        # happens perform a short clear + force a full refresh to avoid
+        # ghosting/artifacts from partial updates.
+        self._last_interface: str | None = None
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -107,7 +139,12 @@ class EPaperDaemon:
             env_ps_bool = str(env_ps).lower() in ("1", "true", "yes")
         except Exception:
             env_ps_bool = False
-        self.power_save = power_save or env_ps_bool
+        # Ensure we reference the instance attribute; avoid NameError when
+        # a signal arrives.
+        try:
+            self.power_save = bool(self.power_save) or env_ps_bool
+        except Exception:
+            self.power_save = env_ps_bool
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.running = False
 
@@ -132,6 +169,45 @@ class EPaperDaemon:
                 # Collect current status
                 status = self.collector.collect()
                 update_count += 1
+
+                # If WAN state transitioned to a reconfiguration event,
+                # clear the display briefly before rendering the updated
+                # status. This helps avoid artifacts when the active
+                # interface changes (WAN manager writes 'reconfiguring'
+                # into the runtime WAN state during switch). Force a
+                # full refresh for this update to ensure a clean output.
+                force_full_refresh = False
+                try:
+                    current_wan_state = getattr(status.network, "wan_state", None)
+                    current_interface = getattr(status.network, "interface", None)
+                    if self._last_wan_state != current_wan_state and current_wan_state == "reconfiguring":
+                        self.logger.info("WAN reconfiguration detected: clearing display before update")
+                        try:
+                            # Best-effort clear — ignore hardware errors here.
+                            self.renderer.clear()
+                        except Exception as e:
+                            self.logger.debug(f"Display clear failed: {e}")
+                        force_full_refresh = True
+                    # If the active interface changed (e.g. eth0 -> wlan1),
+                    # perform a clear + force full refresh so the new
+                    # interface/IP is shown cleanly. Skip on initial run
+                    # when we don't have a previous value.
+                    if (
+                        current_interface is not None
+                        and self._last_interface is not None
+                        and current_interface != self._last_interface
+                    ):
+                        self.logger.info(
+                            f"WAN interface changed: {self._last_interface} -> {current_interface}; clearing display"
+                        )
+                        try:
+                            self.renderer.clear()
+                        except Exception as e:
+                            self.logger.debug(f"Display clear on interface change failed: {e}")
+                        force_full_refresh = True
+                except Exception:
+                    # Conservative: if any error occurs, don't prevent normal update
+                    pass
 
                 self.logger.debug(
                     f"Update #{update_count}: mode={status.security.mode}, "
@@ -164,6 +240,11 @@ class EPaperDaemon:
                 # epdconfig.module_exit() (closing the SPI device) which can
                 # race with subsequent updates and produce "Bad file descriptor".
                 # Keep the display initialized and only sleep on shutdown.
+                # If we detected a WAN reconfiguration transition, force a
+                # full (non-gentle) refresh for this specific update so the
+                # display shows a clean, consistent output.
+                if force_full_refresh:
+                    gentle = False
                 self.renderer.display(image, gentle=gentle)
 
                 # Optionally put the module to sleep after each update when
@@ -178,7 +259,15 @@ class EPaperDaemon:
                             import traceback
 
                             traceback.print_exc()
-
+                # Remember last seen WAN state for next iteration's transition detection
+                try:
+                    self._last_wan_state = getattr(status.network, "wan_state", None)
+                    try:
+                        self._last_interface = getattr(status.network, "interface", None)
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
                 # Wait for next update (with early exit on shutdown)
                 for _ in range(self.update_interval):
                     if not self.running:
@@ -274,6 +363,17 @@ def main() -> int:
         default=int(os.getenv("EPD_FULL_REFRESH_MINUTES", "30")),
         help="Perform a full (non-partial) refresh every N minutes to reduce e-paper ghosting. Set 0 to disable (default: 30)",
     )
+    parser.add_argument(
+        "--wan-state-path",
+        type=Path,
+        help="Optional path to WAN state JSON file (overrides AZAZEL_WAN_STATE_PATH)",
+    )
+    parser.add_argument(
+        "--emulate-output",
+        type=Path,
+        default=Path("/tmp/azazel_epd_test.png"),
+        help="When in --mode test and --emulate is set, save the output image to this path",
+    )
 
     args = parser.parse_args()
 
@@ -289,7 +389,7 @@ def main() -> int:
         return 0
 
     if args.mode == "test":
-        collector = StatusCollector(events_log=args.events_log)
+        collector = StatusCollector(events_log=args.events_log, wan_state_path=args.wan_state_path)
         renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         status = collector.collect()
         image = renderer.render_status(status)
@@ -302,7 +402,7 @@ def main() -> int:
         # (apply the renderer rotation before saving so test output matches
         # what hardware would receive).
         if args.emulate:
-            output_path = "/tmp/azazel_epd_test.png"
+            output_path = str(args.emulate_output)
             try:
                 rot = getattr(renderer, "rotation", 0)
                 if rot:
@@ -327,6 +427,7 @@ def main() -> int:
         power_save=args.power_save,
         state_machine_path=args.state_config,
         events_log=args.events_log,
+        wan_state_path=args.wan_state_path,
         gentle_updates=not args.no_gentle,
         debug=args.debug,
         emulate=args.emulate,

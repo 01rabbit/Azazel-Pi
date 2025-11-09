@@ -105,7 +105,7 @@ Error: No networks found or scan failed
 sudo iw dev
 
 # Test scan permissions
-sudo iw wlan1 scan | head -20
+sudo iw ${AZAZEL_WAN_IF:-wlan1} scan | head -20
 
 # Resolve NetworkManager conflicts
 sudo systemctl stop NetworkManager
@@ -122,16 +122,19 @@ sudo systemctl disable NetworkManager
 
 ```bash
 # Check wpa_supplicant status
-sudo wpa_cli -i wlan1 status
+# Note: replace 'wlan1' with the runtime WAN interface. You can override the detected
+# interface by exporting AZAZEL_WAN_IF (or AZAZEL_LAN_IF for LAN-related commands).
+# Example uses the environment override with a fallback to the historical default:
+sudo wpa_cli -i ${AZAZEL_WAN_IF:-wlan1} status
 
 # Verify configuration file permissions
 ls -l /etc/wpa_supplicant/wpa_supplicant.conf
 
-# Test manual connection
-sudo wpa_cli -i wlan1 add_network
-sudo wpa_cli -i wlan1 set_network 0 ssid '"YourSSID"'
-sudo wpa_cli -i wlan1 set_network 0 psk '"YourPassword"'
-sudo wpa_cli -i wlan1 enable_network 0
+# Test manual connection (use AZAZEL_WAN_IF to override the interface name):
+sudo wpa_cli -i ${AZAZEL_WAN_IF:-wlan1} add_network
+sudo wpa_cli -i ${AZAZEL_WAN_IF:-wlan1} set_network 0 ssid '"YourSSID"'
+sudo wpa_cli -i ${AZAZEL_WAN_IF:-wlan1} set_network 0 psk '"YourPassword"'
+sudo wpa_cli -i ${AZAZEL_WAN_IF:-wlan1} enable_network 0
 ```
 
 ### Service Management Issues

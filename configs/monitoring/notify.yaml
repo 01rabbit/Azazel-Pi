@@ -44,6 +44,8 @@ opencanary:
 
 # ネットワーク制御設定
 network:
+  # 遅延制御対象インタフェース（例: wlan1）。ランタイムでの検出を優先する場合は
+  # 環境変数 AZAZEL_WAN_IF を設定してください（例: export AZAZEL_WAN_IF=wlan1）。
   interface: "wlan1"           # 遅延制御対象インタフェース
   inactivity_minutes: 2        # 無活動判定時間
   delay:

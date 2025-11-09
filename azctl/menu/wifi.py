@@ -24,11 +24,23 @@ class WiFiManager:
     def __init__(self, console: Console):
         self.console = console
     
-    def manage_wifi(self, wan_if: str = "wlan1") -> None:
-        """Wi-Fi connection manager entry point."""
+    def manage_wifi(self, wan_if: Optional[str] = None) -> None:
+        """Wi-Fi connection manager entry point.
+
+        If wan_if is not provided, resolve it using the WANManager active
+        interface accessor so callers get the WANManager-driven default.
+        """
         self.console.clear()
         self._print_section_header("Wi-Fi Connection Manager")
-        
+
+        # Resolve default WAN interface from WANManager if not provided
+        if wan_if is None:
+            try:
+                from azazel_pi.utils.wan_state import get_active_wan_interface
+                wan_if = get_active_wan_interface()
+            except Exception:
+                wan_if = "wlan1"
+
         # Check if required tools are available
         if not self._check_wifi_tools():
             return

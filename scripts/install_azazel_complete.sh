@@ -224,16 +224,19 @@ PY
   # if the installer is invoked with EPD_WIFI_SSID and EPD_WIFI_PSK environment variables.
   # Example: sudo EPD_WIFI_SSID="MySSID" EPD_WIFI_PSK="mypassword" ./install_azazel_complete.sh --enable-epd
   if [[ -n "${EPD_WIFI_SSID:-}" && -n "${EPD_WIFI_PSK:-}" ]]; then
-    log "Attempting to provision Wi-Fi for EPD (SSID=${EPD_WIFI_SSID})"
+    # Allow override of which interface to use for EPD Wi-Fi provisioning.
+  # Precedence: EPD_WIFI_IF -> AZAZEL_WAN_IF -> fallback ${AZAZEL_WAN_IF:-wlan1}
+  EPD_WIFI_IF=${EPD_WIFI_IF:-${AZAZEL_WAN_IF:-wlan1}}
+    log "Attempting to provision Wi-Fi for EPD (SSID=${EPD_WIFI_SSID}, if=${EPD_WIFI_IF})"
     # Try direct connect first (creates a connection profile on success)
-    if nmcli -t -f GENERAL.STATE device show wlan1 >/dev/null 2>&1; then
-      if nmcli device wifi connect "$EPD_WIFI_SSID" password "$EPD_WIFI_PSK" ifname wlan1; then
-        log "Wi-Fi connected (wlan1) to ${EPD_WIFI_SSID}"
+    if nmcli -t -f GENERAL.STATE device show "$EPD_WIFI_IF" >/dev/null 2>&1; then
+      if nmcli device wifi connect "$EPD_WIFI_SSID" password "$EPD_WIFI_PSK" ifname "$EPD_WIFI_IF"; then
+        log "Wi-Fi connected (${EPD_WIFI_IF}) to ${EPD_WIFI_SSID}"
       else
         warn "Direct nmcli connect failed; attempting to create persistent connection profile"
         # Create connection, then explicitly set security properties to avoid
         # "key-mgmt missing" errors across nmcli versions.
-        nmcli connection add type wifi con-name azazel-epd-wifi ifname wlan1 ssid "$EPD_WIFI_SSID" || true
+        nmcli connection add type wifi con-name azazel-epd-wifi ifname "$EPD_WIFI_IF" ssid "$EPD_WIFI_SSID" || true
         # Set PSK and key management using the 802-11-wireless-security keys
         nmcli connection modify azazel-epd-wifi 802-11-wireless-security.key-mgmt "wpa-psk" || true
         nmcli connection modify azazel-epd-wifi 802-11-wireless-security.psk "$EPD_WIFI_PSK" || true
@@ -246,7 +249,7 @@ PY
         nmcli connection up azazel-epd-wifi || warn "Failed to activate azazel-epd-wifi"
       fi
     else
-      warn "wlan1 device not present or controllable by NetworkManager; skipping wifi provisioning"
+      warn "${EPD_WIFI_IF} device not present or controllable by NetworkManager; skipping wifi provisioning"
     fi
   fi
 else

@@ -7,11 +7,13 @@ functionality for the Azazel TUI menu system.
 """
 
 from typing import Optional, Any
+import os
 
 from rich.console import Console
 
 from azctl.menu.types import MenuCategory, MenuAction
 from azctl.menu.wifi import WiFiManager
+from azazel_pi.utils.wan_state import get_active_wan_interface
 from azazel_pi.utils.network_utils import (
     get_wlan_ap_status, get_wlan_link_info, get_active_profile,
     get_network_interfaces_stats, format_bytes
@@ -26,11 +28,16 @@ except ImportError:
 class NetworkModule:
     """Network information and management functionality."""
     
-    def __init__(self, console: Console, lan_if: str = "wlan0", wan_if: str = "wlan1", 
+    def __init__(self, console: Console, lan_if: Optional[str] = None, wan_if: Optional[str] = None,
                  status_collector: Optional[Any] = None):
         self.console = console
-        self.lan_if = lan_if
-        self.wan_if = wan_if
+        # LAN precedence: explicit arg -> AZAZEL_LAN_IF env -> default wlan0
+        self.lan_if = lan_if or os.environ.get("AZAZEL_LAN_IF") or "wlan0"
+        # WAN precedence: explicit arg -> AZAZEL_WAN_IF env -> helper -> fallback wlan1
+        try:
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
+        except Exception:
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or "wlan1"
         self.status_collector = status_collector
         
         # Initialize Wi-Fi manager
@@ -195,7 +202,8 @@ class NetworkModule:
         
         # Add interface statistics
         for interface, stats in status.get('interfaces', {}).items():
-            if interface in [self.lan_if, self.wan_if, 'eth0']:
+            # Show statistics for LAN and WAN interfaces; prefer resolved interfaces
+            if interface in [self.lan_if, self.wan_if]:
                 rx_bytes = self._format_bytes(stats.get('rx_bytes', 0))
                 tx_bytes = self._format_bytes(stats.get('tx_bytes', 0))
                 rx_packets = f"{stats.get('rx_packets', 0):,}"
@@ -242,7 +250,7 @@ class NetworkModule:
                     interface = fields[0].rstrip(':')
                     
                     # Only show relevant interfaces
-                    if interface in [self.lan_if, self.wan_if, 'eth0', 'lo']:
+                    if interface in [self.lan_if, self.wan_if, 'lo']:
                         rx_bytes = int(fields[1])
                         rx_packets = int(fields[2])
                         rx_errors = int(fields[3])

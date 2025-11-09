@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any, Callable
+import os
 
 from rich.console import Console
 from rich.text import Text
@@ -39,11 +40,18 @@ except ImportError:
 class AzazelTUIMenu:
     """Main TUI menu system for Azazel-Pi control interface."""
     
-    def __init__(self, decisions_log: Optional[str] = None, lan_if: str = "wlan0", wan_if: str = "wlan1"):
+    def __init__(self, decisions_log: Optional[str] = None, lan_if: Optional[str] = None, wan_if: Optional[str] = None):
         self.console = Console()
         self.decisions_log = decisions_log
-        self.lan_if = lan_if
-        self.wan_if = wan_if
+        # LAN precedence: explicit arg -> AZAZEL_LAN_IF env -> default wlan0
+        self.lan_if = lan_if or os.environ.get("AZAZEL_LAN_IF") or "wlan0"
+        # Resolve WAN interface default from explicit arg -> env -> helper -> fallback
+        try:
+            from azazel_pi.utils.wan_state import get_active_wan_interface
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
+        except Exception:
+            # Fallback to previous hardcoded default if resolution fails
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or "wlan1"
         
         # Initialize status collector if available
         self.status_collector = None
@@ -55,14 +63,14 @@ class AzazelTUIMenu:
         
         # Initialize all modules (import here to avoid circular imports)
         from azctl.menu.network import NetworkModule
-        from azctl.menu.defense import DefenseModule 
+        from azctl.menu.defense import DefenseModule
         from azctl.menu.services import ServicesModule
         from azctl.menu.monitoring import MonitoringModule
         from azctl.menu.system import SystemModule
         from azctl.menu.emergency import EmergencyModule
-        
-        self.network_module = NetworkModule(self.console, self.lan_if, self.wan_if)
-        self.defense_module = DefenseModule(self.console)
+
+        self.network_module = NetworkModule(self.console, self.lan_if, self.wan_if, self.status_collector)
+        self.defense_module = DefenseModule(self.console, decisions_log=self.decisions_log, lan_if=self.lan_if, wan_if=self.wan_if)
         self.services_module = ServicesModule(self.console)
         self.monitoring_module = MonitoringModule(self.console)
         self.system_module = SystemModule(self.console, self.status_collector)

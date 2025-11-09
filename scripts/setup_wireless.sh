@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Unified Wireless Network Setup for Azazel-Pi
-# Configures wlan0 as AP (internal network) and wlan1 monitoring for Suricata
+# Configures an internal AP (default ${AZAZEL_LAN_IF:-wlan0}) and an upstream/monitoring interface (default ${AZAZEL_WAN_IF:-wlan1}).
+# Interfaces may be overridden by environment variables: AZAZEL_LAN_IF (AP) and AZAZEL_WAN_IF (upstream).
 # Run as root (sudo)
 
 set -euo pipefail
@@ -8,8 +9,9 @@ set -euo pipefail
 # --- Configuration ---
 SSID="Azazel_Internal"
 PASSPHRASE="change-this-to-a-strong-pass"
-WLAN_AP="wlan0"              # Internal AP interface
-WLAN_UP="wlan1"              # Upstream/monitoring interface
+# Allow environment overrides for interfaces. Precedence: AZAZEL_LAN_IF for AP, AZAZEL_WAN_IF for upstream
+WLAN_AP="${AZAZEL_LAN_IF:-wlan0}"              # Internal AP interface (default ${AZAZEL_LAN_IF:-wlan0})
+WLAN_UP="${AZAZEL_WAN_IF:-wlan1}"              # Upstream/monitoring interface (default ${AZAZEL_WAN_IF:-wlan1})
 INTERNAL_NET="172.16.0.0/24"
 AP_IP="172.16.0.254"
 DHCPS_START="172.16.0.10"
@@ -48,12 +50,12 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Configure wireless interfaces for Azazel-Pi:
-- wlan0: Internal Access Point (172.16.0.0/24)
-- wlan1: Upstream connection + Suricata monitoring
+- ${AZAZEL_LAN_IF:-wlan0}: Internal Access Point (172.16.0.0/24)
+- ${AZAZEL_WAN_IF:-wlan1}: Upstream connection + Suricata monitoring
 
 Options:
-  --ap-only           Configure only AP (wlan0), skip Suricata setup
-  --suricata-only     Configure only Suricata monitoring (wlan1), skip AP
+  --ap-only           Configure only AP (default: ${AZAZEL_LAN_IF:-wlan0}), skip Suricata setup
+  --suricata-only     Configure only Suricata monitoring (default: ${AZAZEL_WAN_IF:-wlan1}), skip AP
   --skip-confirm      Skip interactive confirmations (for automation)
   --ssid NAME         Set AP SSID (default: $SSID)
   --passphrase PASS   Set AP passphrase (default: $PASSPHRASE)
@@ -124,8 +126,8 @@ fi
 log "Unified Wireless Network Setup for Azazel-Pi"
 echo
 echo "Configuration Summary:"
-echo "  AP Interface (wlan0):     $([ $SETUP_AP -eq 1 ] && echo "✓ Configure as $AP_IP" || echo "✗ Skip")"
-echo "  Monitor Interface (wlan1): $([ $SETUP_SURICATA -eq 1 ] && echo "✓ Configure for Suricata" || echo "✗ Skip")"
+  echo "  AP Interface (${WLAN_AP}):     $([ $SETUP_AP -eq 1 ] && echo "✓ Configure as $AP_IP" || echo "✗ Skip")"
+  echo "  Monitor Interface (${WLAN_UP}): $([ $SETUP_SURICATA -eq 1 ] && echo "✓ Configure for Suricata" || echo "✗ Skip")"
 echo "  Internal Network:         $INTERNAL_NET"
 echo "  AP SSID:                  $SSID"
 echo "  DHCP Range:               $DHCPS_START - $DHCPS_END"
@@ -136,7 +138,7 @@ if [[ $SKIP_CONFIRM -eq 0 ]]; then
   confirm "Proceed with wireless configuration?" || { echo "Aborted."; exit 1; }
 fi
 
-# Function: Setup Access Point (wlan0)
+# Function: Setup Access Point (${AZAZEL_LAN_IF:-wlan0})
 setup_access_point() {
   log "Setting up Access Point on $WLAN_AP"
   
@@ -241,16 +243,17 @@ EOF
   # Apply nftables rules
   nft -f /etc/nftables.conf || warn "nftables rules may have issues"
   
-  # Exclude wlan0 from NetworkManager management
+  # Exclude ${AZAZEL_LAN_IF:-wlan0} from NetworkManager management
   log "Configuring NetworkManager to ignore $WLAN_AP..."
   mkdir -p /etc/NetworkManager/conf.d
-  cat > /etc/NetworkManager/conf.d/unmanaged-wlan0.conf <<EOF
+[ -n "$WLAN_AP" ] || error "WLAN_AP not set"
+  cat > /etc/NetworkManager/conf.d/unmanaged-${WLAN_AP}.conf <<EOF
 [keyfile]
 unmanaged-devices=interface-name:$WLAN_AP
 EOF
   systemctl reload NetworkManager 2>/dev/null || true
   
-  # Configure systemd-networkd for persistent IP on wlan0
+  # Configure systemd-networkd for persistent IP on ${AZAZEL_LAN_IF:-wlan0}
   log "Configuring systemd-networkd for persistent IP..."
   mkdir -p /etc/systemd/network
   cat > /etc/systemd/network/10-${WLAN_AP}.network <<EOF
@@ -274,7 +277,7 @@ EOF
   success "Access Point configuration completed"
 }
 
-# Function: Setup Suricata Monitoring (wlan1)
+# Function: Setup Suricata Monitoring (${AZAZEL_WAN_IF:-wlan1})
 setup_suricata_monitoring() {
   log "Setting up Suricata monitoring on $WLAN_UP"
   

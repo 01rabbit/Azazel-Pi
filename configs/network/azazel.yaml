@@ -3,6 +3,9 @@ interfaces:
   lan: wlan0
   wan: wlan1
   # 外部（アップリンク）として扱うインターフェースの明示（複数可）
+  # 注意: これらは例です。ランタイムでの自動選択を優先する場合は
+  # 環境変数 `AZAZEL_WAN_IF` (単一) または `AZAZEL_WAN_CANDIDATES` (カンマ区切り) を使用して
+  # 実行時に優先するインターフェースを指定できます。
   external: ["eth0", "wlan1"]
 profiles:
   active: lte
@@ -39,6 +42,8 @@ privacy: { pii_minimize: true, hash_fields: ["src.ip", "dst.ip", "username"] }
 
 # QoS internal network control (premium/standard/best_effort/restricted)
 wan_iface: "eth0"     # shaping target interface (can mirror 'interfaces.wan')
+# Runtime note: to override the shaping target at runtime set AZAZEL_WAN_IF env var
+#   export AZAZEL_WAN_IF=wlan1
 lan_iface: "br0"      # LAN bridge for ARP pinning when MODE=lock
 mark_map:
   premium:    0x10

@@ -18,7 +18,11 @@ rule-files:
   - suricata.rules      # suricata-updateで取得したルール＋自作ルール（Emerging Threats推奨）
 
 af-packet:
-  # 外部ネットワーク接続インターフェース（WAN）として wlan1 と eth0 の両方を監視
+  # 外部ネットワーク接続インターフェース（WAN）の例。実環境では
+  # AZAZEL_WAN_IF 環境変数で単一インターフェースを指定するか、
+  # azazel のランタイム WAN マネージャ経由で選択することを推奨します。
+  # 例: export AZAZEL_WAN_IF=wlan1
+  # 下記は複数インターフェースを監視するサンプルです。
   - interface: wlan1
     cluster-id: 99
     cluster-type: cluster_flow

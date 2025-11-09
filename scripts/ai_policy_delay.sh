@@ -6,7 +6,8 @@ set -euo pipefail
 
 SRC_IP=${1:?source IP required}
 DELAY=${2:-200ms}
-INTERFACE=${3:-wlan1}  # Default to wlan1 (WAN interface)
+# Interface precedence: positional arg -> AZAZEL_WAN_IF env -> fallback ${AZAZEL_WAN_IF:-wlan1}
+INTERFACE=${3:-${AZAZEL_WAN_IF:-wlan1}}
 
 # Logging function
 log() {
