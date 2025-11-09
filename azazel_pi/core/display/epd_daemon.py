@@ -104,6 +104,11 @@ class EPaperDaemon:
         except Exception:
             self.rotation = 0
         self.renderer = EPaperRenderer(debug=debug, emulate=emulate, rotation=self.rotation)
+        # Track last seen WAN state so we can detect interface-driven
+        # transitions (e.g. when WAN manager sets status to "reconfiguring").
+        # On such transitions we clear the E-Paper to a clean white state
+        # before rendering the next update to avoid flicker/ghosting.
+        self._last_wan_state: str | None = None
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -149,6 +154,27 @@ class EPaperDaemon:
                 status = self.collector.collect()
                 update_count += 1
 
+                # If WAN state transitioned to a reconfiguration event,
+                # clear the display briefly before rendering the updated
+                # status. This helps avoid artifacts when the active
+                # interface changes (WAN manager writes 'reconfiguring'
+                # into the runtime WAN state during switch). Force a
+                # full refresh for this update to ensure a clean output.
+                force_full_refresh = False
+                try:
+                    current_wan_state = getattr(status.network, "wan_state", None)
+                    if self._last_wan_state != current_wan_state and current_wan_state == "reconfiguring":
+                        self.logger.info("WAN reconfiguration detected: clearing display before update")
+                        try:
+                            # Best-effort clear — ignore hardware errors here.
+                            self.renderer.clear()
+                        except Exception as e:
+                            self.logger.debug(f"Display clear failed: {e}")
+                        force_full_refresh = True
+                except Exception:
+                    # Conservative: if any error occurs, don't prevent normal update
+                    pass
+
                 self.logger.debug(
                     f"Update #{update_count}: mode={status.security.mode}, "
                     f"score={status.security.score_average:.1f}, "
@@ -180,6 +206,11 @@ class EPaperDaemon:
                 # epdconfig.module_exit() (closing the SPI device) which can
                 # race with subsequent updates and produce "Bad file descriptor".
                 # Keep the display initialized and only sleep on shutdown.
+                # If we detected a WAN reconfiguration transition, force a
+                # full (non-gentle) refresh for this specific update so the
+                # display shows a clean, consistent output.
+                if force_full_refresh:
+                    gentle = False
                 self.renderer.display(image, gentle=gentle)
 
                 # Optionally put the module to sleep after each update when
@@ -194,7 +225,11 @@ class EPaperDaemon:
                             import traceback
 
                             traceback.print_exc()
-
+                # Remember last seen WAN state for next iteration's transition detection
+                try:
+                    self._last_wan_state = getattr(status.network, "wan_state", None)
+                except Exception:
+                    pass
                 # Wait for next update (with early exit on shutdown)
                 for _ in range(self.update_interval):
                     if not self.running:
