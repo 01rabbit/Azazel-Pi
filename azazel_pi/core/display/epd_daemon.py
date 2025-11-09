@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import logging
 import signal
 import sys
@@ -26,11 +27,14 @@ class EPaperDaemon:
         update_interval: int = 10,
         state_machine_path: Path | None = None,
         events_log: Path | None = None,
-        gentle_updates: bool = True,
+    gentle_updates: bool = True,
+    full_refresh_minutes: int = 30,
         debug: bool = False,
         emulate: bool = False,
+        rotation: int = 0,
+        power_save: bool = False,
     ):
-        """Initialize the daemon.
+        """Initialize the EPaperDaemon.
 
         Args:
             update_interval: Seconds between display updates
@@ -39,12 +43,22 @@ class EPaperDaemon:
             gentle_updates: Use partial updates to reduce flicker
             debug: Enable debug logging
             emulate: Emulation mode (no physical display required)
+            rotation: Display rotation in degrees (0/90/180/270)
+            power_save: If True, put the EPD to sleep after each update
         """
         self.update_interval = update_interval
         self.gentle_updates = gentle_updates
         self.debug = debug
         self.emulate = emulate
         self.running = False
+        self.power_save = power_save
+        # Periodic full-refresh interval in minutes. If > 0, the daemon will
+        # perform a full (non-gentle) refresh every `full_refresh_minutes`
+        # minutes to reduce E-Paper ghosting from repeated partial updates.
+        try:
+            self.full_refresh_minutes = int(full_refresh_minutes)
+        except Exception:
+            self.full_refresh_minutes = 0
 
         # Set up logging
         log_level = logging.DEBUG if debug else logging.INFO
@@ -73,8 +87,12 @@ class EPaperDaemon:
             events_log=events_log,
         )
 
-        # Initialize renderer
-        self.renderer = EPaperRenderer(debug=debug, emulate=emulate)
+        # Initialize renderer (support rotation)
+        try:
+            self.rotation = int(rotation) if rotation is not None else 0
+        except Exception:
+            self.rotation = 0
+        self.renderer = EPaperRenderer(debug=debug, emulate=emulate, rotation=self.rotation)
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -82,6 +100,14 @@ class EPaperDaemon:
 
     def _signal_handler(self, signum: int, frame) -> None:
         """Handle shutdown signals gracefully."""
+        # Power-save mode: if True, put the EPD to sleep after each update.
+        # Controlled by CLI flag --power-save or environment EPD_POWER_SAVE.
+        env_ps = os.getenv("EPD_POWER_SAVE", os.getenv("AZAZEL_EPD_POWER_SAVE", "0"))
+        try:
+            env_ps_bool = str(env_ps).lower() in ("1", "true", "yes")
+        except Exception:
+            env_ps_bool = False
+        self.power_save = power_save or env_ps_bool
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.running = False
 
@@ -94,17 +120,10 @@ class EPaperDaemon:
         self.logger.info("E-Paper daemon starting...")
         self.running = True
 
-        # Show boot animation
-        try:
-            self.logger.info("Displaying boot animation...")
-            self.renderer.render_boot_animation(steps=8, frame_delay=0.2)
-            time.sleep(1)
-        except Exception as e:
-            self.logger.error(f"Boot animation failed: {e}")
-            if self.debug:
-                import traceback
-
-                traceback.print_exc()
+        # Boot animation intentionally disabled by default to reduce SPI/GPIO activity
+        # and avoid timing races during early boot. The renderer's boot helper now
+        # performs a simple clear-to-white; do not run animated sequences here.
+        self.logger.debug("Boot animation suppressed (static clear-only behavior)")
 
         # Main update loop
         update_count = 0
@@ -125,8 +144,40 @@ class EPaperDaemon:
                 
                 # Use gentle updates after the first one
                 gentle = self.gentle_updates and update_count > 1
+
+                # If periodic full-refresh is enabled, compute whether this
+                # update should be a full refresh. We convert the minutes
+                # interval into an update-frequency based on update_interval
+                # (in seconds). If the current update_count hits that
+                # frequency, force a full refresh (gentle=False).
+                if self.full_refresh_minutes and self.update_interval > 0:
+                    try:
+                        secs_per_full = max(1, int(self.full_refresh_minutes) * 60)
+                        updates_per_full = max(1, secs_per_full // self.update_interval)
+                        if update_count % updates_per_full == 0:
+                            gentle = False
+                    except Exception:
+                        # On any error, keep existing gentle selection
+                        pass
+                # Display (keep module initialized). Putting the module to
+                # sleep after every update causes the driver to call
+                # epdconfig.module_exit() (closing the SPI device) which can
+                # race with subsequent updates and produce "Bad file descriptor".
+                # Keep the display initialized and only sleep on shutdown.
                 self.renderer.display(image, gentle=gentle)
-                self.renderer.sleep()
+
+                # Optionally put the module to sleep after each update when
+                # power-save mode is enabled. Disabled by default to avoid
+                # module_exit / SPI.close() races; enabling this will trade
+                # lower power consumption for a higher chance of races.
+                if self.power_save:
+                    try:
+                        self.renderer.sleep()
+                    except Exception:
+                        if self.debug:
+                            import traceback
+
+                            traceback.print_exc()
 
                 # Wait for next update (with early exit on shutdown)
                 for _ in range(self.update_interval):
@@ -206,44 +257,81 @@ def main() -> int:
         action="store_true",
         help="Emulation mode (no physical E-Paper required)",
     )
+    parser.add_argument(
+        "--power-save",
+        action="store_true",
+        help="Enable per-update EPD sleep (power saving). Default: disabled; can also be set via EPD_POWER_SAVE env var.",
+    )
+    parser.add_argument(
+        "--rotate",
+        type=int,
+        default=int(os.getenv("EPD_ROTATION", "0")),
+        help="Rotate display output in degrees (0,90,180,270). Can also be set via EPD_ROTATION env var.",
+    )
+    parser.add_argument(
+        "--full-refresh-minutes",
+        type=int,
+        default=int(os.getenv("EPD_FULL_REFRESH_MINUTES", "30")),
+        help="Perform a full (non-partial) refresh every N minutes to reduce e-paper ghosting. Set 0 to disable (default: 30)",
+    )
 
     args = parser.parse_args()
 
     # Quick mode handlers
     if args.mode == "boot":
-        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate)
+        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         renderer.render_boot_animation(steps=10, frame_delay=0.25)
         return 0
 
     if args.mode == "shutdown":
-        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate)
+        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         renderer.render_shutdown_animation(hold_seconds=1.5)
         return 0
 
     if args.mode == "test":
         collector = StatusCollector(events_log=args.events_log)
-        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate)
+        renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         status = collector.collect()
         image = renderer.render_status(status)
+
+        # Display (which will apply rotation internally), then sleep
         renderer.display(image, gentle=False)
         renderer.sleep()
-        
-        # In emulation mode, save image to file for verification
+
+        # In emulation mode, save the image as it would appear on the display
+        # (apply the renderer rotation before saving so test output matches
+        # what hardware would receive).
         if args.emulate:
             output_path = "/tmp/azazel_epd_test.png"
-            image.save(output_path)
-            print(f"Emulation mode: Image saved to {output_path}")
-        
+            try:
+                rot = getattr(renderer, "rotation", 0)
+                if rot:
+                    save_img = image.rotate(rot, expand=False)
+                else:
+                    save_img = image
+                save_img.save(output_path)
+                print(f"Emulation mode: Image saved to {output_path} (rotation={rot})")
+            except Exception as e:
+                # Best-effort fallback — save the original image
+                try:
+                    image.save(output_path)
+                    print(f"Emulation mode: Image saved to {output_path} (fallback, error: {e})")
+                except Exception:
+                    print(f"Emulation mode: failed to save image: {e}")
+
         return 0
 
     # Daemon mode
     daemon = EPaperDaemon(
         update_interval=args.interval,
+        power_save=args.power_save,
         state_machine_path=args.state_config,
         events_log=args.events_log,
         gentle_updates=not args.no_gentle,
         debug=args.debug,
         emulate=args.emulate,
+        rotation=args.rotate,
+        full_refresh_minutes=args.full_refresh_minutes,
     )
     return daemon.run()
 

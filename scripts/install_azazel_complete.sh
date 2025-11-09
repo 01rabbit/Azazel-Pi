@@ -111,8 +111,11 @@ if [[ $ENABLE_EPD -eq 1 ]]; then
     python3-dev \
     python3-spidev \
     python3-rpi.gpio \
-    libopenjp2-7 \
-    libtiff5 \
+    ethtool \
+    iw \
+  libopenjp2-7 \
+  libtiff6 \
+  libtiff-tools \
     git || warn "One or more E-Paper dependency packages failed to install"
 
   # Enable SPI if not already enabled (both legacy + Pi5 path)
@@ -131,6 +134,27 @@ if [[ $ENABLE_EPD -eq 1 ]]; then
     fi
   else
     log "Waveshare E-Paper library already present"
+  fi
+
+  # Install the Waveshare Python package (so waveshare_epd is available system-wide)
+  EPD_PY_PATH="$EPD_ROOT/RaspberryPi_JetsonNano/python"
+  if [[ -d "$EPD_PY_PATH" ]]; then
+    log "Installing Waveshare Python driver from $EPD_PY_PATH"
+    pushd "$EPD_PY_PATH" >/dev/null || true
+    # Try setup.py install first, fall back to pip install
+    if python3 setup.py install; then
+      log "Waveshare Python driver installed via setup.py"
+    else
+      warn "setup.py install failed, attempting pip install ."
+      if pip3 install .; then
+        log "Waveshare Python driver installed via pip"
+      else
+        warn "Failed to install Waveshare Python driver; E-Paper support may be incomplete"
+      fi
+    fi
+    popd >/dev/null || true
+  else
+    warn "Expected Waveshare python source directory not found: $EPD_PY_PATH"
   fi
 
   # Install default configuration + service
@@ -157,6 +181,73 @@ if [[ $ENABLE_EPD -eq 1 ]]; then
     fi
   else
     warn "SPI device /dev/spidev0.0 not found; skipping service enable (use --epd-force or --epd-emulate to override)."
+  fi
+  
+  # If a backup of epdconfig.py exists in the source tree, attempt to restore it
+  # into the installed waveshare package location (best-effort).
+  EPDCONFIG_BAK="$EPD_PY_PATH/epdconfig.py.bak"
+  if [[ -f "$EPDCONFIG_BAK" ]]; then
+    log "Found epdconfig.py.bak in source; attempting to restore to installed package"
+    PY_TARGET=$(python3 - <<PY
+import importlib, os
+try:
+    m = importlib.import_module('waveshare_epd')
+    print(os.path.dirname(m.__file__))
+except Exception:
+    print('')
+PY
+)
+    if [[ -n "$PY_TARGET" && -d "$PY_TARGET" ]]; then
+      install -m 0644 "$EPDCONFIG_BAK" "$PY_TARGET/epdconfig.py" || warn "Failed to restore epdconfig.py from backup"
+      log "Restored epdconfig.py from backup into $PY_TARGET"
+    else
+      warn "Could not locate installed waveshare_epd package to restore epdconfig.py"
+    fi
+  fi
+
+  # Ensure repository fonts used by the renderer are installed to the deployed path
+  # so the systemd-run process can find them regardless of CWD. This ensures the
+  # renderer will use the repo font under service environment (not only in dev).
+  if [[ -d "fonts" ]]; then
+    log "Installing repository fonts to /opt/azazel/fonts"
+    mkdir -p /opt/azazel/fonts
+    # Install common font(s) used by the renderer; ignore failures but warn.
+    if [[ -f "fonts/Tamanegi_kaisyo_geki_v7.ttf" ]]; then
+      install -m 0644 "fonts/Tamanegi_kaisyo_geki_v7.ttf" /opt/azazel/fonts/Tamanegi_kaisyo_geki_v7.ttf || warn "Failed to install repo font to /opt/azazel/fonts"
+      chmod 644 /opt/azazel/fonts/Tamanegi_kaisyo_geki_v7.ttf || true
+    else
+      warn "Repo font fonts/Tamanegi_kaisyo_geki_v7.ttf not found; renderer may fall back to system fonts"
+    fi
+  fi
+
+  # Optional: allow the installer to provision Wi-Fi for the E-Paper host interface
+  # if the installer is invoked with EPD_WIFI_SSID and EPD_WIFI_PSK environment variables.
+  # Example: sudo EPD_WIFI_SSID="MySSID" EPD_WIFI_PSK="mypassword" ./install_azazel_complete.sh --enable-epd
+  if [[ -n "${EPD_WIFI_SSID:-}" && -n "${EPD_WIFI_PSK:-}" ]]; then
+    log "Attempting to provision Wi-Fi for EPD (SSID=${EPD_WIFI_SSID})"
+    # Try direct connect first (creates a connection profile on success)
+    if nmcli -t -f GENERAL.STATE device show wlan1 >/dev/null 2>&1; then
+      if nmcli device wifi connect "$EPD_WIFI_SSID" password "$EPD_WIFI_PSK" ifname wlan1; then
+        log "Wi-Fi connected (wlan1) to ${EPD_WIFI_SSID}"
+      else
+        warn "Direct nmcli connect failed; attempting to create persistent connection profile"
+        # Create connection, then explicitly set security properties to avoid
+        # "key-mgmt missing" errors across nmcli versions.
+        nmcli connection add type wifi con-name azazel-epd-wifi ifname wlan1 ssid "$EPD_WIFI_SSID" || true
+        # Set PSK and key management using the 802-11-wireless-security keys
+        nmcli connection modify azazel-epd-wifi 802-11-wireless-security.key-mgmt "wpa-psk" || true
+        nmcli connection modify azazel-epd-wifi 802-11-wireless-security.psk "$EPD_WIFI_PSK" || true
+        # Disable MAC address randomization for stability with some APs/extenders
+        nmcli connection modify azazel-epd-wifi wifi.mac-address-randomization never || true
+        # Optional: if an environment BSSID is provided, pin to that AP
+        if [[ -n "${EPD_WIFI_BSSID:-}" ]]; then
+          nmcli connection modify azazel-epd-wifi 802-11-wireless.bssid "$EPD_WIFI_BSSID" || true
+        fi
+        nmcli connection up azazel-epd-wifi || warn "Failed to activate azazel-epd-wifi"
+      fi
+    else
+      warn "wlan1 device not present or controllable by NetworkManager; skipping wifi provisioning"
+    fi
   fi
 else
   log "E-Paper integration not requested (use --enable-epd to include)"

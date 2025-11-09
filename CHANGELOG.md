@@ -65,3 +65,27 @@ All notable changes to this project will be documented in this file.
 
 --
 Semantic versioning: MAJOR.MINOR.PATCH. Deprecations queued for removal after at least one minor release grace period.
+
+## [1.5.0] - 2025-11-05
+### Added
+- Nginx reverse proxy configuration and setup scripts to front-end Mattermost and other services.
+- Mattermost full-reset script and Docker/Postgres integration for easy environment refresh.
+- Configuration schema updates to support external interfaces and updated defaults in `azazel.yaml`.
+- Suricata can monitor multiple interfaces (wlan1 and eth0) for broader visibility.
+- Documentation updates (EN/JA) covering Nginx setup and network configuration notes.
+
+### Changed
+- Adjusted Nginx recommended headers and client/body limits.
+- Cleaned up legacy service files and removed deprecated references.
+
+### Notes
+- Version bump to 1.5.0; this release focuses on deployability and documentation improvements.
+
+## [1.0.0] - 2025-10-05
+### Initial release
+- Initial public baseline of Azazel-Pi with core features:
+  - Suricata integration for network threat detection
+  - AI-based threat evaluation pipeline and scoring
+  - Basic TUI and CLI utilities for status and control
+  - Initial installer and documentation to deploy core services
+

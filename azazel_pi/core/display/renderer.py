@@ -18,6 +18,10 @@ WS_LIB = WS_ROOT / "lib"
 
 # Font candidates (fallback chain)
 TITLE_FONT_CANDIDATES = [
+    # Prefer local repo font if present (fonts/ in project root), then fall back
+    # to system fonts.
+    # Path: <repo root>/fonts/Tamanegi_kaisyo_geki_v7.ttf
+    str(Path(__file__).resolve().parents[3] / "fonts" / "Tamanegi_kaisyo_geki_v7.ttf"),
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf",
 ]
@@ -35,6 +39,7 @@ class EPaperRenderer:
         width: int = 250,
         height: int = 122,
         driver_name: str = "epd2in13_V4",
+        rotation: int = 0,
         debug: bool = False,
         emulate: bool = False,
     ):
@@ -50,6 +55,11 @@ class EPaperRenderer:
         self.width = width
         self.height = height
         self.driver_name = driver_name
+        # Rotation in degrees (0, 90, 180, 270). Applied to final image before sending.
+        try:
+            self.rotation = int(rotation) % 360
+        except Exception:
+            self.rotation = 0
         self.debug = debug
         self.emulate = emulate
         self._epd = None
@@ -124,6 +134,8 @@ class EPaperRenderer:
 
     def _pick_font(self, candidates: list[str], size: int) -> ImageFont.FreeTypeFont:
         """Select first available font from candidates."""
+        # Pick the first existing font from the candidate list. Don't log
+        # during normal operation to keep journal output clean.
         for path in candidates:
             try:
                 if Path(path).exists():
@@ -160,11 +172,22 @@ class EPaperRenderer:
         Returns:
             PIL Image ready for display
         """
+        # Ensure driver dimensions are known before composing the image. Some
+        # drivers update `self.width`/`self.height` during init, and composing
+        # an image with the wrong size will cause clipping on hardware.
+        try:
+            self._init_driver()
+        except Exception:
+            # If driver init fails, continue with configured dimensions so we
+            # can still produce an image in emulation or degraded mode.
+            pass
+
         img = Image.new("1", (self.width, self.height), 255)
         draw = ImageDraw.Draw(img)
 
         # Fonts
-        title_font = self._pick_font(TITLE_FONT_CANDIDATES, 16)
+        # Use a slightly larger title font so the header is more readable.
+        title_font = self._pick_font(TITLE_FONT_CANDIDATES, 20)
         header_font = self._pick_font(MONO_FONT_CANDIDATES, 14)
         body_font = self._pick_font(MONO_FONT_CANDIDATES, 12)
 
@@ -196,18 +219,141 @@ class EPaperRenderer:
         draw.rectangle([(4, y), (4 + mode_width, y + 18)], fill=bg_color)
         draw.text((8, y + 2), mode_text, font=header_font, fill=text_color)
         
-        # Score on the right
-        draw.text((self.width - 80, y + 2), score_text, font=header_font, fill=0)
+        # Score on the right — compute width and ensure it doesn't overlap the
+        # mode indicator box. Shift left as needed so the text isn't clipped.
+        score_bbox = draw.textbbox((0, 0), score_text, font=header_font)
+        score_w = score_bbox[2] - score_bbox[0]
+        # Desired x so the score has a small right margin
+        score_x = self.width - score_w - 6
+        # Minimum x: leave a small gap after the mode box
+        min_x_after_mode = 8 + mode_width + 4
+        if score_x < min_x_after_mode:
+            score_x = min_x_after_mode
+        draw.text((score_x, y + 2), score_text, font=header_font, fill=0)
         y += 22
 
         # Separator line
         draw.line([(0, y), (self.width, y)], fill=0, width=1)
         y += 4
 
-        # Network status
+        # Network status: choose a single interface to show when multiple
+        # interfaces are active. Rules:
+        # 1) If primary interface (from StatusCollector) and wlan1 are in the
+        #    same /24 network, prefer the primary interface (e.g., eth0).
+        # 2) If they are in different networks, prefer the interface with the
+        #    higher reported link speed (attempt /sys, ethtool or iw), falling
+        #    back to the primary interface on error.
         net_icon = "●" if status.network.is_up else "○"
+        primary_iface = status.network.interface
         ip_text = status.network.ip_address or "No IP"
-        net_line = f"{net_icon} {status.network.interface}: {ip_text}"
+
+        def _get_iface_ip(iface: str) -> str | None:
+            try:
+                import subprocess
+
+                res = subprocess.run(
+                    ["ip", "-4", "addr", "show", iface],
+                    capture_output=True,
+                    text=True,
+                    timeout=0.5,
+                    check=False,
+                )
+                for line in res.stdout.splitlines():
+                    if "inet " in line:
+                        parts = line.strip().split()
+                        if len(parts) >= 2:
+                            return parts[1].split("/")[0]
+            except Exception:
+                pass
+            return None
+
+        def _same_subnet_a_b(ip_a: str | None, ip_b: str | None) -> bool:
+            # Reasonable default: compare /24 prefixes for LANs. If either is
+            # missing, treat as different.
+            try:
+                if not ip_a or not ip_b:
+                    return False
+                a_parts = ip_a.split(".")
+                b_parts = ip_b.split(".")
+                return a_parts[0:3] == b_parts[0:3]
+            except Exception:
+                return False
+
+        def _get_iface_speed_mbps(iface: str) -> int | None:
+            # Try to read /sys/class/net/<iface>/speed (works for many wired)
+            try:
+                p = Path(f"/sys/class/net/{iface}/speed")
+                if p.exists():
+                    val = p.read_text().strip()
+                    if val and val != "unknown":
+                        return int(val)
+            except Exception:
+                pass
+
+            # Try ethtool (may require package installed). Parse 'Speed: 1000Mb/s'
+            try:
+                import subprocess, re
+
+                res = subprocess.run(["ethtool", iface], capture_output=True, text=True, timeout=0.8, check=False)
+                for line in res.stdout.splitlines():
+                    if "Speed:" in line:
+                        m = re.search(r"Speed:\s*([0-9]+)\s*Mb/s", line)
+                        if m:
+                            return int(m.group(1))
+            except Exception:
+                pass
+
+            # For Wi-Fi, try 'iw dev <iface> link' and parse 'tx bitrate:'
+            try:
+                import subprocess, re
+
+                res = subprocess.run(["iw", "dev", iface, "link"], capture_output=True, text=True, timeout=0.8, check=False)
+                for line in res.stdout.splitlines():
+                    if "tx bitrate" in line.lower() or "tx bitrate:" in line:
+                        # line like: 'tx bitrate: 270.0 MBit/s'
+                        m = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*MBit/s", line)
+                        if m:
+                            return int(float(m.group(1)))
+            except Exception:
+                pass
+
+            return None
+
+        # Query wlan1 IP (best-effort)
+        wlan_ip = _get_iface_ip("wlan1")
+
+        # Decide which interface to show
+        chosen_iface = primary_iface
+        chosen_ip = ip_text
+        try:
+            if wlan_ip:
+                # If both in same /24, prefer primary iface (likely eth0)
+                if _same_subnet_a_b(ip_text, wlan_ip):
+                    chosen_iface = primary_iface
+                    chosen_ip = ip_text
+                else:
+                    # Different networks: compare speeds
+                    try:
+                        sp0 = _get_iface_speed_mbps(primary_iface) or 0
+                    except Exception:
+                        sp0 = 0
+                    try:
+                        sp1 = _get_iface_speed_mbps("wlan1") or 0
+                    except Exception:
+                        sp1 = 0
+                    # If wlan faster, prefer wlan1; else prefer primary
+                    if sp1 > sp0:
+                        chosen_iface = "wlan1"
+                        chosen_ip = wlan_ip
+                    else:
+                        chosen_iface = primary_iface
+                        chosen_ip = ip_text
+        except Exception:
+            # On any error, fall back to primary
+            chosen_iface = primary_iface
+            chosen_ip = ip_text
+
+        net_line = f"{net_icon} {chosen_iface}: {chosen_ip}"
         net_line = self._fit_text(draw, net_line, body_font, self.width - 8)
         draw.text((4, y), net_line, font=body_font, fill=0)
         y += 16
@@ -228,7 +374,15 @@ class EPaperRenderer:
         # Uptime and timestamp
         uptime_hours = status.uptime_seconds // 3600
         uptime_mins = (status.uptime_seconds % 3600) // 60
-        time_str = status.timestamp.strftime("%H:%M:%S")
+        # Ensure displayed time uses the local timezone. StatusCollector
+        # provides a timezone-aware timestamp (UTC); convert to local time
+        # so the E-Paper shows human-local time instead of UTC.
+        try:
+            local_ts = status.timestamp.astimezone()
+            time_str = local_ts.strftime("%H:%M:%S")
+        except Exception:
+            # Fallback to naive formatting if anything goes wrong
+            time_str = status.timestamp.strftime("%H:%M:%S")
         footer = f"Up {uptime_hours}h{uptime_mins}m | {time_str}"
         footer = self._fit_text(draw, footer, body_font, self.width - 8)
         draw.text((4, self.height - 14), footer, font=body_font, fill=0)
@@ -244,6 +398,16 @@ class EPaperRenderer:
         """
         self._init_driver()
 
+        # Ensure the driver is initialized (wake from sleep) before attempting display.
+        if not self.emulate and getattr(self, "_epd", None) is not None:
+            try:
+                if hasattr(self._epd, "init"):
+                    # Some drivers support re-init to wake the module from sleep.
+                    self._epd.init()
+            except Exception:
+                # If re-init fails, we'll rely on the retry logic below to recreate the driver.
+                if self.debug:
+                    print("EPD re-init failed; will attempt reinit on retry.", file=sys.stderr)
         # Check for partial update capability
         partial_update = None
         if gentle:
@@ -252,25 +416,70 @@ class EPaperRenderer:
                     partial_update = getattr(self._epd, method_name)
                     break
 
-        # Convert to buffer
-        buffer = self._epd.getbuffer(image)
+        # Apply rotation if requested (handle 180° flip for upside-down displays)
+        if getattr(self, "rotation", 0):
+            try:
+                # Use expand=False to keep target dimensions; 180° is safe for same-size
+                image = image.rotate(self.rotation, expand=False)
+            except Exception as e:
+                if self.debug:
+                    print(f"Rotation error: {e}", file=sys.stderr)
 
-        # Display
-        try:
+        def _do_display():
+            """Internal helper to perform the actual display call."""
+            buf = self._epd.getbuffer(image)
             if partial_update and gentle:
-                partial_update(buffer)
+                partial_update(buf)
             elif self._bicolor:
                 # Bicolor display needs red buffer (all white for status display)
                 red_buffer = self._epd.getbuffer(Image.new("1", (self.width, self.height), 255))
-                self._epd.display(buffer, red_buffer)
+                self._epd.display(buf, red_buffer)
             else:
-                self._epd.display(buffer)
+                self._epd.display(buf)
+
+        # Try display, on SPI/OS errors attempt one reinit+retry
+        try:
+            _do_display()
+            return
         except Exception as e:
+            # Detect common SPI/GPIO issues and attempt recovery once
+            is_spi_error = isinstance(e, OSError) or "Bad file descriptor" in str(e) or "GPIO busy" in str(e)
             if self.debug:
-                print(f"Display error: {e}", file=sys.stderr)
+                print(f"Display error (first attempt): {e}", file=sys.stderr)
                 traceback.print_exc()
-            # Fallback to basic display
-            self._epd.display(buffer)
+
+            if is_spi_error:
+                if self.debug:
+                    print("Attempting to reinitialize E-Paper driver and retry display...", file=sys.stderr)
+                # Best-effort cleanup — avoid calling driver sleep/module_exit here
+                # because that closes the SPI device (module_exit) and can race
+                # with ongoing display calls, causing Bad file descriptor errors.
+                # Instead, drop our reference and force a reinit on retry.
+                self._epd = None
+
+                # Short backoff before retry
+                try:
+                    import time
+
+                    time.sleep(0.25)
+                except Exception:
+                    pass
+
+                # Reinit and retry once
+                try:
+                    self._init_driver()
+                    _do_display()
+                    if self.debug:
+                        print("Retry successful.", file=sys.stderr)
+                    return
+                except Exception as e2:
+                    if self.debug:
+                        print(f"Retry failed: {e2}", file=sys.stderr)
+                        traceback.print_exc()
+                    # Fall through to raise the original exception
+
+            # If not a SPI-related error or retry failed, re-raise
+            raise
 
     def clear(self) -> None:
         """Clear the display."""
@@ -294,98 +503,48 @@ class EPaperRenderer:
                 pass
 
     def render_boot_animation(self, steps: int = 10, frame_delay: float = 0.3) -> None:
-        """Display a boot progress animation.
+        """Boot: clear the display to a clean (white) state and keep the module initialized.
 
-        Args:
-            steps: Number of animation steps
-            frame_delay: Delay between frames in seconds
+        We deliberately do not perform any animated drawing here. The goal is to
+        ensure the display is in a known clean state before the daemon's first
+        status update. Keeping the module initialized avoids repeated open/close
+        of the SPI device which can race with updates.
         """
-        import time
-
-        self._init_driver()
-        self.clear()
-
-        title_font = self._pick_font(TITLE_FONT_CANDIDATES, 18)
-        body_font = self._pick_font(MONO_FONT_CANDIDATES, 12)
-
-        for i in range(steps + 1):
-            img = Image.new("1", (self.width, self.height), 255)
-            draw = ImageDraw.Draw(img)
-
-            # Title (inverted)
-            title = "Azazel-Pi"
-            bbox = draw.textbbox((0, 0), title, font=title_font)
-            title_height = bbox[3] - bbox[1] + 8
-            draw.rectangle([(0, 0), (self.width, title_height)], fill=0)
-            title_x = (self.width - (bbox[2] - bbox[0])) // 2
-            draw.text((title_x, 4), title, font=title_font, fill=255)
-
-            # Progress bar
-            bar_y = title_height + 20
-            bar_height = 16
-            bar_margin = 10
-            bar_width = self.width - (2 * bar_margin)
-
-            # Border
-            draw.rectangle(
-                [(bar_margin, bar_y), (self.width - bar_margin, bar_y + bar_height)],
-                outline=0,
-                width=2,
-            )
-
-            # Fill
-            progress = i / steps
-            fill_width = int((bar_width - 4) * progress)
-            if fill_width > 0:
-                draw.rectangle(
-                    [(bar_margin + 2, bar_y + 2), (bar_margin + 2 + fill_width, bar_y + bar_height - 2)],
-                    fill=0,
-                )
-
-            # Status text
-            status_text = f"Booting... {int(progress * 100)}%"
-            bbox = draw.textbbox((0, 0), status_text, font=body_font)
-            text_x = (self.width - (bbox[2] - bbox[0])) // 2
-            draw.text((text_x, bar_y + bar_height + 8), status_text, font=body_font, fill=0)
-
-            # Display with gentle update after first frame
-            self.display(img, gentle=(i > 0))
-            time.sleep(frame_delay)
-
-        self.sleep()
+        # Ensure driver is available and clear the screen to white. Keep the
+        # module initialized for subsequent updates.
+        try:
+            self._init_driver()
+            self.clear()
+            if self.debug:
+                print("Boot: display cleared (white); keeping EPD initialized.", file=sys.stderr)
+        except Exception as e:
+            # If we can't init the driver at boot, log debug info but don't raise
+            # — daemon will attempt normal updates and retry driver init later.
+            if self.debug:
+                print(f"Boot: failed to init/clear display: {e}", file=sys.stderr)
 
     def render_shutdown_animation(self, hold_seconds: float = 1.0) -> None:
-        """Display a shutdown message and clear.
+        """Shutdown: clear the display to a clean (white) state and put module to sleep.
 
+        We avoid rendering any text or animation during shutdown to minimise SPI/GPIO
+        activity and reduce the chance of races. If the driver cannot be initialized
+        during shutdown, silently skip hardware operations.
         Args:
-            hold_seconds: How long to show the message before clearing
+            hold_seconds: Ignored for the simplified shutdown — left for API
+                compatibility.
         """
-        import time
-
-        self._init_driver()
-
-        title_font = self._pick_font(TITLE_FONT_CANDIDATES, 18)
-        body_font = self._pick_font(MONO_FONT_CANDIDATES, 14)
-
-        img = Image.new("1", (self.width, self.height), 255)
-        draw = ImageDraw.Draw(img)
-
-        # Title (inverted)
-        title = "Azazel-Pi"
-        bbox = draw.textbbox((0, 0), title, font=title_font)
-        title_height = bbox[3] - bbox[1] + 8
-        draw.rectangle([(0, 0), (self.width, title_height)], fill=0)
-        title_x = (self.width - (bbox[2] - bbox[0])) // 2
-        draw.text((title_x, 4), title, font=title_font, fill=255)
-
-        # Shutdown message
-        message = "Shutting down..."
-        bbox = draw.textbbox((0, 0), message, font=body_font)
-        msg_x = (self.width - (bbox[2] - bbox[0])) // 2
-        msg_y = (self.height - (bbox[3] - bbox[1])) // 2
-        draw.text((msg_x, msg_y), message, font=body_font, fill=0)
-
-        self.display(img, gentle=False)
-        time.sleep(hold_seconds)
-        self.clear()
-        self.sleep()
+        try:
+            self._init_driver()
+            # Clear to white then put hardware to sleep for power savings.
+            self.clear()
+            try:
+                self.sleep()
+            except Exception:
+                # Best-effort; don't raise during shutdown
+                pass
+            if self.debug:
+                print("Shutdown: display cleared and EPD put to sleep.", file=sys.stderr)
+        except Exception as e:
+            if self.debug:
+                print(f"Shutdown: driver init/clear failed: {e}", file=sys.stderr)
+            # Nothing else to do during shutdown
