@@ -92,11 +92,22 @@ class EPaperDaemon:
                 self.logger.warning(f"Could not load state machine: {e}")
 
     # Initialize status collector (allow explicit wan_state_path for testing).
-        self.collector = StatusCollector(
-            state_machine=self.state_machine,
-            events_log=events_log,
-            wan_state_path=wan_state_path,
-        )
+        # Some installed copies of StatusCollector may not accept the
+        # wan_state_path kwarg (older deployments). Attempt to pass the
+        # argument but fall back to calling without it for compatibility.
+        try:
+            self.collector = StatusCollector(
+                state_machine=self.state_machine,
+                events_log=events_log,
+                wan_state_path=wan_state_path,
+            )
+        except TypeError:
+            # Backwards-compatible fallback for older StatusCollector API
+            self.logger.debug("StatusCollector.__init__ does not accept wan_state_path; using fallback call")
+            self.collector = StatusCollector(
+                state_machine=self.state_machine,
+                events_log=events_log,
+            )
 
         # Initialize renderer (support rotation)
         try:
@@ -109,6 +120,11 @@ class EPaperDaemon:
         # On such transitions we clear the E-Paper to a clean white state
         # before rendering the next update to avoid flicker/ghosting.
         self._last_wan_state: str | None = None
+        # Track last seen active interface so we can detect when the
+        # active WAN interface switches (e.g. eth0 -> wlan1). When this
+        # happens perform a short clear + force a full refresh to avoid
+        # ghosting/artifacts from partial updates.
+        self._last_interface: str | None = None
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -163,6 +179,7 @@ class EPaperDaemon:
                 force_full_refresh = False
                 try:
                     current_wan_state = getattr(status.network, "wan_state", None)
+                    current_interface = getattr(status.network, "interface", None)
                     if self._last_wan_state != current_wan_state and current_wan_state == "reconfiguring":
                         self.logger.info("WAN reconfiguration detected: clearing display before update")
                         try:
@@ -170,6 +187,23 @@ class EPaperDaemon:
                             self.renderer.clear()
                         except Exception as e:
                             self.logger.debug(f"Display clear failed: {e}")
+                        force_full_refresh = True
+                    # If the active interface changed (e.g. eth0 -> wlan1),
+                    # perform a clear + force full refresh so the new
+                    # interface/IP is shown cleanly. Skip on initial run
+                    # when we don't have a previous value.
+                    if (
+                        current_interface is not None
+                        and self._last_interface is not None
+                        and current_interface != self._last_interface
+                    ):
+                        self.logger.info(
+                            f"WAN interface changed: {self._last_interface} -> {current_interface}; clearing display"
+                        )
+                        try:
+                            self.renderer.clear()
+                        except Exception as e:
+                            self.logger.debug(f"Display clear on interface change failed: {e}")
                         force_full_refresh = True
                 except Exception:
                     # Conservative: if any error occurs, don't prevent normal update
@@ -228,6 +262,10 @@ class EPaperDaemon:
                 # Remember last seen WAN state for next iteration's transition detection
                 try:
                     self._last_wan_state = getattr(status.network, "wan_state", None)
+                    try:
+                        self._last_interface = getattr(status.network, "interface", None)
+                    except Exception:
+                        pass
                 except Exception:
                     pass
                 # Wait for next update (with early exit on shutdown)

@@ -7,10 +7,15 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Iterable
 
 from ..state_machine import StateMachine
-from ...utils.wan_state import load_wan_state, get_active_wan_interface
+from ...utils.wan_state import (
+    InterfaceSnapshot,
+    WANState,
+    get_active_wan_interface,
+    load_wan_state,
+)
 
 
 @dataclass
@@ -56,20 +61,18 @@ class StatusCollector:
         self,
         state_machine: Optional[StateMachine] = None,
         events_log: Optional[Path] = None,
-        wan_state_path: Optional[Path] = None,
+        wan_state_path: Optional[Path] = None,  # 修正: wan_state_path を追加
     ):
         """Initialize the status collector.
 
         Args:
             state_machine: Optional state machine instance for mode/score info
             events_log: Path to events.json for alert counting
+            wan_state_path: Optional path to WAN state JSON file
         """
         self.state_machine = state_machine
         self.events_log = events_log or Path("/var/log/azazel/events.json")
-        # Optional explicit path to the WAN state file. If None, the
-        # utilities in azazel_pi.utils.wan_state will consult
-        # AZAZEL_WAN_STATE_PATH or fallback locations.
-        self.wan_state_path = wan_state_path
+        self.wan_state_path = wan_state_path  # 修正: wan_state_path を保存
 
     def collect(self) -> SystemStatus:
         """Collect current system status."""
@@ -99,17 +102,33 @@ class StatusCollector:
         """Get network interface status."""
         # Load WAN state, allowing an explicit path to override env/defaults.
         wan_state = load_wan_state(path=self.wan_state_path)
-        # Prefer explicit wan_state.active_interface, then caller-provided interface.
-        # Next preference: AZAZEL_WAN_IF env, then WANManager helper; final fallback to eth0.
-        active_iface = wan_state.active_interface or interface or os.environ.get("AZAZEL_WAN_IF")
+        env_iface = os.environ.get("AZAZEL_WAN_IF")
+        active_iface = wan_state.active_interface or interface or env_iface
         if not active_iface:
             try:
-                # Ask the WAN state helper for the current active interface.
-                # If no active interface is recorded, prefer AZAZEL_WAN_IF or
-                # fall back to the historical default (eth0).
-                active_iface = get_active_wan_interface(default=os.environ.get("AZAZEL_WAN_IF", "eth0"))
+                active_iface = get_active_wan_interface(default=env_iface or "wlan1")
             except Exception:
-                active_iface = os.environ.get("AZAZEL_WAN_IF", "eth0")
+                active_iface = env_iface or "wlan1"
+
+        # If the WAN manager did not provide an explicit active_interface
+        # and the environment did not force one, prefer the kernel's actual
+        # default route decision — this catches cases where the system's
+        # default route is via eth0 even though no wan_state file exists.
+        if (not wan_state.active_interface) and (env_iface is None):
+            route_iface = self._get_default_route_interface()
+            if route_iface:
+                active_iface = route_iface
+
+        if not active_iface:
+            active_iface = "wlan1"
+
+        # When multiple WAN candidates are up simultaneously (e.g. wlan1
+        # and eth0), prefer the interface reporting the highest measured
+        # speed so the display reflects the interface users actually use.
+        # This mirrors operator expectations where a newly plugged-in
+        # faster link should immediately become the "primary" on the EPD
+        # even before state files are refreshed.
+        active_iface = self._prefer_fastest_candidate(wan_state, active_iface)
         status = NetworkStatus(
             interface=active_iface,
             wan_state=wan_state.status,
@@ -161,6 +180,82 @@ class StatusCollector:
             pass
 
         return status
+
+    def _get_default_route_interface(self) -> Optional[str]:
+        """Return the interface used for the default route (best-effort)."""
+        try:
+            result = subprocess.run(
+                ["ip", "route", "get", "1.1.1.1"],
+                capture_output=True,
+                text=True,
+                timeout=1,
+                check=False,
+            )
+        except Exception:
+            return None
+
+        out = (result.stdout or "").strip()
+        if not out:
+            return None
+        parts = out.split()
+        if "dev" not in parts:
+            return None
+        idx = parts.index("dev")
+        if idx + 1 >= len(parts):
+            return None
+        return parts[idx + 1] or None
+
+    def _prefer_fastest_candidate(self, wan_state: WANState, current_iface: str) -> str:
+        """Return the interface representing the fastest healthy candidate."""
+        fastest = self._fastest_candidate(wan_state.candidates)
+        if not fastest:
+            return current_iface
+
+        if fastest.name == current_iface:
+            return current_iface
+
+        current_snapshot = self._find_snapshot(wan_state.candidates, current_iface)
+        fastest_speed = fastest.speed_mbps or 0
+        current_speed = (current_snapshot.speed_mbps or 0) if current_snapshot else -1
+
+        # If we have no data for the current interface or it is down, switch immediately.
+        if (not current_snapshot) or (not current_snapshot.link_up) or (
+            not current_snapshot.ip_address
+        ):
+            return fastest.name
+
+        if fastest_speed > current_speed:
+            return fastest.name
+        return current_iface
+
+    @staticmethod
+    def _fastest_candidate(
+        candidates: Iterable[InterfaceSnapshot],
+    ) -> Optional[InterfaceSnapshot]:
+        """Pick the fastest candidate that is link-up and has an IP."""
+        fastest: Optional[InterfaceSnapshot] = None
+        for snap in candidates:
+            if not snap.link_up or not snap.ip_address:
+                continue
+            if fastest is None:
+                fastest = snap
+                continue
+            snap_speed = snap.speed_mbps or 0
+            fastest_speed = fastest.speed_mbps or 0
+            if snap_speed > fastest_speed:
+                fastest = snap
+        return fastest
+
+    @staticmethod
+    def _find_snapshot(
+        candidates: Iterable[InterfaceSnapshot], iface: Optional[str]
+    ) -> Optional[InterfaceSnapshot]:
+        if iface is None:
+            return None
+        for snap in candidates:
+            if snap.name == iface:
+                return snap
+        return None
 
     def _get_security_status(self) -> SecurityStatus:
         """Get security monitoring status."""

@@ -186,8 +186,9 @@ class EPaperRenderer:
         draw = ImageDraw.Draw(img)
 
         # Fonts
-        # Use a slightly larger title font so the header is more readable.
-        title_font = self._pick_font(TITLE_FONT_CANDIDATES, 20)
+        # Use a slightly larger title font so the header is readable. Keep
+        # conservative sizing to avoid layout overflow on small displays.
+        title_font = self._pick_font(TITLE_FONT_CANDIDATES, 18)
         header_font = self._pick_font(MONO_FONT_CANDIDATES, 14)
         body_font = self._pick_font(MONO_FONT_CANDIDATES, 12)
         small_font = self._pick_font(MONO_FONT_CANDIDATES, 10)
@@ -240,16 +241,23 @@ class EPaperRenderer:
         net_icon = "●" if status.network.is_up else "○"
         primary_iface = status.network.interface
         ip_text = status.network.ip_address or "No IP"
-        net_line = f"{net_icon} WAN ({primary_iface}): {ip_text}"
+        # Show only the active interface and IP to keep the display concise;
+        # remove the literal "WAN" prefix which the user found redundant.
+        net_line = f"{net_icon} {primary_iface}: {ip_text}"
         net_line = self._fit_text(draw, net_line, body_font, self.width - 8)
         draw.text((4, y), net_line, font=body_font, fill=0)
         y += 16
 
-        if status.network.wan_state and status.network.wan_state != "ready":
+        # Only display WAN status messages for meaningful states. Suppress
+        # the common/harmless 'unknown' state to avoid clutter.
+        if (
+            status.network.wan_state
+            and status.network.wan_state not in ("ready", "unknown")
+        ):
             warn_text = status.network.wan_message or status.network.wan_state
             warn_line = self._fit_text(
                 draw,
-                f"[WAN] {warn_text}",
+                f"{warn_text}",
                 small_font,
                 self.width - 8,
             )
@@ -283,7 +291,21 @@ class EPaperRenderer:
             time_str = status.timestamp.strftime("%H:%M:%S")
         footer = f"Up {uptime_hours}h{uptime_mins}m | {time_str}"
         footer = self._fit_text(draw, footer, body_font, self.width - 8)
-        draw.text((4, self.height - 14), footer, font=body_font, fill=0)
+        # Reserve footer area to avoid content overlap: compute footer bbox
+        # and ensure we don't draw other content into this region.
+        try:
+            fbbox = draw.textbbox((0, 0), footer, font=body_font)
+            footer_height = fbbox[3] - fbbox[1]
+        except Exception:
+            footer_height = 12
+        footer_y = self.height - footer_height - 2
+        # If current y has already reached footer area, shift it up slightly
+        if y >= footer_y:
+            y = max(2, footer_y - 16)
+        draw.text((4, footer_y), footer, font=body_font, fill=0)
+
+        # Prevent any accidental drawing beyond footer by returning image
+        # (all content should be complete at this point).
 
         return img
 
