@@ -104,6 +104,18 @@ Semantic versioning: MAJOR.MINOR.PATCH. Deprecations queued for removal after at
 ## [1.0.0] - 2025-10-05
 ### Initial release
 - Initial public baseline of Azazel-Pi with core features:
+
+## [3.1.0] - 2025-11-09
+### Added
+- Display: clear and force a full E-Paper refresh when the active WAN interface changes (e.g. eth0 -> wlan1) to avoid ghosting and show the updated interface/IP immediately. (commit 478b8ee)
+- Status collection: prefer kernel default route when runtime WAN state is missing and provide a `wan_state_path` injection point for testing/overrides.
+- Renderer: improve network line formatting by removing the redundant "WAN" prefix and suppressing non-actionable "[WAN] unknown" messages; reserve footer area to prevent text overlap.
+
+### Changed
+- Backwards-compatible `StatusCollector` initialization handling in `epd_daemon` — older installs without the new `wan_state_path` parameter are tolerated.
+
+### Notes
+- These are backward-compatible improvements (minor release). See commit 478b8ee for details and files changed: `azazel_pi/core/display/status_collector.py`, `epd_daemon.py`, `renderer.py`.
   - Suricata integration for network threat detection
   - AI-based threat evaluation pipeline and scoring
   - Basic TUI and CLI utilities for status and control
