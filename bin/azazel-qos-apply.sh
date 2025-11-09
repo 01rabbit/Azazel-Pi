@@ -26,14 +26,23 @@ if [[ "$DRY_RUN" == "1" ]]; then
   else
     echo "[DRY_RUN] yq not found, using fallback defaults" >&2
     MARK_PREMIUM="0x10"
-    LAN_IF="wlan0"
+    # Allow environment override for LAN interface in DRY_RUN
+    # Use the AZAZEL_LAN_IF environment variable when present, otherwise
+    # fall back to the historical default (wlan0). This mirrors how the
+    # non-DRY_RUN path resolves the LAN interface.
+    LAN_IF="${AZAZEL_LAN_IF:-wlan0}"
   fi
 else
   for cmd in nft yq ip; do
     command -v "$cmd" >/dev/null 2>&1 || { echo "missing command: $cmd" >&2; exit 1; }
   done
   MARK_PREMIUM=$(yq -r '.mark_map.premium' "$CFG")
-  LAN_IF=$(yq -r '.lan_iface' "$CFG")
+  # Prefer environment override, then config
+  if [[ -n "${AZAZEL_LAN_IF:-}" ]]; then
+    LAN_IF="$AZAZEL_LAN_IF"
+  else
+    LAN_IF=$(yq -r '.lan_iface' "$CFG")
+  fi
 fi
 
 # Prepare sets

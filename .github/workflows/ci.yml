@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, feature/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create virtualenv (.venv)
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+
+      - name: Install project and test dependencies
+        run: |
+          # Install package in editable mode and test extras from pyproject
+          .venv/bin/pip install -e '.[test]'
+          # Pillow is optional in pyproject; ensure it is present for renderer tests
+          .venv/bin/pip install pillow
+
+      - name: Run tests
+        run: .venv/bin/pytest -v
+
+      - name: Upload pytest JUnit result (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-log
+          path: .pytest_cache

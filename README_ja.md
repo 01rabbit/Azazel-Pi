@@ -202,7 +202,11 @@ sudo systemctl enable --now azazel-epd.service
 python3 -m azctl.cli menu
 
 # 特定のインターフェース設定で起動
-python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+# 例: 実行時のWAN選択を優先します。`--wan-if` を省略した場合、WANマネージャが既定値を選択します。
+# 必要に応じて環境変数で上書きできます：
+#   export AZAZEL_LAN_IF=${AZAZEL_LAN_IF:-wlan0}
+#   export AZAZEL_WAN_IF=${AZAZEL_WAN_IF:-wlan1}
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
 ```
 
 **モジュラーアーキテクチャ：**
@@ -283,13 +287,14 @@ echo '{"mode": "lockdown"}' | azctl events --config -
 python3 -m azctl.cli menu
 
 # カスタムインターフェースを指定
-python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN_IF:-wlan1}
 ```
 
 **メニュー機能：**
 
 1. **コア設定の編集**: `/etc/azazel/azazel.yaml` を修正して遅延値、帯域制御、ロックダウン許可リストを調整（テンプレートは `configs/network/azazel.yaml`）。
-   - 既定では `wlan0` を内部LAN（AP）、`wlan1` と `eth0` を外部（WAN/アップリンク）として扱います。`configs/network/azazel.yaml` の `interfaces.external` に `["eth0", "wlan1"]` を定義済みです（必要に応じて変更可能）。
+    - 既定では `wlan0` を内部LAN（AP）、`wlan1` と `eth0` を外部（WAN/アップリンク）として扱います。`configs/network/azazel.yaml` の `interfaces.external` に `["eth0", "wlan1"]` を定義済みです（必要に応じて変更可能）。
+       注: `--wan-if` を指定しない場合、WAN 管理コンポーネントがランタイムで最適な WAN インターフェイスを選択します。明示的に指定したい場合は `AZAZEL_WAN_IF` / `AZAZEL_LAN_IF` を環境変数で設定してください。
 
 2. **Suricataルール生成**: `scripts/suricata_generate.py` を使用して環境固有のIDS設定をレンダリング
 
@@ -411,6 +416,33 @@ azctl/menu/
 - [`docs/ja/ARCHITECTURE.md`](docs/ja/ARCHITECTURE.md) — システムアーキテクチャとコンポーネント関係
 - [`docs/ja/API_REFERENCE.md`](docs/ja/API_REFERENCE.md) — Pythonモジュールとスクリプトリファレンス
 - [`docs/ja/SURICATA_INSTALLER.md`](docs/ja/SURICATA_INSTALLER.md) — Suricataインストールと設定詳細
+
+#### 動的WAN切り替え（新機能）
+
+- `azctl wan-manager` サービスが `interfaces.external` に列挙されたインターフェースを順番にヘルスチェックし、起動直後と運用中の両方で最も安定した WAN を自動選択します。
+- 選定結果と各インターフェースの状態は `runtime/wan_state.json`（本番では `/var/run/azazel/wan_state.json`）に記録され、E-Paper 画面にも「再設定中」「WAN切替完了」といったメッセージで表示されます。テストやカスタム配置では `AZAZEL_WAN_STATE_PATH` 環境変数で状態ファイルの場所を上書きできます。
+- WAN マネージャは候補の読み取り順序（優先順位）を持ちます: 明示的な CLI の `--candidate` → `AZAZEL_WAN_CANDIDATES` 環境変数（カンマ区切り）→ `configs/network/azazel.yaml` の `interfaces.external` / `interfaces.wan` → フォールバック。設定ファイルを直接編集せずに候補順序を制御したい環境では `AZAZEL_WAN_CANDIDATES` を利用してください。
+- 切り替え時には `bin/azazel-traffic-init.sh`、NAT (`iptables -t nat`) を再適用し、Suricata と `azctl-unified` を順次再起動して即座に新しいインターフェースを利用させます。
+- Suricata は `azazel_pi.core.network.suricata_wrapper` を経由して起動するため、サービス再起動だけで常に最新の WAN 状態を参照できます。
+
+開発者向けメモ — 非 root 環境でのテストとフォールバック動作
+
+- WAN マネージャは通常システムのランタイムパス（例: `/var/run/azazel/wan_state.json`）へ状態を書き込みます。systemd 等で root 権限で実行される本番環境ではこれが期待どおりに動作します。
+- 一方で開発や CI 環境などでプロセスに `/var/run/azazel` を作成する権限が無い場合、現在の実装は自動的にリポジトリ内の `runtime/wan_state.json` にフォールバックするため、非 root ユーザーでも `azctl wan-manager` を実行して動作確認ができます。
+- 明示的に書き込み先を指定したい場合は `AZAZEL_WAN_STATE_PATH` 環境変数を設定してください（開発例）：
+
+```bash
+# リポジトリ内の runtime ディレクトリに状態を書き込む（root 不要）
+AZAZEL_WAN_STATE_PATH=runtime/wan_state.json python3 -m azctl.cli wan-manager --once
+```
+
+- 本番運用では systemd（root）経由で WAN マネージャを動かすことを推奨します。これにより `tc`/`iptables`（または `nft`）やサービス再起動など、特権を要する処理が正しく行われます。例（推奨）:
+
+```bash
+sudo systemctl enable --now azazel-wan-manager.service
+```
+
+これにより、開発者は権限に縛られずにローカルで動作確認ができ、本番では特権を持った実行で期待どおりの自動適用が行われます。
 
 ## 開発の背景
 

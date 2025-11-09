@@ -190,6 +190,7 @@ class EPaperRenderer:
         title_font = self._pick_font(TITLE_FONT_CANDIDATES, 20)
         header_font = self._pick_font(MONO_FONT_CANDIDATES, 14)
         body_font = self._pick_font(MONO_FONT_CANDIDATES, 12)
+        small_font = self._pick_font(MONO_FONT_CANDIDATES, 10)
 
         y = 2
 
@@ -236,127 +237,24 @@ class EPaperRenderer:
         draw.line([(0, y), (self.width, y)], fill=0, width=1)
         y += 4
 
-        # Network status: choose a single interface to show when multiple
-        # interfaces are active. Rules:
-        # 1) If primary interface (from StatusCollector) and wlan1 are in the
-        #    same /24 network, prefer the primary interface (e.g., eth0).
-        # 2) If they are in different networks, prefer the interface with the
-        #    higher reported link speed (attempt /sys, ethtool or iw), falling
-        #    back to the primary interface on error.
         net_icon = "●" if status.network.is_up else "○"
         primary_iface = status.network.interface
         ip_text = status.network.ip_address or "No IP"
-
-        def _get_iface_ip(iface: str) -> str | None:
-            try:
-                import subprocess
-
-                res = subprocess.run(
-                    ["ip", "-4", "addr", "show", iface],
-                    capture_output=True,
-                    text=True,
-                    timeout=0.5,
-                    check=False,
-                )
-                for line in res.stdout.splitlines():
-                    if "inet " in line:
-                        parts = line.strip().split()
-                        if len(parts) >= 2:
-                            return parts[1].split("/")[0]
-            except Exception:
-                pass
-            return None
-
-        def _same_subnet_a_b(ip_a: str | None, ip_b: str | None) -> bool:
-            # Reasonable default: compare /24 prefixes for LANs. If either is
-            # missing, treat as different.
-            try:
-                if not ip_a or not ip_b:
-                    return False
-                a_parts = ip_a.split(".")
-                b_parts = ip_b.split(".")
-                return a_parts[0:3] == b_parts[0:3]
-            except Exception:
-                return False
-
-        def _get_iface_speed_mbps(iface: str) -> int | None:
-            # Try to read /sys/class/net/<iface>/speed (works for many wired)
-            try:
-                p = Path(f"/sys/class/net/{iface}/speed")
-                if p.exists():
-                    val = p.read_text().strip()
-                    if val and val != "unknown":
-                        return int(val)
-            except Exception:
-                pass
-
-            # Try ethtool (may require package installed). Parse 'Speed: 1000Mb/s'
-            try:
-                import subprocess, re
-
-                res = subprocess.run(["ethtool", iface], capture_output=True, text=True, timeout=0.8, check=False)
-                for line in res.stdout.splitlines():
-                    if "Speed:" in line:
-                        m = re.search(r"Speed:\s*([0-9]+)\s*Mb/s", line)
-                        if m:
-                            return int(m.group(1))
-            except Exception:
-                pass
-
-            # For Wi-Fi, try 'iw dev <iface> link' and parse 'tx bitrate:'
-            try:
-                import subprocess, re
-
-                res = subprocess.run(["iw", "dev", iface, "link"], capture_output=True, text=True, timeout=0.8, check=False)
-                for line in res.stdout.splitlines():
-                    if "tx bitrate" in line.lower() or "tx bitrate:" in line:
-                        # line like: 'tx bitrate: 270.0 MBit/s'
-                        m = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*MBit/s", line)
-                        if m:
-                            return int(float(m.group(1)))
-            except Exception:
-                pass
-
-            return None
-
-        # Query wlan1 IP (best-effort)
-        wlan_ip = _get_iface_ip("wlan1")
-
-        # Decide which interface to show
-        chosen_iface = primary_iface
-        chosen_ip = ip_text
-        try:
-            if wlan_ip:
-                # If both in same /24, prefer primary iface (likely eth0)
-                if _same_subnet_a_b(ip_text, wlan_ip):
-                    chosen_iface = primary_iface
-                    chosen_ip = ip_text
-                else:
-                    # Different networks: compare speeds
-                    try:
-                        sp0 = _get_iface_speed_mbps(primary_iface) or 0
-                    except Exception:
-                        sp0 = 0
-                    try:
-                        sp1 = _get_iface_speed_mbps("wlan1") or 0
-                    except Exception:
-                        sp1 = 0
-                    # If wlan faster, prefer wlan1; else prefer primary
-                    if sp1 > sp0:
-                        chosen_iface = "wlan1"
-                        chosen_ip = wlan_ip
-                    else:
-                        chosen_iface = primary_iface
-                        chosen_ip = ip_text
-        except Exception:
-            # On any error, fall back to primary
-            chosen_iface = primary_iface
-            chosen_ip = ip_text
-
-        net_line = f"{net_icon} {chosen_iface}: {chosen_ip}"
+        net_line = f"{net_icon} WAN ({primary_iface}): {ip_text}"
         net_line = self._fit_text(draw, net_line, body_font, self.width - 8)
         draw.text((4, y), net_line, font=body_font, fill=0)
         y += 16
+
+        if status.network.wan_state and status.network.wan_state != "ready":
+            warn_text = status.network.wan_message or status.network.wan_state
+            warn_line = self._fit_text(
+                draw,
+                f"[WAN] {warn_text}",
+                small_font,
+                self.width - 8,
+            )
+            draw.text((4, y), warn_line, font=small_font, fill=0)
+            y += 14
 
         # Alert counters
         alert_line = f"Alerts: {status.security.recent_alerts}/{status.security.total_alerts} (5m/total)"

@@ -78,8 +78,8 @@ sudo scripts/setup_ollama_unified.sh --skip-restart
 - **Advanced Vector Setup**: Multi-source log processing
 - **Failure Monitoring**: Automatic logging and alerting
 
-### Wireless Integration (from `setup_wlan0_ap.sh` + `setup_suricata_wlan1.sh`)
-- **Dual Interface Setup**: AP (wlan0) + monitoring (wlan1) in single script
+### Wireless Integration (AP + monitoring)
+- **Dual Interface Setup**: AP (default ${AZAZEL_LAN_IF:-wlan0}) + monitoring (default ${AZAZEL_WAN_IF:-wlan1}) in single script
 - **Flexible Configuration**: AP-only, monitoring-only, or combined setup
 - **Status Verification**: Built-in health checks and connectivity testing
 - **Custom Options**: SSID/passphrase configuration via command line
@@ -100,10 +100,10 @@ sudo scripts/setup_ollama_unified.sh --skip-restart
 # Complete wireless setup (AP + Suricata monitoring)
 sudo scripts/setup_wireless.sh
 
-# AP only (wlan0 as access point)
+# AP only (${AZAZEL_LAN_IF:-wlan0} as access point)
 sudo scripts/setup_wireless.sh --ap-only
 
-# Suricata monitoring only (wlan1 monitoring)
+# Suricata monitoring only (${AZAZEL_WAN_IF:-wlan1} monitoring)
 sudo scripts/setup_wireless.sh --suricata-only
 
 # Automated setup with custom SSID
@@ -111,7 +111,7 @@ sudo scripts/setup_wireless.sh --ssid "MyNetwork" --passphrase "MyPassword" --sk
 ```
 
 **Features:**
-- **Dual Interface Setup**: wlan0 as internal AP (172.16.0.0/24), wlan1 for upstream/monitoring
+- **Dual Interface Setup**: ${AZAZEL_LAN_IF:-wlan0} as internal AP (172.16.0.0/24), ${AZAZEL_WAN_IF:-wlan1} for upstream/monitoring
 - **Access Point Configuration**: hostapd, dnsmasq, NAT with nftables
 - **Suricata Integration**: HOME_NET configuration and interface monitoring setup
 - **Flexible Options**: Can configure AP-only, monitoring-only, or both

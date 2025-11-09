@@ -9,6 +9,7 @@ for the Azazel TUI menu system.
 import subprocess
 from pathlib import Path
 from typing import Optional, Dict, Any
+import os
 
 from rich.console import Console
 from rich.layout import Layout
@@ -30,9 +31,22 @@ except ImportError:
 class DefenseModule:
     """Defense control and mode management functionality."""
     
-    def __init__(self, console: Console, decisions_log: Optional[str] = None):
+    def __init__(self, console: Console, decisions_log: Optional[str] = None, lan_if: Optional[str] = None, wan_if: Optional[str] = None):
         self.console = console
         self.decisions_log = decisions_log
+        # LAN precedence: explicit arg -> AZAZEL_LAN_IF env -> default wlan0
+        self.lan_if = lan_if or os.environ.get("AZAZEL_LAN_IF") or "wlan0"
+        # Resolve WAN interface default from explicit arg -> env -> WANManager helper -> fallback
+        try:
+            from azazel_pi.utils.wan_state import get_active_wan_interface
+            # Resolve WAN precedence: explicit arg -> AZAZEL_WAN_IF -> WAN manager -> fallback
+            self.wan_if = (
+                wan_if
+                or os.environ.get("AZAZEL_WAN_IF")
+                or get_active_wan_interface(default=os.environ.get("AZAZEL_WAN_IF", "wlan1"))
+            )
+        except Exception:
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or "wlan1"
         
         # Initialize status collector if available
         try:
@@ -116,8 +130,8 @@ class DefenseModule:
                 color = "green" if mode == "portal" else "yellow" if mode == "shield" else "red" if mode == "lockdown" else "blue"
             mode_emoji = {"portal": "🟢", "shield": "🟡", "lockdown": "🔴"}.get(mode, "⚪")
         
-        wlan0 = get_wlan_ap_status("wlan0")
-        wlan1 = get_wlan_link_info("wlan1")
+        wlan0 = get_wlan_ap_status(self.lan_if)
+        wlan1 = get_wlan_link_info(self.wan_if)
         profile = get_active_profile()
         
         try:
@@ -183,9 +197,9 @@ class DefenseModule:
             wan_status += f" ({wlan1['ssid']})"
             
         info_table.add_row(
-            "📡 AP (wlan0):",
+            f"📡 AP ({self.lan_if}):",
             ap_status,
-            "🌐 WAN (wlan1):",
+            f"🌐 WAN ({self.wan_if}):",
             wan_status
         )
         

@@ -1,10 +1,13 @@
 [Unit]
 Description=Suricata IDS
-After=network-online.target
+After=network-online.target azazel-wan-manager.service
+Wants=azazel-wan-manager.service
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/suricata -c /etc/suricata/suricata.yaml -i wlan1
+WorkingDirectory=/home/azazel/Azazel-Pi
+Environment=PYTHONPATH=/home/azazel/Azazel-Pi
+ExecStart=/usr/bin/env python3 -m azazel_pi.core.network.suricata_wrapper
 Restart=on-failure
 
 [Install]

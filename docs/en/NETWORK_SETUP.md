@@ -12,6 +12,12 @@ Azazel-Pi can operate in multiple network modes:
 
 The installer provides automatic configuration for most scenarios, with manual options available for specialized deployments.
 
+Note on interface names and dynamic selection:
+
+- Many examples in this guide use common interface names such as `wlan0`, `wlan1`, or `eth0` for clarity. These are examples only.
+- Azazel now supports dynamic WAN selection via the `wan-manager`. If you omit `--wan-if` in CLI commands, the system will prefer the runtime-selected WAN interface. To override defaults explicitly, set the environment variables `AZAZEL_WAN_IF` and/or `AZAZEL_LAN_IF`, or pass `--wan-if` / `--lan-if` on the CLI.
+
+
 ## Automatic Network Configuration
 
 ### During Installation
@@ -24,8 +30,8 @@ Edit `/etc/azazel/azazel.yaml` to specify your network requirements:
 
 ```yaml
 network:
-  # Primary monitoring interface
-  interface: "eth0"
+  # Primary monitoring interface (use AZAZEL_WAN_IF to override at runtime)
+  interface: "${AZAZEL_WAN_IF:-eth0}"
   
   # Home network definition for IDS rules
   home_net: "192.168.1.0/24"
@@ -33,8 +39,8 @@ network:
   # Gateway mode configuration (optional)
   gateway_mode:
     enabled: false
-    ap_interface: "wlan0"
-    client_interface: "wlan1"
+  ap_interface: "${AZAZEL_LAN_IF:-wlan0}"
+  client_interface: "${AZAZEL_WAN_IF:-wlan1}"
     internal_network: "172.16.0.0/24"
     ap_ssid: "Azazel-GW"
     ap_passphrase: "SecurePassphrase123"
@@ -81,8 +87,8 @@ sudo systemctl status hostapd
 # Verify DHCP server
 sudo systemctl status dnsmasq
 
-# Test internet connectivity
-ping -I wlan1 8.8.8.8
+# Test internet connectivity (uses the runtime-selected WAN interface)
+ping -I ${AZAZEL_WAN_IF:-wlan1} 8.8.8.8
 
 # Check NAT rules
 sudo nft list ruleset | grep -A5 -B5 masquerade
@@ -146,9 +152,9 @@ If automatic configuration doesn't meet your needs, you can configure components
 #### 1. hostapd Configuration
 
 ```bash
-# Create hostapd configuration
+# Create hostapd configuration (AP interface uses AZAZEL_LAN_IF)
 sudo tee /etc/hostapd/hostapd.conf <<EOF
-interface=wlan0
+interface=${AZAZEL_LAN_IF:-wlan0}
 driver=nl80211
 ssid=Azazel-GW
 hw_mode=g
@@ -176,9 +182,9 @@ sudo systemctl enable --now hostapd
 #### 2. DHCP Server Configuration
 
 ```bash
-# Configure dnsmasq for DHCP
+# Configure dnsmasq for DHCP (AP interface uses AZAZEL_LAN_IF)
 sudo tee /etc/dnsmasq.d/01-azazel.conf <<EOF
-interface=wlan0
+interface=${AZAZEL_LAN_IF:-wlan0}
 dhcp-range=172.16.0.100,172.16.0.200,255.255.255.0,24h
 dhcp-option=3,172.16.0.1    # Gateway
 dhcp-option=6,8.8.8.8       # DNS
@@ -191,11 +197,11 @@ sudo systemctl restart dnsmasq
 #### 3. Static IP Configuration
 
 ```bash
-# Configure static IP for AP interface
+# Configure static IP for AP interface (AP interface uses AZAZEL_LAN_IF)
 sudo tee -a /etc/dhcpcd.conf <<EOF
 
 # Azazel-Pi AP configuration
-interface wlan0
+interface ${AZAZEL_LAN_IF:-wlan0}
 static ip_address=172.16.0.1/24
 nohook wpa_supplicant
 EOF
@@ -218,10 +224,10 @@ table ip nat {
         type nat hook prerouting priority -100;
     }
     
-    chain postrouting {
-        type nat hook postrouting priority 100;
-        oifname "wlan1" masquerade
-    }
+  chain postrouting {
+    type nat hook postrouting priority 100;
+    oifname "${AZAZEL_WAN_IF:-wlan1}" masquerade
+  }
 }
 EOF
 

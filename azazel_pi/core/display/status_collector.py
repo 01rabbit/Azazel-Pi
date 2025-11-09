@@ -5,10 +5,12 @@ import json
 import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..state_machine import StateMachine
+from ...utils.wan_state import load_wan_state, get_active_wan_interface
 
 
 @dataclass
@@ -20,6 +22,8 @@ class NetworkStatus:
     is_up: bool = False
     tx_bytes: int = 0
     rx_bytes: int = 0
+    wan_state: Optional[str] = None
+    wan_message: Optional[str] = None
 
 
 @dataclass
@@ -52,6 +56,7 @@ class StatusCollector:
         self,
         state_machine: Optional[StateMachine] = None,
         events_log: Optional[Path] = None,
+        wan_state_path: Optional[Path] = None,
     ):
         """Initialize the status collector.
 
@@ -61,6 +66,10 @@ class StatusCollector:
         """
         self.state_machine = state_machine
         self.events_log = events_log or Path("/var/log/azazel/events.json")
+        # Optional explicit path to the WAN state file. If None, the
+        # utilities in azazel_pi.utils.wan_state will consult
+        # AZAZEL_WAN_STATE_PATH or fallback locations.
+        self.wan_state_path = wan_state_path
 
     def collect(self) -> SystemStatus:
         """Collect current system status."""
@@ -86,14 +95,31 @@ class StatusCollector:
         except Exception:
             return "azazel-pi"
 
-    def _get_network_status(self, interface: str = "eth0") -> NetworkStatus:
+    def _get_network_status(self, interface: Optional[str] = None) -> NetworkStatus:
         """Get network interface status."""
-        status = NetworkStatus(interface=interface)
+        # Load WAN state, allowing an explicit path to override env/defaults.
+        wan_state = load_wan_state(path=self.wan_state_path)
+        # Prefer explicit wan_state.active_interface, then caller-provided interface.
+        # Next preference: AZAZEL_WAN_IF env, then WANManager helper; final fallback to eth0.
+        active_iface = wan_state.active_interface or interface or os.environ.get("AZAZEL_WAN_IF")
+        if not active_iface:
+            try:
+                # Ask the WAN state helper for the current active interface.
+                # If no active interface is recorded, prefer AZAZEL_WAN_IF or
+                # fall back to the historical default (eth0).
+                active_iface = get_active_wan_interface(default=os.environ.get("AZAZEL_WAN_IF", "eth0"))
+            except Exception:
+                active_iface = os.environ.get("AZAZEL_WAN_IF", "eth0")
+        status = NetworkStatus(
+            interface=active_iface,
+            wan_state=wan_state.status,
+            wan_message=wan_state.message,
+        )
 
         # Check if interface is up
         try:
             result = subprocess.run(
-                ["ip", "link", "show", interface],
+                ["ip", "link", "show", active_iface],
                 capture_output=True,
                 text=True,
                 timeout=1,
@@ -106,7 +132,7 @@ class StatusCollector:
         # Get IP address
         try:
             result = subprocess.run(
-                ["ip", "-4", "addr", "show", interface],
+                ["ip", "-4", "addr", "show", active_iface],
                 capture_output=True,
                 text=True,
                 timeout=1,
@@ -123,7 +149,7 @@ class StatusCollector:
 
         # Get traffic stats
         try:
-            stats_path = Path(f"/sys/class/net/{interface}/statistics")
+            stats_path = Path(f"/sys/class/net/{active_iface}/statistics")
             if stats_path.exists():
                 tx_path = stats_path / "tx_bytes"
                 rx_path = stats_path / "rx_bytes"

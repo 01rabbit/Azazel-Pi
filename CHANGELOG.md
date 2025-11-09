@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2025-11-09
+### Added
+- Dynamic WAN selection and runtime orchestration via `azctl wan-manager`:
+  - Evaluates candidate uplink interfaces and selects the healthiest WAN at boot and runtime.
+  - Writes health snapshots to `runtime/wan_state.json` (production path `/var/run/azazel/wan_state.json`); path can be overridden with `AZAZEL_WAN_STATE_PATH`.
+  - Candidate precedence: explicit CLI `--candidate` → `AZAZEL_WAN_CANDIDATES` env var (comma-separated) → `configs/network/azazel.yaml` (`interfaces.external`/`interfaces.wan`) → safe fallbacks.
+  - On WAN change, the manager reapplies traffic control (`bin/azazel-traffic-init.sh`), refreshes NAT, and restarts dependent services (Suricata, `azctl-unified`).
+
+- Universal runtime interface resolution for consumers:
+  - CLI/TUI, scripts, and services now prefer explicit CLI args → environment variables (`AZAZEL_WAN_IF` / `AZAZEL_LAN_IF`) → WAN manager state → configuration values → final fallback.
+  - Added `AZAZEL_WAN_CANDIDATES` and `AZAZEL_WAN_STATE_PATH` environment variables for operational control and testing.
+
+### Changed
+- Scripts and documentation updated to use parameterized interface references (`${AZAZEL_WAN_IF:-<fallback>}` and `${AZAZEL_LAN_IF:-<fallback>}`) in help text and examples. Where safe, runtime resolution now uses the WAN manager helper instead of hard-coded interface names.
+
+### Notes
+- Backwards-compatible: explicit CLI flags and environment variables still override runtime selection. Existing deployments should continue to work; review scripts that assume literal interface names before automating deployment.
+- Tests and shell syntax checks were run after edits; no regressions detected in the unit test suite.
+- QoS features are opt-in via systemd service enablement.
+- All changes maintain backward compatibility with existing configurations.
+
 ## [2.2.0] - 2025-11-07
 ### Added
 - **Internal Network QoS Control**: Comprehensive privilege-based traffic shaping and security enforcement for LAN devices.
@@ -20,6 +41,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - QoS scripts support DRY_RUN mode (print commands without execution, no root required).
 - All QoS scripts are idempotent (safe to re-run).
+ - Dynamic WAN selection: `wan-manager` now determines the active WAN interface at runtime and writes runtime/wan_state.json. Consumers (CLI, TUI, scripts) will use that selection by default when `--wan-if` is omitted. Environment variables `AZAZEL_WAN_IF` and `AZAZEL_LAN_IF` may be used to override defaults where needed.
 
 ### Security
 - MAC address verification prevents ARP spoofing for privileged devices.
@@ -34,8 +56,6 @@ All notable changes to this project will be documented in this file.
 
 ### Notes
 - Minor version bump (2.1.0 → 2.2.0) adds significant new QoS feature without breaking existing functionality.
-- QoS features are opt-in via systemd service enablement.
-- All changes maintain backward compatibility with existing configurations.
 
 ## [2.1.0] - 2025-11-07
 ### Added

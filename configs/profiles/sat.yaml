@@ -1,4 +1,7 @@
 node: azazel-sat-field
+# Interface examples: these are sample values for this profile.
+# Override at runtime with AZAZEL_LAN_IF / AZAZEL_WAN_IF or set
+# AZAZEL_WAN_CANDIDATES for a prioritized list (comma-separated).
 interfaces: { lan: lan0, wan: wlan1 }
 profiles:
   active: sat

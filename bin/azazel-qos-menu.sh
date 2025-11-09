@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 # bin/azazel-qos-menu.sh
+# Interactive helper for managing privileged host CSV and invoking azazel-qos-apply.sh
+# Notes:
+# - This menu is intentionally minimal and defers interface selection to
+#   the underlying apply script. To override the LAN interface globally,
+#   set AZAZEL_LAN_IF (e.g. export AZAZEL_LAN_IF=${AZAZEL_LAN_IF:-wlan0}).
 set -euo pipefail
 
 CSV="configs/network/privileged.csv"

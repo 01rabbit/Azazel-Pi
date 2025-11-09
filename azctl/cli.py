@@ -31,6 +31,7 @@ from azazel_pi.core.ingest.suricata_tail import SuricataTail
 from azazel_pi.core.ingest.canary_tail import CanaryTail
 from azazel_pi.core import notify_config as notice
 from azazel_pi.core.display.status_collector import StatusCollector
+from azazel_pi.utils.wan_state import get_active_wan_interface
 
 
 # ---------------------------------------------------------------------------
@@ -303,7 +304,7 @@ def _parse_hostapd_status(text: str) -> dict:
 # レガシー関数は network_utils.py に移行し、統合関数に完全移行しました
 
 
-def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str = "wlan0", wan_if: str = "wlan1") -> int:
+def cmd_status(decisions: Optional[str], output_json: bool, lan_if: str, wan_if: str) -> int:
     # Likely locations to probe for decisions.log
     candidates = [
         Path(decisions) if decisions else None,
@@ -491,8 +492,8 @@ def main(argv: Iterable[str] | None = None) -> int:
     p_status = sub.add_parser("status", help="Show defensive mode and WLAN info")
     p_status.add_argument("--decisions-log", help="Path to decisions.log (optional)")
     p_status.add_argument("--json", action="store_true", help="Output JSON")
-    p_status.add_argument("--lan-if", default="wlan0", help="LAN/AP interface name (default: wlan0)")
-    p_status.add_argument("--wan-if", default="wlan1", help="WAN/client interface name (default: wlan1)")
+    p_status.add_argument("--lan-if", default=os.environ.get("AZAZEL_LAN_IF", "wlan0"), help="LAN/AP interface name (default: wlan0 or AZAZEL_LAN_IF)")
+    p_status.add_argument("--wan-if", default=None, help="WAN/client interface name (default: dynamically determined by WAN manager)")
     p_status.add_argument("--tui", action="store_true", help="Rich TUI like the E-Paper layout")
     p_status.add_argument("--watch", action="store_true", help="Continuously update status")
     p_status.add_argument("--interval", type=float, default=5.0, help="Refresh interval in seconds (default: 5.0)")
@@ -500,16 +501,25 @@ def main(argv: Iterable[str] | None = None) -> int:
     # Menu: interactive TUI menu system
     p_menu = sub.add_parser("menu", help="Launch interactive TUI menu for Azazel control operations")
     p_menu.add_argument("--decisions-log", help="Path to decisions.log (optional)")
-    p_menu.add_argument("--lan-if", default="wlan0", help="LAN/AP interface name (default: wlan0)")
-    p_menu.add_argument("--wan-if", default="wlan1", help="WAN/client interface name (default: wlan1)")
+    p_menu.add_argument("--lan-if", default=os.environ.get("AZAZEL_LAN_IF", "wlan0"), help="LAN/AP interface name (default: wlan0 or AZAZEL_LAN_IF)")
+    p_menu.add_argument("--wan-if", default=None, help="WAN/client interface name (default: dynamically determined by WAN manager)")
 
     # Serve: long-running daemon that consumes ingest streams and updates mode
     p_serve = sub.add_parser("serve", help="Run long-running daemon to consume events and auto-update mode")
     p_serve.add_argument("--config", help="Path to Azazel configuration YAML for system initialization")
     p_serve.add_argument("--decisions-log", help="Path to decisions.log (optional)")
     p_serve.add_argument("--suricata-eve", help="Path to Suricata eve.json (defaults from configs)", default=notice.SURICATA_EVE_JSON_PATH)
-    p_serve.add_argument("--lan-if", default="wlan0", help="LAN/AP interface name (default: wlan0)")
-    p_serve.add_argument("--wan-if", default="wlan1", help="WAN/client interface name (default: wlan1)")
+    p_serve.add_argument("--lan-if", default=os.environ.get("AZAZEL_LAN_IF", "wlan0"), help="LAN/AP interface name (default: wlan0 or AZAZEL_LAN_IF)")
+    p_serve.add_argument("--wan-if", default=None, help="WAN/client interface name (default: dynamically determined by WAN manager)")
+
+    # WAN Manager: dynamic interface orchestrator
+    p_wan = sub.add_parser("wan-manager", help="Monitor and select WAN interfaces automatically")
+    p_wan.add_argument("--config", help="Path to azazel.yaml (default: /etc/azazel/azazel.yaml)")
+    p_wan.add_argument("--candidate", action="append", dest="candidates", help="Override WAN candidates (repeatable)")
+    p_wan.add_argument("--interval", type=float, default=20.0, help="Polling interval in seconds (default: 20)")
+    p_wan.add_argument("--lan-cidr", default="172.16.0.0/24", help="Internal LAN CIDR for NAT (default: 172.16.0.0/24)")
+    p_wan.add_argument("--state-file", help="Override WAN state file path")
+    p_wan.add_argument("--once", action="store_true", help="Run a single evaluation then exit")
 
     # Back-compat: events processing (original behavior)
     p_events = sub.add_parser("events", help="Process events from a YAML config")
@@ -520,13 +530,27 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    def safe_path(path_str: Optional[str], fallback: Optional[str] = None) -> Optional[Path]:
+        """Return a Path for path_str if provided, otherwise a Path for fallback or None.
+
+        This avoids calling Path(None) which raises TypeError when argparse sets
+        the attribute to None even if the option wasn't provided.
+        """
+        if path_str:
+            return Path(path_str)
+        if fallback:
+            return Path(fallback)
+        return None
+
     if args.command == "status":
+        # Resolve WAN interface dynamically if not provided on CLI
+        wan_if = getattr(args, "wan_if", None) or get_active_wan_interface()
         if getattr(args, "tui", False) or getattr(args, "watch", False):
             # TUI path (one-shot with --tui or continuous with --watch)
             return cmd_status_tui(
                 decisions=getattr(args, "decisions_log", None),
                 lan_if=getattr(args, "lan_if", "wlan0"),
-                wan_if=getattr(args, "wan_if", "wlan1"),
+                wan_if=wan_if,
                 interval=float(getattr(args, "interval", 5.0)),
                 once=not bool(getattr(args, "watch", False)),
             )
@@ -534,22 +558,38 @@ def main(argv: Iterable[str] | None = None) -> int:
             decisions=getattr(args, "decisions_log", None),
             output_json=bool(getattr(args, "json", False)),
             lan_if=getattr(args, "lan_if", "wlan0"),
-            wan_if=getattr(args, "wan_if", "wlan1"),
+            wan_if=wan_if,
         )
     if args.command == "menu":
+        wan_if = getattr(args, "wan_if", None) or get_active_wan_interface()
         return cmd_menu(
             decisions=getattr(args, "decisions_log", None),
             lan_if=getattr(args, "lan_if", "wlan0"),
-            wan_if=getattr(args, "wan_if", "wlan1"),
+            wan_if=wan_if,
         )
     if args.command == "serve":
+        wan_if = getattr(args, "wan_if", None) or get_active_wan_interface()
         return cmd_serve(
             config=getattr(args, "config", None),
             decisions=getattr(args, "decisions_log", None),
             suricata_eve=getattr(args, "suricata_eve", notice.SURICATA_EVE_JSON_PATH),
             lan_if=getattr(args, "lan_if", "wlan0"),
-            wan_if=getattr(args, "wan_if", "wlan1"),
+            wan_if=wan_if,
         )
+    if args.command == "wan-manager":
+        from azazel_pi.core.network.wan_manager import WANManager
+
+        cfg_path = safe_path(getattr(args, "config", None), "/etc/azazel/azazel.yaml")
+        state_path = safe_path(getattr(args, "state_file", None), None)
+
+        manager = WANManager(
+            config_path=cfg_path,
+            candidates=getattr(args, "candidates", None),
+            poll_interval=float(getattr(args, "interval", 20.0)),
+            lan_cidr=getattr(args, "lan_cidr", "172.16.0.0/24"),
+            state_path=state_path,
+        )
+        return manager.run(once=bool(getattr(args, "once", False)))
 
     # Legacy or explicit events mode
     config_path = None

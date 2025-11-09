@@ -6,6 +6,7 @@ Provides emergency response and recovery operations for the Azazel TUI menu syst
 """
 
 import subprocess
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -16,15 +17,21 @@ from rich.prompt import Prompt, Confirm
 
 from azctl.menu.types import MenuCategory, MenuAction
 from azazel_pi.utils.network_utils import get_wlan_ap_status, get_wlan_link_info
+from azazel_pi.utils.wan_state import get_active_wan_interface
 
 
 class EmergencyModule:
     """Emergency operations and recovery functionality."""
     
-    def __init__(self, console: Console, lan_if: str = "wlan0", wan_if: str = "wlan1"):
+    def __init__(self, console: Console, lan_if: Optional[str] = None, wan_if: Optional[str] = None):
         self.console = console
-        self.lan_if = lan_if
-        self.wan_if = wan_if
+        # LAN precedence: explicit arg -> AZAZEL_LAN_IF env -> default wlan0
+        self.lan_if = lan_if or os.environ.get("AZAZEL_LAN_IF") or "wlan0"
+        # WAN precedence: explicit arg -> AZAZEL_WAN_IF env -> helper -> fallback wlan1
+        try:
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
+        except Exception:
+            self.wan_if = wan_if or os.environ.get("AZAZEL_WAN_IF") or "wlan1"
     
     def get_category(self) -> MenuCategory:
         """Get the emergency operations menu category."""

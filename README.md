@@ -145,8 +145,18 @@ Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment 
 After cloning the repository or downloading a release, run the complete automated installer:
 
 ```bash
-cd Azazel-Pi
-# Complete installation with all dependencies and configurations
+# Launch TUI menu. If you omit --wan-if the CLI will dynamically resolve the WAN
+# interface using the WAN manager (recommended). You can also force an interface
+# via the AZAZEL_WAN_IF / AZAZEL_LAN_IF environment variables.
+# Example: prefer runtime selection — WAN will be resolved automatically when omitted.
+# You can override the detected interfaces with environment variables:
+#   export AZAZEL_LAN_IF=${AZAZEL_LAN_IF:-wlan0}
+#   export AZAZEL_WAN_IF=${AZAZEL_WAN_IF:-wlan1}
+# then run the CLI without the --wan-if flag if you want the runtime helper to pick the WAN.
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
+# or: omit --wan-if to let the system choose the active WAN interface
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
+```
 sudo scripts/install_azazel_complete.sh --start
 
 # Or step-by-step installation:
@@ -203,6 +213,35 @@ sudo systemctl enable --now azazel-epd.service
 
 See [`docs/en/EPD_SETUP.md`](docs/en/EPD_SETUP.md) for complete E-Paper configuration instructions.
 
+## Running tests (developer)
+
+This project uses a local virtual environment at `.venv` for development tests. To run the unit tests that exercise E-Paper rendering in emulation mode, do the following:
+
+1. Activate or create the virtual environment (example):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements-dev.txt
+```
+
+2. Install optional dependencies used by E-Paper rendering (Pillow) if not included in `requirements-dev.txt`:
+
+```bash
+pip install pillow
+```
+
+3. Run tests (example):
+
+```bash
+.venv/bin/pytest tests/core/test_epd_daemon.py -q
+```
+
+Notes:
+- The E-Paper renderer supports `--emulate` which avoids hardware access and writes a PNG file when run in `--mode test`.
+- Use `--wan-state-path` to point the renderer/collector at a custom WAN state file for integration testing.
+
 ### Optional: Front Mattermost with Nginx
 
 To serve Mattermost via Nginx reverse proxy (recommended), use the provided template and setup script:
@@ -229,7 +268,7 @@ The interactive Terminal User Interface (TUI) menu provides comprehensive system
 python3 -m azctl.cli menu
 
 # With specific interface configuration
-python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN_IF:-wlan1}
 ```
 
 **Modular Architecture:**
@@ -293,11 +332,16 @@ echo '{"mode": "lockdown"}' | azctl events --config -
 The modular TUI menu provides comprehensive system management:
 
 ```bash
-# Launch modular TUI menu
+# Launch modular TUI menu. If --wan-if is omitted, azctl will consult the
+# WAN manager to select the active WAN interface. To override selection use
+# the CLI flags or environment variables described below.
 python3 -m azctl.cli menu
 
-# Specify custom interfaces
-python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
+# Specify custom interfaces (explicit override)
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN_IF:-wlan1}
+
+# Or let the system choose WAN automatically:
+python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
 ```
 
 **Menu Features:**
@@ -386,7 +430,12 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 ### Configuration Workflow
 
 1. **Edit Core Configuration**: Modify `/etc/azazel/azazel.yaml` to adjust delay values, bandwidth controls, and lockdown allowlists (template at `configs/network/azazel.yaml`).
-   - By default, `wlan0` is treated as the internal LAN (AP), and both `wlan1` and `eth0` are considered external (WAN/uplink) interfaces. See `interfaces.external: ["eth0", "wlan1"]` in `configs/network/azazel.yaml` and adjust as needed.
+   - Interface defaults: `${AZAZEL_LAN_IF:-wlan0}` is typically treated as the internal LAN (AP); `${AZAZEL_WAN_IF:-wlan1}` and `${AZAZEL_WAN_IF:-eth0}` are common external (WAN/uplink) candidates and are listed under `interfaces.external` in `configs/network/azazel.yaml`.
+       Note: Azazel now prefers a runtime WAN selection produced by the WAN manager when `--wan-if` is not provided. To explicitly override the chosen interfaces, set the environment variables `AZAZEL_WAN_IF` and/or `AZAZEL_LAN_IF` before running commands or scripts.
+   - Override options:
+     - CLI: pass `--lan-if` and/or `--wan-if` to `azctl` commands to explicitly set interfaces.
+     - Environment: set `AZAZEL_LAN_IF` or `AZAZEL_WAN_IF` to change defaults for scripts and services.
+     - Dynamic: if `--wan-if` is omitted, `azctl` will query the WAN manager (recommended) to pick the active WAN interface based on runtime health checks.
 
 2. **Generate Suricata Rules**: Use `scripts/suricata_generate.py` to render environment-specific IDS configurations
 
@@ -395,6 +444,32 @@ python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
 4. **Health Check**: Verify service status using `scripts/sanity_check.sh`
 
 5. **Monitor Operations**: Analyze scoring results in `decisions.log` and use `azctl` for manual mode switching during incidents
+
+### Dynamic WAN Selection (NEW)
+
+- The `azctl wan-manager` service evaluates all candidate WAN interfaces (from `interfaces.external`) after boot and continuously during runtime.
+- Health snapshots (link status, IP presence, estimated speed) are written to `runtime/wan_state.json` (or `/var/run/azazel/wan_state.json` on deployed systems) and surfaced on the E-Paper display. You can override the default path with the `AZAZEL_WAN_STATE_PATH` environment variable when testing or for non-standard deployments.
+- The WAN manager reads candidate lists in order of precedence: explicit CLI `--candidate` arguments, the `AZAZEL_WAN_CANDIDATES` environment variable (comma-separated), values declared in `configs/network/azazel.yaml` (`interfaces.external` or `interfaces.wan`), then safe fallbacks. Use `AZAZEL_WAN_CANDIDATES` to force a specific candidate ordering without changing config files.
+- When the active interface changes, the manager reapplies `bin/azazel-traffic-init.sh`, refreshes NAT (`iptables -t nat`), and restarts dependent services (Suricata and `azctl-unified`) so they immediately consume the new interface.
+- Suricata now launches through `azazel_pi.core.network.suricata_wrapper`, which reads the same WAN state file, so restarting the service is sufficient to follow the latest selection.
+
+Developer note — non-root testing and fallback behavior
+
+- The WAN manager will attempt to write the runtime state file to a system runtime path (for example `/var/run/azazel/wan_state.json`) when running as a system service. On systems where the process does not have permission to create `/var/run/azazel`, the manager now falls back automatically to a repository-local path `runtime/wan_state.json` so developers can run and test `azctl wan-manager` without root.
+- For explicit control in tests or non-standard deployments, set `AZAZEL_WAN_STATE_PATH` to a writable path before running the manager. Example (development):
+
+```bash
+# write state into the repository runtime directory (no root required)
+AZAZEL_WAN_STATE_PATH=runtime/wan_state.json python3 -m azctl.cli wan-manager --once
+```
+
+- For production systems, run the WAN manager via systemd (root) so that traffic-init, iptables/nft, and service restarts run with the required privileges. Example (recommended for deployed systems):
+
+```bash
+sudo systemctl enable --now azazel-wan-manager.service
+```
+
+These options allow safe developer testing while preserving the intended privileged behavior in production.
 
 ### Defensive Mode Operations
 

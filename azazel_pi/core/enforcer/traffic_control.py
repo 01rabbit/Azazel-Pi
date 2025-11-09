@@ -18,6 +18,8 @@ from ...utils.delay_action import (
     load_opencanary_ip, ensure_nft_table_and_chain, 
     list_active_diversions, OPENCANARY_IP
 )
+from ...utils.wan_state import get_active_wan_interface
+import os
 
 # ログ設定
 try:
@@ -53,7 +55,8 @@ class TrafficControlEngine:
     
     def __init__(self, config_path: Optional[str] = None):
         self.config_path = config_path or "/home/azazel/Azazel-Pi/configs/network/azazel.yaml"
-        self.interface = "wlan1"
+        # Respect AZAZEL_WAN_IF environment override first, then WAN manager helper
+        self.interface = os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
         self.active_rules: Dict[str, List[TrafficControlRule]] = {}
         self._ensure_tc_setup()
         

@@ -25,33 +25,43 @@ class EPaperDaemon:
     def __init__(
         self,
         update_interval: int = 10,
+        *,
         state_machine_path: Path | None = None,
         events_log: Path | None = None,
-    gentle_updates: bool = True,
-    full_refresh_minutes: int = 30,
+        wan_state_path: Path | None = None,
+        gentle_updates: bool = True,
+        full_refresh_minutes: int = 30,
         debug: bool = False,
         emulate: bool = False,
         rotation: int = 0,
         power_save: bool = False,
-    ):
+    ) -> None:
         """Initialize the EPaperDaemon.
 
-        Args:
-            update_interval: Seconds between display updates
-            state_machine_path: Optional path to state machine config
-            events_log: Path to events.json log file
-            gentle_updates: Use partial updates to reduce flicker
-            debug: Enable debug logging
-            emulate: Emulation mode (no physical display required)
-            rotation: Display rotation in degrees (0/90/180/270)
-            power_save: If True, put the EPD to sleep after each update
+        Keyword args (aside from positional `update_interval`):
+            update_interval: Seconds between display updates (positional)
+            state_machine_path: Optional path to a state-machine config used
+                to construct an internal StateMachine instance (if present).
+            events_log: Path to events.json for alert counting (defaults to
+                /var/log/azazel/events.json when not provided to StatusCollector).
+            wan_state_path: Optional explicit path to the WAN state JSON file
+                (overrides $AZAZEL_WAN_STATE_PATH and other fallbacks).
+            gentle_updates: Use partial/fast updates to reduce flicker (default True).
+            full_refresh_minutes: Perform a non-partial full refresh every N minutes
+                to reduce E-Paper ghosting. Set 0 to disable.
+            debug: Enable debug-level logging and additional trace output.
+            emulate: Emulation mode (does not require physical E-Paper hardware).
+            rotation: Display rotation in degrees (0, 90, 180, 270).
+            power_save: If True, attempt to sleep the EPD after each update
+                (may increase chance of SPI/device races; default False).
         """
-        self.update_interval = update_interval
-        self.gentle_updates = gentle_updates
-        self.debug = debug
-        self.emulate = emulate
+        # Core runtime configuration
+        self.update_interval = int(update_interval)
+        self.gentle_updates = bool(gentle_updates)
+        self.debug = bool(debug)
+        self.emulate = bool(emulate)
         self.running = False
-        self.power_save = power_save
+        self.power_save = bool(power_save)
         # Periodic full-refresh interval in minutes. If > 0, the daemon will
         # perform a full (non-gentle) refresh every `full_refresh_minutes`
         # minutes to reduce E-Paper ghosting from repeated partial updates.
@@ -69,7 +79,7 @@ class EPaperDaemon:
         )
         self.logger = logging.getLogger(__name__)
 
-        # Initialize state machine (optional, for mode/score tracking)
+    # Initialize state machine (optional, for mode/score tracking).
         self.state_machine = None
         if state_machine_path and Path(state_machine_path).exists():
             try:
@@ -81,10 +91,11 @@ class EPaperDaemon:
             except Exception as e:
                 self.logger.warning(f"Could not load state machine: {e}")
 
-        # Initialize status collector
+    # Initialize status collector (allow explicit wan_state_path for testing).
         self.collector = StatusCollector(
             state_machine=self.state_machine,
             events_log=events_log,
+            wan_state_path=wan_state_path,
         )
 
         # Initialize renderer (support rotation)
@@ -107,7 +118,12 @@ class EPaperDaemon:
             env_ps_bool = str(env_ps).lower() in ("1", "true", "yes")
         except Exception:
             env_ps_bool = False
-        self.power_save = power_save or env_ps_bool
+        # Ensure we reference the instance attribute; avoid NameError when
+        # a signal arrives.
+        try:
+            self.power_save = bool(self.power_save) or env_ps_bool
+        except Exception:
+            self.power_save = env_ps_bool
         self.logger.info(f"Received signal {signum}, shutting down...")
         self.running = False
 
@@ -274,6 +290,17 @@ def main() -> int:
         default=int(os.getenv("EPD_FULL_REFRESH_MINUTES", "30")),
         help="Perform a full (non-partial) refresh every N minutes to reduce e-paper ghosting. Set 0 to disable (default: 30)",
     )
+    parser.add_argument(
+        "--wan-state-path",
+        type=Path,
+        help="Optional path to WAN state JSON file (overrides AZAZEL_WAN_STATE_PATH)",
+    )
+    parser.add_argument(
+        "--emulate-output",
+        type=Path,
+        default=Path("/tmp/azazel_epd_test.png"),
+        help="When in --mode test and --emulate is set, save the output image to this path",
+    )
 
     args = parser.parse_args()
 
@@ -289,7 +316,7 @@ def main() -> int:
         return 0
 
     if args.mode == "test":
-        collector = StatusCollector(events_log=args.events_log)
+        collector = StatusCollector(events_log=args.events_log, wan_state_path=args.wan_state_path)
         renderer = EPaperRenderer(debug=args.debug, emulate=args.emulate, rotation=args.rotate)
         status = collector.collect()
         image = renderer.render_status(status)
@@ -302,7 +329,7 @@ def main() -> int:
         # (apply the renderer rotation before saving so test output matches
         # what hardware would receive).
         if args.emulate:
-            output_path = "/tmp/azazel_epd_test.png"
+            output_path = str(args.emulate_output)
             try:
                 rot = getattr(renderer, "rotation", 0)
                 if rot:
@@ -327,6 +354,7 @@ def main() -> int:
         power_save=args.power_save,
         state_machine_path=args.state_config,
         events_log=args.events_log,
+        wan_state_path=args.wan_state_path,
         gentle_updates=not args.no_gentle,
         debug=args.debug,
         emulate=args.emulate,
