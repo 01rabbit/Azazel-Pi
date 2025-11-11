@@ -1,0 +1,68 @@
+# Azazel notification and monitoring settings
+# Updated for production use with minimal Mattermost configuration
+
+# 日本時間（UTC+9）
+tz: "+09:00"
+
+# Mattermost 通知設定
+# 【運用方法】
+# 1. Mattermostで通知専用botユーザーを作成
+# 2. そのbotユーザーでWebhookを生成
+# 3. 通知先チャンネルは、Webhook作成時に指定
+# 4. 個別通知が必要なユーザーをnotify_usersに列挙
+mattermost:
+  enabled: true                # 通知有効フラグ
+  webhook_url: "http://172.16.0.254:8065/hooks/w5togts4gprcjdgstjkmhotszh"
+  notify_users:                # 通知対象ユーザー（@mention）
+    - "admin"                  # 管理者ユーザー
+    - "security.team"          # セキュリティチーム
+    # 必要に応じてユーザーを追加
+    # - "oncall.engineer"      # 待機エンジニア
+  # 注意: channel, username, icon_emojiはbotユーザーの設定を使用するため不要
+
+# ログファイルパス
+paths:
+  events: "/opt/azazel/logs/events.json"
+  opencanary: "/opt/azazel/logs/opencanary.log"
+  suricata_eve: "/var/log/suricata/eve.json"
+  decisions: "/var/log/azazel/decisions.log"
+
+# イベント抑止設定
+suppress:
+  # 選択肢: "signature", "signature_ip", "signature_ip_user", "signature_ip_user_session"
+  key_mode: "signature_ip_user"
+  cooldown_seconds: 60          # 同一イベントの抑止時間
+  summary_interval_mins: 5      # サマリー通知間隔
+
+# OpenCanary設定
+opencanary:
+  ip: "172.16.10.10"
+  ports:
+    - 22    # SSH
+    - 80    # HTTP
+    - 5432  # PostgreSQL
+
+# ネットワーク制御設定
+network:
+  # 遅延制御対象インタフェース（例: wlan1）。ランタイムでの検出を優先する場合は
+  # 環境変数 AZAZEL_WAN_IF を設定してください（例: export AZAZEL_WAN_IF=wlan1）。
+  interface: "wlan1"           # 遅延制御対象インタフェース
+  inactivity_minutes: 2        # 無活動判定時間
+  delay:
+    base_ms: 500              # 基本遅延時間
+    jitter_ms: 100            # 揺らぎ
+
+# AI脅威評価設定
+ai:
+  enabled: true                # AI評価機能の有効/無効
+  ollama_url: "http://127.0.0.1:11434/api/generate"
+  model: "phi3:mini"           # 使用するLLMモデル
+  timeout: 30                  # API呼び出しタイムアウト（秒）
+  max_payload_chars: 400       # ペイロード最大文字数
+  fallback_on_error: true      # エラー時のフォールバック有効
+  model_alternatives:          # 代替モデル候補
+    - "qwen2.5:3b"
+    - "tinyllama"
+  policy_scripts:              # AI判定によるポリシー適用スクリプト
+    delay: "/home/azazel/Azazel-Pi/scripts/ai_policy_delay.sh"
+    block: "/home/azazel/Azazel-Pi/scripts/ai_policy_block.sh"

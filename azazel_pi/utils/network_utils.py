@@ -127,58 +127,75 @@ def get_wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
     
     try:
         # インターフェース存在確認
-        result = subprocess.run(
-            ["ip", "link", "show", interface], 
-            capture_output=True, text=True, timeout=5
-        )
+        result = subprocess.run(["ip", "link", "show", interface], capture_output=True, text=True, timeout=5)
         if result.returncode != 0:
             info["status"] = "not_found"
+            # ensure compatibility keys exist
+            info.setdefault("ip4", None)
+            info.setdefault("signal_dbm", None)
             return info
-        
-        # IPアドレス取得
-        result = subprocess.run(
-            ["ip", "addr", "show", interface], 
-            capture_output=True, text=True, timeout=5
-        )
+
+        # IPv4 アドレス取得（第一の inet 行を使用）
+        result = subprocess.run(["ip", "-4", "addr", "show", interface], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
-            for line in result.stdout.split('\n'):
-                if "inet " in line and "scope global" in line:
-                    info["ip_address"] = line.split()[1].split('/')[0]
-                    break
-        
+            for line in result.stdout.splitlines():
+                if "inet " in line:
+                    parts = line.strip().split()
+                    if len(parts) >= 2:
+                        info["ip_address"] = parts[1].split("/")[0]
+                        break
+
         # 接続情報取得（iw経由）
-        result = subprocess.run(
-            ["iw", "dev", interface, "link"], 
-            capture_output=True, text=True, timeout=5
-        )
+        result = subprocess.run(["iw", "dev", interface, "link"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
-            if "Connected to" in result.stdout:
+            out = result.stdout or ""
+            if "Connected to" in out:
                 info["connected"] = True
-                for line in result.stdout.split('\n'):
-                    if "SSID:" in line:
-                        info["ssid"] = line.split("SSID: ")[1].strip()
-                    elif "freq:" in line:
+                for line in out.splitlines():
+                    line = line.strip()
+                    if line.startswith("SSID:"):
+                        info["ssid"] = line.split("SSID:", 1)[1].strip()
+                    elif line.startswith("freq:"):
                         try:
-                            info["frequency"] = int(line.split("freq: ")[1].split()[0])
+                            info["frequency"] = int(line.split("freq:", 1)[1].strip().split()[0])
                         except (ValueError, IndexError):
                             pass
                     elif "signal:" in line:
+                        # typical: 'signal: -45.00 dBm'
                         try:
-                            info["signal"] = float(line.split("signal: ")[1].split()[0])
+                            info["signal"] = float(line.split("signal:", 1)[1].strip().split()[0])
+                        except (ValueError, IndexError):
+                            pass
+                    elif "signal_dbm" in line:
+                        try:
+                            # fallback parsing for alternate formats
+                            info["signal"] = float(line.split("signal_dbm", 1)[1].strip().split()[0])
                         except (ValueError, IndexError):
                             pass
             else:
                 info["connected"] = False
-        
+
         info["status"] = "connected" if info["connected"] else "disconnected"
-        
+
     except Exception as e:
         logger.error(f"WLAN link info check failed for {interface}: {e}")
         info["status"] = "error"
-    
+
+    # Backwards-compatible aliases expected by CLI/menu code
+    if info.get("ip_address"):
+        info["ip4"] = info.get("ip_address")
+    else:
+        info.setdefault("ip4", None)
+
+    if info.get("signal") is not None:
+        try:
+            info["signal_dbm"] = int(round(info.get("signal")))
+        except Exception:
+            info["signal_dbm"] = None
+    else:
+        info.setdefault("signal_dbm", None)
+
     return info
-
-
 def get_active_profile() -> Optional[str]:
     """
     現在アクティブなネットワークプロファイル取得

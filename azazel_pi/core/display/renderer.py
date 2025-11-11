@@ -234,6 +234,55 @@ class EPaperRenderer:
         draw.text((score_x, y + 2), score_text, font=header_font, fill=0)
         y += 22
 
+        # Draw a tiny sparkline for recent scores (if available).
+        # Use font-independent rectangle bars so the E-Paper hardware
+        # doesn't depend on availability of block glyphs. This method
+        # renders reliably on real devices.
+        try:
+            sh = getattr(status.security, "score_history", []) or []
+            if sh:
+                vals = list(sh[-12:])
+                n = len(vals)
+                # Sparkline drawing area (left margin 4, right margin 4)
+                area_x = 4
+                area_w = max(8, self.width - 8)
+                area_y = y
+                area_h = 10
+
+                # Determine mapping: if constant values, map absolute 0-100
+                # so a constant high score appears high; otherwise normalize
+                mn = min(vals)
+                mx = max(vals)
+
+                bars_total_w = area_w
+                bar_w = max(1, bars_total_w // n)
+                gap = max(1, bar_w // 6)
+
+                for i, v in enumerate(vals):
+                    try:
+                        fv = float(v)
+                    except Exception:
+                        fv = 0.0
+
+                    if mx - mn < 1e-6:
+                        # absolute mapping 0..100
+                        frac = max(0.0, min(1.0, fv / 100.0))
+                    else:
+                        frac = (fv - mn) / (mx - mn)
+
+                    bar_h = int(frac * area_h)
+                    x0 = area_x + i * bar_w + gap // 2
+                    x1 = x0 + bar_w - gap
+                    y0 = area_y + (area_h - bar_h)
+                    y1 = area_y + area_h
+                    # Draw filled rectangle for the bar (black)
+                    draw.rectangle([(x0, y0), (x1, y1)], fill=0)
+
+                # Move cursor down after drawing sparkline area
+                y += area_h + 4
+        except Exception:
+            pass
+
         # Separator line
         draw.line([(0, y), (self.width, y)], fill=0, width=1)
         y += 4
@@ -268,41 +317,33 @@ class EPaperRenderer:
         alert_line = f"Alerts: {status.security.recent_alerts}/{status.security.total_alerts} (5m/total)"
         alert_line = self._fit_text(draw, alert_line, body_font, self.width - 8)
         draw.text((4, y), alert_line, font=body_font, fill=0)
-        y += 16
+        y += 14
 
-        # Service status
-        suri_status = "✓" if status.security.suricata_active else "✗"
-        canary_status = "✓" if status.security.opencanary_active else "✗"
-        svc_line = f"Svc: Suri{suri_status} Canary{canary_status}"
-        draw.text((4, y), svc_line, font=body_font, fill=0)
-        y += 16
+        # Service status: show ON/OFF explicitly. Also display the current
+        # local time at the right edge of this same row so the bottom area
+        # doesn't need a separate uptime footer (uptime removed per request).
+        suri_txt = "ON" if status.security.suricata_active else "OFF"
+        canary_txt = "ON" if status.security.opencanary_active else "OFF"
+        # Short EPD form requested by user: 'Serv: Suri:ON, Canary:OFF'
+        svc_line = f"Serv: Suri:{suri_txt}, Canary:{canary_txt}"
 
-        # Uptime and timestamp
-        uptime_hours = status.uptime_seconds // 3600
-        uptime_mins = (status.uptime_seconds % 3600) // 60
-        # Ensure displayed time uses the local timezone. StatusCollector
-        # provides a timezone-aware timestamp (UTC); convert to local time
-        # so the E-Paper shows human-local time instead of UTC.
+        # Time string (local)
         try:
             local_ts = status.timestamp.astimezone()
             time_str = local_ts.strftime("%H:%M:%S")
         except Exception:
-            # Fallback to naive formatting if anything goes wrong
             time_str = status.timestamp.strftime("%H:%M:%S")
-        footer = f"Up {uptime_hours}h{uptime_mins}m | {time_str}"
-        footer = self._fit_text(draw, footer, body_font, self.width - 8)
-        # Reserve footer area to avoid content overlap: compute footer bbox
-        # and ensure we don't draw other content into this region.
+
+        # Draw service text at left, time at right
+        draw.text((4, y), svc_line, font=body_font, fill=0)
         try:
-            fbbox = draw.textbbox((0, 0), footer, font=body_font)
-            footer_height = fbbox[3] - fbbox[1]
+            tbbox = draw.textbbox((0, 0), time_str, font=body_font)
+            tw = tbbox[2] - tbbox[0]
         except Exception:
-            footer_height = 12
-        footer_y = self.height - footer_height - 2
-        # If current y has already reached footer area, shift it up slightly
-        if y >= footer_y:
-            y = max(2, footer_y - 16)
-        draw.text((4, footer_y), footer, font=body_font, fill=0)
+            tw = 40
+        time_x = max(4, self.width - tw - 4)
+        draw.text((time_x, y), time_str, font=body_font, fill=0)
+        y += 16
 
         # Prevent any accidental drawing beyond footer by returning image
         # (all content should be complete at this point).

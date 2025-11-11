@@ -17,6 +17,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from azazel_pi.core.display import EPaperRenderer, StatusCollector
 from azazel_pi.core.state_machine import StateMachine
+from azazel_pi.core.config import AzazelConfig
+from collections import deque
+from pathlib import Path
 
 
 class EPaperDaemon:
@@ -79,17 +82,49 @@ class EPaperDaemon:
         )
         self.logger = logging.getLogger(__name__)
 
-    # Initialize state machine (optional, for mode/score tracking).
+        # Initialize state machine (optional, for mode/score tracking).
+        # Try to build a StateMachine when either an explicit state_machine_path
+        # is provided or a system config exists at /etc/azazel/azazel.yaml.
         self.state_machine = None
-        if state_machine_path and Path(state_machine_path).exists():
-            try:
-                # Import the build_machine function from azctl
-                from azctl.cli import build_machine
+        try:
+            config_path = None
+            if state_machine_path and Path(state_machine_path).exists():
+                config_path = Path(state_machine_path)
+            else:
+                # Fall back to system config if present
+                system_cfg = Path(os.getenv('AZAZEL_CONFIG_PATH', '/etc/azazel/azazel.yaml'))
+                if system_cfg.exists():
+                    config_path = system_cfg
 
-                self.state_machine = build_machine()
-                self.logger.info(f"Loaded state machine from {state_machine_path}")
-            except Exception as e:
-                self.logger.warning(f"Could not load state machine: {e}")
+            if config_path is not None:
+                try:
+                    from azctl.cli import build_machine
+
+                    self.state_machine = build_machine()
+                    # Load config and apply optional scoring tuning (ewma_tau/window_size)
+                    try:
+                        cfg = AzazelConfig.from_file(str(config_path))
+                        scoring = cfg.get('scoring', {}) or {}
+                        if 'ewma_tau' in scoring:
+                            try:
+                                self.state_machine.ewma_tau = float(scoring.get('ewma_tau'))
+                            except Exception:
+                                pass
+                        if 'window_size' in scoring:
+                            try:
+                                self.state_machine.window_size = int(scoring.get('window_size'))
+                                self.state_machine._score_window = deque(maxlen=max(self.state_machine.window_size, 1))
+                            except Exception:
+                                pass
+                    except Exception:
+                        # Non-fatal: continue even if config can't be parsed
+                        pass
+                    self.logger.info(f"Loaded state machine (config: {config_path})")
+                except Exception as e:
+                    self.logger.warning(f"Could not load state machine: {e}")
+        except Exception:
+            # Defensive: keep running even if state machine init fails
+            self.state_machine = None
 
     # Initialize status collector (allow explicit wan_state_path for testing).
         # Some installed copies of StatusCollector may not accept the
@@ -125,6 +160,11 @@ class EPaperDaemon:
         # happens perform a short clear + force a full refresh to avoid
         # ghosting/artifacts from partial updates.
         self._last_interface: str | None = None
+        # Track last seen security mode so mode transitions can trigger
+        # a full refresh on the E-Paper display (reduce ghosting/artifacts
+        # after a mode switch). Initialized to None so the first update
+        # won't be considered a transition.
+        self._last_mode: str | None = None
 
         # Set up signal handlers
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -180,6 +220,7 @@ class EPaperDaemon:
                 try:
                     current_wan_state = getattr(status.network, "wan_state", None)
                     current_interface = getattr(status.network, "interface", None)
+                    current_mode = getattr(status.security, "mode", None)
                     if self._last_wan_state != current_wan_state and current_wan_state == "reconfiguring":
                         self.logger.info("WAN reconfiguration detected: clearing display before update")
                         try:
@@ -205,6 +246,24 @@ class EPaperDaemon:
                         except Exception as e:
                             self.logger.debug(f"Display clear on interface change failed: {e}")
                         force_full_refresh = True
+                    # If the security mode itself changed since the last
+                    # update, perform a clear + full refresh so the new
+                    # mode is displayed cleanly on the EPD. We avoid
+                    # treating the initial run as a transition.
+                    try:
+                        if (
+                            self._last_mode is not None
+                            and current_mode is not None
+                            and current_mode != self._last_mode
+                        ):
+                            self.logger.info(f"Mode transition detected: {self._last_mode} -> {current_mode}; forcing full refresh")
+                            try:
+                                self.renderer.clear()
+                            except Exception as e:
+                                self.logger.debug(f"Display clear on mode change failed: {e}")
+                            force_full_refresh = True
+                    except Exception:
+                        pass
                 except Exception:
                     # Conservative: if any error occurs, don't prevent normal update
                     pass
@@ -264,6 +323,11 @@ class EPaperDaemon:
                     self._last_wan_state = getattr(status.network, "wan_state", None)
                     try:
                         self._last_interface = getattr(status.network, "interface", None)
+                    except Exception:
+                        pass
+                    # Remember last seen security mode for transition detection
+                    try:
+                        self._last_mode = getattr(status.security, "mode", None)
                     except Exception:
                         pass
                 except Exception:
