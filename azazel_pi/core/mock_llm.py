@@ -63,7 +63,9 @@ class MockLLMEvaluator:
     
     def generate_response(self, prompt: str) -> str:
         """Generate LLM-like response for threat evaluation"""
-        
+        # Defensive: ensure prompt is a string to avoid NoneType errors
+        prompt = str(prompt or "")
+
         # Extract key information from prompt
         risk_level = self._analyze_prompt_for_risk(prompt)
         category = self._analyze_prompt_for_category(prompt)
@@ -91,7 +93,8 @@ class MockLLMEvaluator:
     
     def _analyze_prompt_for_risk(self, prompt: str) -> int:
         """Analyze prompt to determine risk level"""
-        prompt_lower = prompt.lower()
+        # Defensive: coerce to string and lowercase once
+        prompt_lower = str(prompt or "").lower()
         # 乱数の非決定性を抑えるため、プロンプト内容から安定シードを生成
         seed = int(hashlib.md5(prompt_lower.encode("utf-8")).hexdigest(), 16) & 0x7FFFFFFF
         rng = random.Random(seed)
@@ -125,7 +128,8 @@ class MockLLMEvaluator:
     
     def _analyze_prompt_for_category(self, prompt: str) -> str:
         """Analyze prompt to determine threat category with priority-based matching"""
-        prompt_lower = prompt.lower()
+        # Defensive: coerce to string and lowercase once
+        prompt_lower = str(prompt or "").lower()
         
         # 優先度順でカテゴリパターンを定義（具体的なものから先に判定）
         category_patterns = [
@@ -156,15 +160,18 @@ class MockLLMEvaluator:
         """Generate explanation reason based on category"""
         if category in self.response_templates:
             base_reason = random.choice(self.response_templates[category])
-            
+
+            # Defensive: coerce prompt to string and lowercase for checks
+            prompt_lower = str(prompt or "").lower()
+
             # Add some context from the prompt
-            if "ssh" in prompt.lower():
+            if "ssh" in prompt_lower:
                 base_reason += " SSHサービスが標的。"
-            elif "http" in prompt.lower():
+            elif "http" in prompt_lower:
                 base_reason += " Webサービスへの攻撃。"
-            elif "database" in prompt.lower() or "sql" in prompt.lower():
+            elif "database" in prompt_lower or "sql" in prompt_lower:
                 base_reason += " データベースが標的。"
-            
+
             return base_reason
         else:
             return "総合的な脅威分析に基づく評価。継続的な監視が推奨される。"

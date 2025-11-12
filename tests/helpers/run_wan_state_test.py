@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 import sys
 from pathlib import Path
 
@@ -48,7 +49,7 @@ def main(argv: list[str]) -> int:
     ]
 
     print("Running:", " ".join(cmd))
-    res = subprocess.run(cmd)
+    res = run_cmd(cmd)
     return res.returncode
 
 

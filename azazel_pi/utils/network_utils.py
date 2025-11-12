@@ -13,6 +13,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional, Any
 import yaml
+from azazel_pi.utils.cmd_runner import run as run_cmd
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)
@@ -41,32 +42,23 @@ def get_wlan_ap_status(interface: str = "wlan0") -> Dict[str, Any]:
     
     try:
         # インターフェース存在確認
-        result = subprocess.run(
-            ["ip", "link", "show", interface], 
-            capture_output=True, text=True, timeout=5
-        )
+        result = run_cmd(["ip", "link", "show", interface], capture_output=True, text=True, timeout=5)
         if result.returncode != 0:
             status["status"] = "not_found"
             return status
-            
+
         # IPアドレス取得
-        result = subprocess.run(
-            ["ip", "addr", "show", interface], 
-            capture_output=True, text=True, timeout=5
-        )
+        result = run_cmd(["ip", "addr", "show", interface], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
-            for line in result.stdout.split('\n'):
+            for line in (result.stdout or "").split('\n'):
                 if "inet " in line and "scope global" in line:
                     status["ip_address"] = line.split()[1].split('/')[0]
                     break
-        
+
         # AP情報取得
-        result = subprocess.run(
-            ["iw", "dev", interface, "info"], 
-            capture_output=True, text=True, timeout=5
-        )
+        result = run_cmd(["iw", "dev", interface, "info"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
-            for line in result.stdout.split('\n'):
+            for line in (result.stdout or "").split('\n'):
                 if "type AP" in line:
                     status["is_ap"] = True
                 elif "type managed" in line:
@@ -76,34 +68,29 @@ def get_wlan_ap_status(interface: str = "wlan0") -> Dict[str, Any]:
                         status["channel"] = int(line.split()[1])
                     except (ValueError, IndexError):
                         pass
-        
+
         # SSID取得（hostapd経由）
         if status["is_ap"]:
             try:
-                result = subprocess.run(
-                    ["hostapd_cli", "-i", interface, "status"], 
-                    capture_output=True, text=True, timeout=5
-                )
+                result = run_cmd(["hostapd_cli", "-i", interface, "status"], capture_output=True, text=True, timeout=5)
                 if result.returncode == 0:
-                    for line in result.stdout.split('\n'):
+                    for line in (result.stdout or "").split('\n'):
                         if line.startswith("ssid="):
                             status["ssid"] = line.split('=', 1)[1]
                         elif line.startswith("num_sta="):
                             try:
                                 status["stations"] = int(line.split('=')[1])
-                            except ValueError:
+                            except Exception:
                                 pass
             except Exception:
                 pass
-        
+
         status["status"] = "active" if status["is_ap"] is not None else "inactive"
-        
+
     except Exception as e:
         logger.error(f"WLAN AP status check failed for {interface}: {e}")
-        status["status"] = "error"
     
     return status
-
 
 def get_wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
     """
@@ -127,7 +114,7 @@ def get_wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
     
     try:
         # インターフェース存在確認
-        result = subprocess.run(["ip", "link", "show", interface], capture_output=True, text=True, timeout=5)
+        result = run_cmd(["ip", "link", "show", interface], capture_output=True, text=True, timeout=5)
         if result.returncode != 0:
             info["status"] = "not_found"
             # ensure compatibility keys exist
@@ -136,8 +123,8 @@ def get_wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
             return info
 
         # IPv4 アドレス取得（第一の inet 行を使用）
-        result = subprocess.run(["ip", "-4", "addr", "show", interface], capture_output=True, text=True, timeout=5)
-        if result.returncode == 0:
+        result = run_cmd(["ip", "-4", "addr", "show", interface], capture_output=True, text=True, timeout=5)
+        if result.returncode == 0 and result.stdout:
             for line in result.stdout.splitlines():
                 if "inet " in line:
                     parts = line.strip().split()
@@ -146,7 +133,7 @@ def get_wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
                         break
 
         # 接続情報取得（iw経由）
-        result = subprocess.run(["iw", "dev", interface, "link"], capture_output=True, text=True, timeout=5)
+        result = run_cmd(["iw", "dev", interface, "link"], capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
             out = result.stdout or ""
             if "Connected to" in out:
@@ -196,6 +183,7 @@ def get_wlan_link_info(interface: str = "wlan1") -> Dict[str, Any]:
         info.setdefault("signal_dbm", None)
 
     return info
+
 def get_active_profile() -> Optional[str]:
     """
     現在アクティブなネットワークプロファイル取得
@@ -289,8 +277,7 @@ def get_comprehensive_network_status() -> Dict[str, Any]:
         "wlan1_sta": get_wlan_link_info("wlan1"),
         "active_profile": get_active_profile(),
         "interface_stats": get_network_interfaces_stats(),
-        "timestamp": subprocess.run(["date", "+%Y-%m-%d %H:%M:%S"], 
-                                   capture_output=True, text=True).stdout.strip()
+        "timestamp": run_cmd(["date", "+%Y-%m-%d %H:%M:%S"], capture_output=True, text=True).stdout.strip()
     }
 
 

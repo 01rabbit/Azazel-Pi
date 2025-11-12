@@ -6,6 +6,7 @@ Provides system monitoring and resource information for the Azazel TUI menu syst
 """
 
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 from typing import Optional, Any
 
 from rich.console import Console
@@ -127,7 +128,7 @@ class SystemModule:
             # Disk Information
             self.console.print("[bold cyan]Disk Usage:[/bold cyan]")
             try:
-                result = subprocess.run(['df', '-h', '/'], capture_output=True, text=True, timeout=5)
+                result = run_cmd(['df', '-h', '/'], capture_output=True, text=True, timeout=5)
                 if result.returncode == 0:
                     lines = result.stdout.strip().split('\n')
                     if len(lines) >= 2:
@@ -271,8 +272,8 @@ class SystemModule:
         self.console.print(Text("─" * len("Running Processes"), style="dim"))
         
         try:
-            result = subprocess.run(
-                ['ps', 'aux', '--sort=-pcpu'], 
+            result = run_cmd(
+                ['ps', 'aux', '--sort=-pcpu'],
                 capture_output=True, text=True, timeout=10
             )
             

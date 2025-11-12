@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Install demo notify config (back up existing configs/monitoring/notify.yaml -> notify.yaml.bak)
+# Install demo notify config (back up existing configs/notify.yaml -> notify.yaml.bak)
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEMO_CFG="$REPO_ROOT/configs/monitoring/notify_demo.yaml"
-TARGET_CFG="$REPO_ROOT/configs/monitoring/notify.yaml"
+TARGET_CFG="$REPO_ROOT/configs/notify.yaml"
 BACKUP="$TARGET_CFG.bak"
 
 if [ ! -f "$DEMO_CFG" ]; then

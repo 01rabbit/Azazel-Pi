@@ -24,10 +24,18 @@ class State:
 
 @dataclass(frozen=True)
 class Event:
-    """An external event that may trigger a transition."""
+    """An external event that may trigger a transition.
+
+    Extended to carry optional network/meta information so downstream
+    consumers (scorer, daemon, enforcer) can act on IP/signature data.
+    """
 
     name: str
     severity: int = 0
+    src_ip: str | None = None
+    dest_ip: str | None = None
+    signature: str | None = None
+    details: dict | None = None
 
 
 @dataclass
@@ -350,8 +358,23 @@ class StateMachine:
 
     def _target_for_normal(self, now: float) -> str:
         """Target state when desired mode is normal - handles step-down from higher modes."""
-        # Normal mode can be reached from any mode when score is low enough
-        # No unlock delays apply when going to normal
+        # When score indicates 'normal', we normally step down to normal.
+        # However, if we're currently in a higher mode that has an unlock
+        # hold (e.g. lockdown -> shield unlock window), remain in the
+        # higher mode until its unlock timer expires.
+        if self.current_state.name == "lockdown":
+            unlock_at = self._unlock_until.get("shield", 0.0)
+            if now < unlock_at:
+                return "lockdown"
+            # unlock window expired: step down to shield first
+            return "shield"
+        if self.current_state.name == "shield":
+            unlock_at = self._unlock_until.get("portal", 0.0)
+            if now < unlock_at:
+                return "shield"
+            # unlock window expired: step down to portal
+            return "portal"
+        # otherwise allow normal
         return "normal"
 
     def _target_for_portal(self, now: float) -> str:

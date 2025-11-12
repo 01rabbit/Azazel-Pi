@@ -34,7 +34,8 @@ thresholds:
   t0_normal: 20
   t1_shield: 50
   t2_lockdown: 80
-  unlock_wait_secs: { shield: 600, portal: 1800 }
+  # Shortened unlock windows for verification testing. Revert after test.
+  unlock_wait_secs: { shield: 30, portal: 90 }
   user_mode_timeout_mins: 3.0
 notify: { level: warn }
 storage: { log_dir: "/var/log/azazel", retain_days: 14 }

@@ -2,7 +2,7 @@
 # Restore original notify.yaml if backup exists
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET_CFG="$REPO_ROOT/configs/monitoring/notify.yaml"
+TARGET_CFG="$REPO_ROOT/configs/notify.yaml"
 BACKUP="$TARGET_CFG.bak"
 
 if [ -f "$BACKUP" ]; then

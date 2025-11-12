@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import os
@@ -91,13 +92,7 @@ class StatusCollector:
     def _get_hostname(self) -> str:
         """Get system hostname."""
         try:
-            result = subprocess.run(
-                ["hostname"],
-                capture_output=True,
-                text=True,
-                timeout=1,
-                check=False,
-            )
+            result = run_cmd(["hostname"], capture_output=True, text=True, timeout=1, check=False)
             return result.stdout.strip() or "azazel-pi"
         except Exception:
             return "azazel-pi"
@@ -141,27 +136,15 @@ class StatusCollector:
 
         # Check if interface is up
         try:
-            result = subprocess.run(
-                ["ip", "link", "show", active_iface],
-                capture_output=True,
-                text=True,
-                timeout=1,
-                check=False,
-            )
-            status.is_up = "state UP" in result.stdout
+            result = run_cmd(["ip", "link", "show", active_iface], capture_output=True, text=True, timeout=1, check=False)
+            status.is_up = "state UP" in (result.stdout or "")
         except Exception:
             pass
 
         # Get IP address
         try:
-            result = subprocess.run(
-                ["ip", "-4", "addr", "show", active_iface],
-                capture_output=True,
-                text=True,
-                timeout=1,
-                check=False,
-            )
-            for line in result.stdout.splitlines():
+            result = run_cmd(["ip", "-4", "addr", "show", active_iface], capture_output=True, text=True, timeout=1, check=False)
+            for line in (result.stdout or "").splitlines():
                 if "inet " in line:
                     parts = line.strip().split()
                     if len(parts) >= 2:
@@ -188,13 +171,7 @@ class StatusCollector:
     def _get_default_route_interface(self) -> Optional[str]:
         """Return the interface used for the default route (best-effort)."""
         try:
-            result = subprocess.run(
-                ["ip", "route", "get", "1.1.1.1"],
-                capture_output=True,
-                text=True,
-                timeout=1,
-                check=False,
-            )
+            result = run_cmd(["ip", "route", "get", "1.1.1.1"], capture_output=True, text=True, timeout=1, check=False)
         except Exception:
             return None
 
@@ -517,14 +494,8 @@ class StatusCollector:
     def _is_service_active(self, service_name: str) -> bool:
         """Check if a systemd service is active."""
         try:
-            result = subprocess.run(
-                ["systemctl", "is-active", f"{service_name}.service"],
-                capture_output=True,
-                text=True,
-                timeout=2,
-                check=False,
-            )
-            return result.stdout.strip() == "active"
+            result = run_cmd(["systemctl", "is-active", f"{service_name}.service"], capture_output=True, text=True, timeout=2, check=False)
+            return (result.stdout or "").strip() == "active"
         except Exception:
             return False
 

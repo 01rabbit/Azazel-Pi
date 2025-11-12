@@ -8,6 +8,7 @@ and uses Ollama for unknown/uncertain threats
 import logging
 from typing import Dict, Any, Tuple, Optional
 from azazel_pi.core.offline_ai_evaluator import evaluate_with_offline_ai
+from .async_ai import enqueue as enqueue_deep_eval
 
 logger = logging.getLogger(__name__)
 
@@ -71,9 +72,9 @@ class HybridThreatEvaluator:
     
     def evaluate_threat_hybrid(self, alert_data: Dict[str, Any]) -> Dict[str, Any]:
         """ハイブリッド脅威評価 - Legacy + Mock LLM + Ollama（未知の脅威用）"""
-        
-        signature = alert_data.get("signature", "")
-        
+        # Defensive: ensure signature is a string
+        signature = str(alert_data.get("signature", "") or "")
+
         # 1. Mock LLM評価を取得（高速・軽量）
         try:
             mock_result = evaluate_with_offline_ai(alert_data)
@@ -104,10 +105,23 @@ class HybridThreatEvaluator:
                     ollama_result = ollama_evaluator.evaluate_threat(alert_data)
                     if ollama_result.get("ai_used", False):
                         self.logger.info(f"Ollama評価成功: risk={ollama_result['risk']}, category={ollama_result['category']}")
-                        
+
+                        # If legacy heuristic already labels this as benign, respect that override
+                        if self._is_benign_traffic(signature, alert_data):
+                            return {
+                                "risk": 1,
+                                "reason": "正常トラフィックとして判定",
+                                "category": "benign",
+                                "score": min(self._calculate_legacy_score(alert_data, signature), 15),
+                                "ai_used": True,
+                                "model": "hybrid_legacy+mock_llm",
+                                "confidence": 0.9,
+                                "evaluation_method": "benign_override"
+                            }
+
                         # Ollamaの評価を優先（未知の脅威に強い）
                         ollama_score = (ollama_result["risk"] - 1) * 25  # 1-5 → 0-100
-                        
+
                         # Mock LLMとOllamaの統合（Ollama優先度高め: 70%）
                         mock_score = (mock_risk - 1) * 25
                         integrated_score = int(ollama_score * 0.7 + mock_score * 0.3)
@@ -208,6 +222,8 @@ class HybridThreatEvaluator:
     
     def _calculate_legacy_score(self, alert_data: Dict[str, Any], signature: str) -> int:
         """従来のルールベーススコア計算"""
+        # Defensive: ensure signature is a string
+        signature = str(signature or "")
         base_score = 0
         
         # 1. Suricata severity基準スコア
@@ -252,6 +268,8 @@ class HybridThreatEvaluator:
     
     def _is_benign_traffic(self, signature: str, alert_data: Dict[str, Any]) -> bool:
         """正常トラフィック判定 (Legacy優先)"""
+        # Defensive: ensure signature is a string
+        signature = str(signature or "")
         sig_lower = signature.lower()
         
         # 明示的な正常パターン
@@ -320,5 +338,47 @@ def get_hybrid_evaluator(config: Optional[Dict[str, Any]] = None) -> HybridThrea
 def evaluate_with_hybrid_system(alert_data: Dict[str, Any], 
                                 config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """ハイブリッド脅威評価の実行"""
-    evaluator = get_hybrid_evaluator(config)
-    return evaluator.evaluate_threat_hybrid(alert_data)
+    # The hybrid evaluator object still exists for legacy synchronous use,
+    # but here we prioritize a fast Mock-LLM (offline) evaluation and
+    # schedule expensive Ollama-based deep analysis asynchronously when
+    # mock confidence is low or category is unknown.
+    try:
+        # Fast offline/mock evaluation
+        mock_result = evaluate_with_offline_ai(alert_data)
+
+        # If the mock LLM marks low confidence or unknown category, enqueue deep eval
+        confidence = float(mock_result.get("confidence", 0.0) or 0.0)
+        category = (mock_result.get("category") or "").lower()
+        unknown_categories = {"unknown", "benign"}
+        # Threshold under which we want deeper analysis (tunable)
+        DEEP_CONF_THRESHOLD = 0.7
+
+        if confidence < DEEP_CONF_THRESHOLD or category in unknown_categories:
+            try:
+                # Provide decisions log path to async worker so deep result can be persisted
+                try:
+                    from azazel_pi.core import notify_config as _nc
+                    decisions_path = _nc._get_nested(_nc._CFG, "paths.decisions", None) or _nc._DEFAULTS["paths"]["decisions"]
+                except Exception:
+                    decisions_path = None
+
+                enqueue_deep_eval(alert_data, context={"decisions_log": decisions_path})
+                mock_result["deferred"] = True
+            except Exception:
+                # If enqueue fails, mark as not deferred but continue
+                mock_result["deferred"] = False
+        else:
+            mock_result["deferred"] = False
+
+        # If the offline/mock result does not provide a 0-100 'score' field,
+        # fall back to the richer HybridThreatEvaluator path to produce a
+        # fully-normalized evaluation result used elsewhere in the code/tests.
+        if "score" not in mock_result:
+            evaluator = get_hybrid_evaluator(config)
+            return evaluator.evaluate_threat_hybrid(alert_data)
+
+        return mock_result
+    except Exception:
+        # Fallback to the original hybrid evaluator when offline fails
+        evaluator = get_hybrid_evaluator(config)
+        return evaluator.evaluate_threat_hybrid(alert_data)

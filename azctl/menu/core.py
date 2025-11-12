@@ -7,6 +7,7 @@ for the Azazel TUI menu system.
 """
 
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 import sys
 import time
 from dataclasses import dataclass
@@ -452,7 +453,7 @@ class AzazelTUIMenu:
         services_active = 0
         for service in services:
             try:
-                result = subprocess.run(
+                result = run_cmd(
                     ["systemctl", "is-active", service],
                     capture_output=True, text=True, timeout=5
                 )

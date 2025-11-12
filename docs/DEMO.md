@@ -25,7 +25,7 @@
 必要なファイル（このリポジトリで追加済み）
 - `scripts/eve_replay.py` — EVE JSON を指定ファイルに周期的に追記してリプレイするスクリプト
 - `configs/monitoring/notify_demo.yaml` — デモ用の Mattermost/webhook 設定（安全なテスト先を設定してください）
-- `scripts/install_demo_notify.sh` — 既存の `configs/monitoring/notify.yaml` をバックアップしてデモ用設定をインストールする補助スクリプト
+- `scripts/install_demo_notify.sh` — 既存の `configs/notify.yaml` をバックアップしてデモ用設定をインストールする補助スクリプト
 - `scripts/restore_notify.sh` — 既存の notify 設定を復元するスクリプト（デモ後に実行）
 
 準備手順
@@ -39,7 +39,7 @@ pip3 install --user rich requests
 
 ```bash
 bash scripts/install_demo_notify.sh
-# 成功すると configs/monitoring/notify.yaml が demo 設定に置き換わります
+# 成功すると configs/notify.yaml が demo 設定に置き換わります
 ```
 
 3) EVE リプレイ先ファイルの準備（デフォルトの場所）

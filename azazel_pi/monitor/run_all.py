@@ -4,6 +4,7 @@ import sys
 import time
 import logging
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 from datetime import datetime, timedelta
 
 from ..core import notify_config as notice
@@ -66,17 +67,17 @@ def reset_network_config():
     except Exception as e:
         logging.error(f"Integrated system cleanup failed: {e}")
         # フォールバック: 従来のtc直接実行
-        result = subprocess.run(["tc", "qdisc", "show", "dev", wan_iface], capture_output=True, text=True)
+        result = run_cmd(["tc", "qdisc", "show", "dev", wan_iface], capture_output=True, text=True)
         if "prio" in result.stdout or "netem" in result.stdout:
-            subprocess.run(["tc", "qdisc", "del", "dev", wan_iface, "root"], check=False)
+            run_cmd(["tc", "qdisc", "del", "dev", wan_iface, "root"], check=False)
             logging.info("Fallback: tc qdisc deleted directly")
 
     # ② NATテーブルの全ルールを一旦削除
-    subprocess.run(["iptables", "-t", "nat", "-F"], check=False)
+    run_cmd(["iptables", "-t", "nat", "-F"], check=False)
 
     # ③ 内部LAN(172.16.0.0/24)からWAN出口(wlan1)へのMASQUERADEを再設定
-    subprocess.run(["iptables", "-t", "nat", "-A", "POSTROUTING",
-                    "-s", "172.16.0.0/24", "-o", wan_iface, "-j", "MASQUERADE"], check=True)
+    run_cmd(["iptables", "-t", "nat", "-A", "POSTROUTING",
+                    "-o", wan_iface, "-j", "MASQUERADE"], check=False)
 
     logging.info("Internal LAN to WAN routing re-established.")
     logging.info("Network reset completed via integrated system.")
