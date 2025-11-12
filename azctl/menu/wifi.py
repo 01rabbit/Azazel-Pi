@@ -8,6 +8,7 @@ for the Azazel TUI menu system.
 
 import re
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 import time
 from typing import List, Dict, Optional, Tuple, Any
 
@@ -91,7 +92,7 @@ class WiFiManager:
         missing_tools = []
         
         for tool in required_tools:
-            result = subprocess.run(['which', tool], capture_output=True, text=True)
+            result = run_cmd(['which', tool], capture_output=True, text=True)
             if result.returncode != 0:
                 missing_tools.append(tool)
         
@@ -105,7 +106,7 @@ class WiFiManager:
     def _get_wifi_interfaces(self) -> List[str]:
         """Get list of available Wi-Fi interfaces."""
         try:
-            result = subprocess.run(['iw', 'dev'], capture_output=True, text=True, timeout=5)
+            result = run_cmd(['iw', 'dev'], capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
                 return []
             
@@ -155,7 +156,7 @@ class WiFiManager:
                 scan_task = progress.add_task("Scanning networks...", total=100)
                 
                 # Perform scan
-                result = subprocess.run(
+                result = run_cmd(
                     ['sudo', 'iw', 'dev', interface, 'scan'],
                     capture_output=True, text=True, timeout=15
                 )
@@ -371,7 +372,7 @@ class WiFiManager:
             
             if network_id is None:
                 # Create new network
-                result = subprocess.run(
+                result = run_cmd(
                     ['sudo', 'wpa_cli', '-i', interface, 'add_network'],
                     capture_output=True, text=True, timeout=10
                 )
@@ -384,23 +385,23 @@ class WiFiManager:
                 created_new = True
                 
                 # Configure network
-                subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'set_network', network_id, 'ssid', f'"{ssid}"'], 
+                run_cmd(['sudo', 'wpa_cli', '-i', interface, 'set_network', network_id, 'ssid', f'"{ssid}"'], 
                              capture_output=True, timeout=10)
                 
                 if is_open:
-                    subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'set_network', network_id, 'key_mgmt', 'NONE'], 
+                    run_cmd(['sudo', 'wpa_cli', '-i', interface, 'set_network', network_id, 'key_mgmt', 'NONE'], 
                                  capture_output=True, timeout=10)
                 else:
-                    subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'set_network', network_id, 'psk', f'"{passphrase}"'], 
+                    run_cmd(['sudo', 'wpa_cli', '-i', interface, 'set_network', network_id, 'psk', f'"{passphrase}"'], 
                                  capture_output=True, timeout=10)
             
             # Attempt connection
             with Progress() as progress:
                 connect_task = progress.add_task("Connecting...", total=100)
                 
-                subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'enable_network', network_id], 
+                run_cmd(['sudo', 'wpa_cli', '-i', interface, 'enable_network', network_id], 
                              capture_output=True, timeout=10)
-                subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'select_network', network_id], 
+                run_cmd(['sudo', 'wpa_cli', '-i', interface, 'select_network', network_id], 
                              capture_output=True, timeout=10)
                 
                 # Wait for connection with timeout
@@ -408,7 +409,7 @@ class WiFiManager:
                 for i in range(20):  # 10 seconds
                     progress.update(connect_task, completed=(i + 1) * 5)
                     
-                    result = subprocess.run(['wpa_cli', '-i', interface, 'status'], 
+                    result = run_cmd(['wpa_cli', '-i', interface, 'status'], 
                                           capture_output=True, text=True, timeout=5)
                     
                     if result.returncode == 0:
@@ -423,9 +424,9 @@ class WiFiManager:
             
             if connected:
                 # Get IP address
-                subprocess.run(['sudo', 'dhcpcd', '-n', interface], capture_output=True, timeout=10)
+                run_cmd(['sudo', 'dhcpcd', '-n', interface], capture_output=True, timeout=10)
                 # Save configuration
-                subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'save_config'], capture_output=True, timeout=10)
+                run_cmd(['sudo', 'wpa_cli', '-i', interface, 'save_config'], capture_output=True, timeout=10)
                 
                 self.console.print(f"[green]✓ Successfully connected to {ssid}[/green]")
                 
@@ -437,14 +438,11 @@ class WiFiManager:
                 
                 # Rollback
                 if created_new and network_id:
-                    subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'remove_network', network_id], 
-                                 capture_output=True, timeout=10)
+                    run_cmd(['sudo', 'wpa_cli', '-i', interface, 'remove_network', network_id], capture_output=True, timeout=10)
                 
                 if current_id:
-                    subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'select_network', current_id], 
-                                 capture_output=True, timeout=10)
-                    subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'reassociate'], 
-                                 capture_output=True, timeout=10)
+                    run_cmd(['sudo', 'wpa_cli', '-i', interface, 'select_network', current_id], capture_output=True, timeout=10)
+                    run_cmd(['sudo', 'wpa_cli', '-i', interface, 'reassociate'], capture_output=True, timeout=10)
         
         except Exception as e:
             self.console.print(f"[red]Connection error: {e}[/red]")
@@ -454,7 +452,7 @@ class WiFiManager:
     def _find_wifi_network_id(self, ssid: str, interface: str) -> Optional[str]:
         """Find network ID for given SSID."""
         try:
-            result = subprocess.run(['wpa_cli', '-i', interface, 'list_networks'], 
+            result = run_cmd(['wpa_cli', '-i', interface, 'list_networks'], 
                                   capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
                 return None
@@ -471,7 +469,7 @@ class WiFiManager:
     def _get_current_wifi_connection(self, interface: str) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Get current Wi-Fi connection info."""
         try:
-            result = subprocess.run(['wpa_cli', '-i', interface, 'status'], 
+            result = run_cmd(['wpa_cli', '-i', interface, 'status'], 
                                   capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
                 return None, None, None
@@ -498,7 +496,7 @@ class WiFiManager:
         
         try:
             # Get wpa_cli status
-            result = subprocess.run(['wpa_cli', '-i', interface, 'status'], 
+            result = run_cmd(['wpa_cli', '-i', interface, 'status'], 
                                   capture_output=True, text=True, timeout=5)
             
             if result.returncode != 0:
@@ -514,7 +512,7 @@ class WiFiManager:
                     status_info[key] = value
             
             # Get IP information
-            ip_result = subprocess.run(['ip', '-4', 'addr', 'show', interface], 
+            ip_result = run_cmd(['ip', '-4', 'addr', 'show', interface], 
                                      capture_output=True, text=True, timeout=5)
             
             ip_addr = "Not assigned"
@@ -560,7 +558,7 @@ class WiFiManager:
             return
         
         try:
-            result = subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'disconnect'], 
+            result = run_cmd(['sudo', 'wpa_cli', '-i', interface, 'disconnect'], 
                                   capture_output=True, text=True, timeout=10)
             
             if result.returncode == 0:
@@ -578,7 +576,7 @@ class WiFiManager:
         self._print_section_header(f"Saved Wi-Fi Networks - {interface}")
         
         try:
-            result = subprocess.run(['wpa_cli', '-i', interface, 'list_networks'], 
+            result = run_cmd(['wpa_cli', '-i', interface, 'list_networks'], 
                                   capture_output=True, text=True, timeout=5)
             
             if result.returncode != 0:
@@ -640,18 +638,16 @@ class WiFiManager:
                         # Delete network
                         net_id = choice[1:]
                         if Confirm.ask(f"Delete network ID {net_id}?", default=False):
-                            result = subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'remove_network', net_id], 
-                                                  capture_output=True, text=True, timeout=10)
+                            result = run_cmd(['sudo', 'wpa_cli', '-i', interface, 'remove_network', net_id], capture_output=True, text=True, timeout=10)
                             if result.returncode == 0:
-                                subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'save_config'], 
-                                             capture_output=True, timeout=10)
+                                run_cmd(['sudo', 'wpa_cli', '-i', interface, 'save_config'], capture_output=True, timeout=10)
                                 self.console.print(f"[green]✓ Network {net_id} deleted[/green]")
                             else:
                                 self.console.print(f"[red]✗ Failed to delete network {net_id}[/red]")
                     elif choice.isdigit():
                         # Enable/disable network
                         net_id = choice
-                        result = subprocess.run(['sudo', 'wpa_cli', '-i', interface, 'enable_network', net_id], 
+                        result = run_cmd(['sudo', 'wpa_cli', '-i', interface, 'enable_network', net_id], 
                                               capture_output=True, text=True, timeout=10)
                         if result.returncode == 0:
                             self.console.print(f"[green]✓ Network {net_id} enabled[/green]")

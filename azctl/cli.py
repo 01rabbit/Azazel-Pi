@@ -20,6 +20,7 @@ from azazel_pi.utils.network_utils import (
     get_wlan_ap_status, get_wlan_link_info, get_active_profile,
     get_network_interfaces_stats, format_bytes
 )
+from collections import deque
 
 from azctl.daemon import AzazelDaemon
 import yaml
@@ -421,21 +422,54 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
     ]
     decision_paths = [p for p in decisions_paths if p is not None]
 
-    collector = StatusCollector()
+    # Try to build a local StateMachine (and apply scoring tuning from
+    # /etc/azazel/azazel.yaml) so the TUI can display EWMA-based score when
+    # possible. Fall back to no state_machine when anything fails.
+    try:
+        state_machine = None
+        system_cfg = Path(os.getenv('AZAZEL_CONFIG_PATH', '/etc/azazel/azazel.yaml'))
+        if system_cfg.exists():
+            try:
+                from azctl.cli import build_machine
+
+                state_machine = build_machine()
+                try:
+                    cfg = AzazelConfig.from_file(str(system_cfg))
+                    scoring = cfg.get('scoring', {}) or {}
+                    if 'ewma_tau' in scoring:
+                        try:
+                            state_machine.ewma_tau = float(scoring.get('ewma_tau'))
+                        except Exception:
+                            pass
+                    if 'window_size' in scoring:
+                        try:
+                            state_machine.window_size = int(scoring.get('window_size'))
+                            state_machine._score_window = deque(maxlen=max(state_machine.window_size, 1))
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+            except Exception:
+                # If build_machine import or construction failed, continue without a state machine
+                pass
+        else:
+            state_machine = None
+        collector = StatusCollector(state_machine=state_machine)
+    except Exception:
+        collector = StatusCollector()
 
     def render():
-        last = _read_last_decision(decision_paths)
-        defensive_mode = last.get("mode") if isinstance(last, dict) else None
+        status = collector.collect()
+        defensive_mode = getattr(status.security, "mode", None)
         mode_label, color = _mode_style(defensive_mode)
 
-        status = collector.collect()
         wlan0 = get_wlan_ap_status(lan_if)
         wlan1 = get_wlan_link_info(wan_if)
 
         # Header
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = Text.assemble(
-            (" Azazel Pi ", "bold white on blue"),
+            (" AZ-01X Azazel Pi ", "bold white on blue"),
             ("  "),
             (f"{now}", "dim"),
         )
@@ -444,8 +478,50 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
         t_left = Table.grid(padding=(0, 1))
         t_left.add_row("Mode", Text(mode_label, style=f"bold {color}"))
         t_left.add_row("Score(avg)", f"{status.security.score_average:.1f}")
+        # Sparkline from recent scores (if available)
+        def make_sparkline(vals: list[float]) -> str:
+            if not vals:
+                return ""
+            blocks = ["▁","▂","▃","▄","▅","▆","▇","█"]
+            mn = min(vals)
+            mx = max(vals)
+            # If all values equal, map their absolute magnitude to 0-100
+            # scale so that a constant high score (e.g. 100.0) displays as
+            # the highest block rather than always the lowest one.
+            if mx - mn < 1e-6:
+                try:
+                    v = float(vals[-1])
+                    idx = int(max(0, min(1.0, v / 100.0)) * (len(blocks) - 1))
+                    return blocks[idx] * len(vals)
+                except Exception:
+                    return blocks[0] * len(vals)
+            out = []
+            for v in vals:
+                idx = int((v - mn) / (mx - mn) * (len(blocks) - 1))
+                out.append(blocks[idx])
+            return "".join(out)
+
+        spark = make_sparkline(status.security.score_history[-12:]) if getattr(status.security, "score_history", None) else ""
+        if spark:
+            t_left.add_row("Trend", spark)
         t_left.add_row("Alerts(recent)", f"{status.security.total_alerts} ({status.security.recent_alerts})")
-        t_left.add_row("Services", f"Suricata: {'ON' if status.security.suricata_active else 'off'}, Canary: {'ON' if status.security.opencanary_active else 'off'}")
+        # Last decision summary
+        if getattr(status.security, "last_decision", None):
+            ld = status.security.last_decision
+            # Prefer short fields if present
+            reason = ld.get("reason") or ld.get("source") or ld.get("signature") or ld.get("note") or None
+            score = ld.get("score") or ld.get("severity") or None
+            summary = f"{reason}" if reason else "(decision)"
+            if score is not None:
+                summary += f" (+{score})"
+            t_left.add_row("Last", summary)
+
+        # Services row (ON/OFF)
+        t_left.add_row(
+            "Services",
+            f"Suricata: {'ON' if status.security.suricata_active else 'OFF'}, OpenCanary: {'ON' if status.security.opencanary_active else 'OFF'}",
+        )
+
         left_panel = Panel(t_left, title="Security", border_style=color)
 
         # Network panel
@@ -471,7 +547,10 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
         return 0
 
     _clear_terminal()
-    with Live(render(), refresh_per_second=max(1, int(1/interval)) if interval < 1 else int(1/interval) if interval >= 1 else 1, screen=False) as live:
+    # Compute refresh rate safely: use fractional refresh_per_second (1/interval)
+    # Live expects a positive number; avoid int-casting which can become 0 for interval>=1.
+    refresh_per_second = 1.0 / interval if interval > 0 else 1.0
+    with Live(render(), refresh_per_second=refresh_per_second, screen=False) as live:
         try:
             while True:
                 live.update(render())
@@ -602,6 +681,25 @@ def main(argv: Iterable[str] | None = None) -> int:
         parser.error("--config is required (either use 'events --config' or legacy '--config')")
 
     machine = build_machine()
+    # Allow config to suggest faster scoring parameters for demo/testing
+    try:
+        if config_obj:
+            scoring_cfg = config_obj.get("scoring", {}) or {}
+            if "ewma_tau" in scoring_cfg:
+                try:
+                    machine.ewma_tau = float(scoring_cfg.get("ewma_tau"))
+                except Exception:
+                    pass
+            if "window_size" in scoring_cfg:
+                try:
+                    machine.window_size = int(scoring_cfg.get("window_size"))
+                    # resize internal deque to match new window size
+                    machine._score_window = deque(maxlen=max(machine.window_size, 1))
+                except Exception:
+                    pass
+    except Exception:
+        # Non-fatal: if config parsing fails here, continue with defaults
+        pass
     daemon = AzazelDaemon(machine=machine, scorer=ScoreEvaluator())
     daemon.process_events(load_events(config_path))
     return 0
@@ -646,12 +744,51 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
     
     # Prepare machine and daemon
     machine = build_machine()
+    # If a config path was provided, try to apply any scoring tuning (ewma_tau/window_size)
+    try:
+        if config:
+            try:
+                config_obj = AzazelConfig.from_file(config)
+                scoring_cfg = config_obj.get('scoring', {}) or {}
+                if 'ewma_tau' in scoring_cfg:
+                    try:
+                        machine.ewma_tau = float(scoring_cfg.get('ewma_tau'))
+                    except Exception:
+                        pass
+                if 'window_size' in scoring_cfg:
+                    try:
+                        machine.window_size = int(scoring_cfg.get('window_size'))
+                        machine._score_window = deque(maxlen=max(machine.window_size, 1))
+                    except Exception:
+                        pass
+            except Exception:
+                # if config can't be read here, continue with defaults
+                pass
+    except Exception:
+        pass
     decisions_path = Path(decisions) if decisions else Path(notice._get_nested({}, "paths.decisions", "/var/log/azazel/decisions.log"))
     daemon = AzazelDaemon(machine=machine, scorer=ScoreEvaluator(), decisions_log=decisions_path)
 
     # Ensure parent dir exists (requires permissions)
     try:
         daemon.decisions_log.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+    # Start background decay writer if available on the daemon. Use the
+    # AZAZEL_DISPLAY_DECAY_TAU environment variable (seconds) to control
+    # the timescale. Also allow configuring the check interval.
+    try:
+        decay_tau = float(os.getenv("AZAZEL_DISPLAY_DECAY_TAU", "120"))
+    except Exception:
+        decay_tau = 120.0
+    try:
+        check_interval = float(os.getenv("AZAZEL_DISPLAY_DECAY_CHECK_INTERVAL", "5"))
+    except Exception:
+        check_interval = 5.0
+    try:
+        # start_decay_writer is best-effort (may not exist on older daemons)
+        daemon.start_decay_writer(decay_tau=decay_tau, check_interval=check_interval)
     except Exception:
         pass
 
@@ -704,6 +841,11 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
 
     t_reader.join(timeout=2)
     t_consumer.join(timeout=2)
+    # Stop decay writer thread cleanly if available
+    try:
+        daemon.stop_decay_writer()
+    except Exception:
+        pass
     return 0
 
 

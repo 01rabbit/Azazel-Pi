@@ -7,6 +7,7 @@ for the Azazel TUI menu system.
 """
 
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 from typing import List, Tuple
 
 from rich.console import Console
@@ -77,7 +78,7 @@ class ServicesModule:
         """Get service status information."""
         try:
             # Get service status
-            status_result = subprocess.run(
+            status_result = run_cmd(
                 ["systemctl", "is-active", service_name],
                 capture_output=True, text=True, timeout=5
             )
@@ -86,7 +87,7 @@ class ServicesModule:
                 status = "🟢 ACTIVE"
                 
                 # Get when service started
-                since_result = subprocess.run(
+                since_result = run_cmd(
                     ["systemctl", "show", service_name, "--property=ActiveEnterTimestamp", "--value"],
                     capture_output=True, text=True, timeout=5
                 )
@@ -126,7 +127,7 @@ class ServicesModule:
         
         # Get current status
         try:
-            status_result = subprocess.run(
+            status_result = run_cmd(
                 ["systemctl", "is-active", service_name],
                 capture_output=True, text=True, timeout=5
             )
@@ -188,7 +189,7 @@ class ServicesModule:
         self.console.print(f"[blue]{action.title()}ing {display_name}...[/blue]")
         
         try:
-            result = subprocess.run(
+            result = run_cmd(
                 ["sudo", "systemctl", action, service_name],
                 capture_output=True, text=True, timeout=30
             )
@@ -210,7 +211,7 @@ class ServicesModule:
         self.console.print(Text("─" * len(f"{display_name} Recent Logs"), style="dim"))
         
         try:
-            result = subprocess.run(
+            result = run_cmd(
                 ["journalctl", "-u", service_name, "-n", "50", "--no-pager"],
                 capture_output=True, text=True, timeout=15
             )
@@ -245,7 +246,7 @@ class ServicesModule:
         self.console.print(Text("─" * len(f"{display_name} Service Details"), style="dim"))
         
         try:
-            result = subprocess.run(
+            result = run_cmd(
                 ["systemctl", "status", service_name, "--no-pager", "-l"],
                 capture_output=True, text=True, timeout=10
             )
@@ -292,7 +293,7 @@ class ServicesModule:
         for service in services:
             self.console.print(f"[blue]Restarting {service}...[/blue]")
             try:
-                result = subprocess.run(
+                result = run_cmd(
                     ["sudo", "systemctl", "restart", service],
                     capture_output=True, text=True, timeout=30
                 )

@@ -1,0 +1,15 @@
+# Demo notification configuration for Azazel-Pi
+# WARNING: Replace `webhook_url` with your test webhook before enabling in a real environment.
+mattermost:
+  enabled: true
+  webhook_url: "https://example.test/hooks/YOUR_TEST_WEBHOOK"
+  channel: "azazel-demo"
+  username: "Azazel-Demo-Bot"
+  icon_emoji: ":shield:"
+# suppress / cooldown settings
+suppress:
+  key_mode: "signature_ip_user"
+  cooldown_seconds: 10
+  summary_interval_mins: 1
+paths:
+  decisions: "./decisions.log"

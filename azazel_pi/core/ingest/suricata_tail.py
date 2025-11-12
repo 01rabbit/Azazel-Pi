@@ -92,9 +92,14 @@ class SuricataTail:
                         record = json.loads(line)
                         event = FilteredEvent.from_eve_record(record)
                         if event:
+                            # Yield enriched Event including network/source metadata
                             yield Event(
                                 name=event.event_type,
                                 severity=event.severity,
+                                src_ip=event.src_ip,
+                                dest_ip=event.dest_ip,
+                                signature=event.signature,
+                                details=event.details,
                             )
                     except json.JSONDecodeError:
                         continue

@@ -98,9 +98,10 @@ def test_ollama_connection():
     
     try:
         import subprocess
+        from azazel_pi.utils.cmd_runner import run as run_cmd
         
         # Test if container is running
-        result = subprocess.run(
+        result = run_cmd(
             ["docker", "ps", "--filter", "name=azazel_ollama", "--format", "{{.Names}}"],
             capture_output=True, text=True, timeout=10
         )
@@ -109,7 +110,7 @@ def test_ollama_connection():
             logger.info("✓ Ollama container is running")
             
             # Test ollama list command
-            list_result = subprocess.run(
+            list_result = run_cmd(
                 ["docker", "exec", "azazel_ollama", "ollama", "list"],
                 capture_output=True, text=True, timeout=30
             )

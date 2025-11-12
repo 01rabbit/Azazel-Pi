@@ -6,6 +6,7 @@ Provides log viewing and monitoring functionality for the Azazel TUI menu system
 """
 
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 from typing import Optional
 
 from rich.console import Console
@@ -44,7 +45,7 @@ class MonitoringModule:
         self.console.print()
         
         try:
-            result = subprocess.run(
+            result = run_cmd(
                 ["tail", "-f", "/var/log/azazel/decisions.log"],
                 timeout=30
             )
@@ -64,7 +65,7 @@ class MonitoringModule:
         self.console.print(Text("─" * len("Recent Suricata Alerts"), style="dim"))
         
         try:
-            result = subprocess.run(
+            result = run_cmd(
                 ["journalctl", "-u", "suricata", "-n", "50", "--no-pager"],
                 capture_output=True, text=True, timeout=10
             )
@@ -96,7 +97,7 @@ class MonitoringModule:
         self.console.print(Text("─" * len("Recent System Messages"), style="dim"))
         
         try:
-            result = subprocess.run(
+            result = run_cmd(
                 ["journalctl", "-n", "30", "--no-pager"],
                 capture_output=True, text=True, timeout=10
             )
@@ -138,7 +139,7 @@ class MonitoringModule:
             for cmd, label in commands:
                 self.console.print(f"\n[bold cyan]{label} Events:[/bold cyan]")
                 try:
-                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+                    result = run_cmd(cmd, capture_output=True, text=True, timeout=5)
                     if result.returncode == 0 and result.stdout.strip():
                         for line in result.stdout.split('\n')[-10:]:
                             if line.strip():

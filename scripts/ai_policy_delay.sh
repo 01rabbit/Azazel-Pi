@@ -38,20 +38,31 @@ fi
 tc filter del dev "$INTERFACE" protocol ip parent 1:0 prio 3 \
   u32 match ip src "$SRC_IP" 2>/dev/null || true
 
-# Ensure basic qdisc structure exists
+# Ensure basic qdisc structure exists (replace preferred)
 tc qdisc replace dev "$INTERFACE" root handle 1: prio 2>/dev/null || {
     log "Creating base qdisc on $INTERFACE"
-    tc qdisc add dev "$INTERFACE" root handle 1: prio
+    existing_qdisc=$(tc qdisc show dev "$INTERFACE" root 2>/dev/null | head -n1 || true)
+    if [ -z "${existing_qdisc}" ] || echo "${existing_qdisc}" | grep -qi "noqueue"; then
+        tc qdisc add dev "$INTERFACE" root handle 1: prio
+    else
+        echo "tc qdisc replace failed and interface has existing qdisc; skipping add to avoid RTNETLINK conflicts" >&2
+    fi
 }
 
-# Create delay qdisc if not exists
+# Create delay qdisc (replace preferred)
 tc qdisc replace dev "$INTERFACE" parent 1:3 handle 30: netem delay "$DELAY" 2>/dev/null || {
     log "Creating delay qdisc with $DELAY"
-    tc qdisc add dev "$INTERFACE" parent 1:3 handle 30: netem delay "$DELAY"
+    # Only add if the specific parent/class doesn't already have a qdisc
+    parent_qdisc=$(tc qdisc show dev "$INTERFACE" | grep "parent 1:3" || true)
+    if [ -z "${parent_qdisc}" ]; then
+        tc qdisc add dev "$INTERFACE" parent 1:3 handle 30: netem delay "$DELAY"
+    else
+        echo "tc qdisc replace failed for parent 1:3 but parent qdisc exists; skipping add to avoid conflicts" >&2
+    fi
 }
 
-# Apply filter to target specific source IP
-tc filter add dev "$INTERFACE" protocol ip parent 1:0 prio 3 \
+# Apply filter to target specific source IP (use replace to avoid File exists races)
+tc filter replace dev "$INTERFACE" protocol ip parent 1:0 prio 3 \
   u32 match ip src "$SRC_IP" flowid 1:3
 
 # Verify the rule was applied

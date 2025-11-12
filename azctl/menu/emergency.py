@@ -6,6 +6,7 @@ Provides emergency response and recovery operations for the Azazel TUI menu syst
 """
 
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 import os
 from datetime import datetime
 from pathlib import Path
@@ -70,7 +71,7 @@ class EmergencyModule:
         try:
             # Step 1: Switch to lockdown mode
             self.console.print("[blue]1. Switching to lockdown mode...[/blue]")
-            result = subprocess.run(
+            result = run_cmd(
                 ["python3", "-m", "azctl", "events", "--mode", "lockdown"],
                 capture_output=True, text=True, timeout=30
             )
@@ -82,27 +83,27 @@ class EmergencyModule:
             # Step 2: Apply emergency firewall rules
             self.console.print("[blue]2. Applying emergency firewall rules...[/blue]")
             try:
-                subprocess.run(["sudo", "nft", "flush", "ruleset"], timeout=10)
-                subprocess.run([
+                run_cmd(["sudo", "nft", "flush", "ruleset"], timeout=10)
+                run_cmd([
                     "sudo", "nft", "add", "table", "inet", "emergency"
                 ], timeout=5)
-                subprocess.run([
+                run_cmd([
                     "sudo", "nft", "add", "chain", "inet", "emergency", "input", 
                     "{", "type", "filter", "hook", "input", "priority", "0", ";", "policy", "drop", ";", "}"
                 ], timeout=5)
-                subprocess.run([
+                run_cmd([
                     "sudo", "nft", "add", "chain", "inet", "emergency", "forward",
                     "{", "type", "filter", "hook", "forward", "priority", "0", ";", "policy", "drop", ";", "}"
                 ], timeout=5)
-                subprocess.run([
+                run_cmd([
                     "sudo", "nft", "add", "chain", "inet", "emergency", "output",
                     "{", "type", "filter", "hook", "output", "priority", "0", ";", "policy", "drop", ";", "}"
                 ], timeout=5)
                 # Allow loopback
-                subprocess.run([
+                run_cmd([
                     "sudo", "nft", "add", "rule", "inet", "emergency", "input", "iif", "lo", "accept"
                 ], timeout=5)
-                subprocess.run([
+                run_cmd([
                     "sudo", "nft", "add", "rule", "inet", "emergency", "output", "oif", "lo", "accept"
                 ], timeout=5)
                 
@@ -113,7 +114,7 @@ class EmergencyModule:
             # Step 3: Disconnect wireless
             self.console.print("[blue]3. Disconnecting wireless connections...[/blue]")
             try:
-                subprocess.run(["sudo", "wpa_cli", "-i", self.wan_if, "disconnect"], timeout=10)
+                run_cmd(["sudo", "wpa_cli", "-i", self.wan_if, "disconnect"], timeout=10)
                 self.console.print("[green]✓ Wireless connections disconnected[/green]")
             except Exception as e:
                 self.console.print(f"[red]✗ Wireless disconnect failed: {e}[/red]")
@@ -123,7 +124,7 @@ class EmergencyModule:
             services_to_stop = ["vector", "opencanary"]
             for service in services_to_stop:
                 try:
-                    subprocess.run(["sudo", "systemctl", "stop", f"{service}.service"], timeout=15)
+                    run_cmd(["sudo", "systemctl", "stop", f"{service}.service"], timeout=15)
                     self.console.print(f"[green]✓ {service} stopped[/green]")
                 except Exception:
                     self.console.print(f"[yellow]! {service} stop failed[/yellow]")
@@ -159,13 +160,13 @@ class EmergencyModule:
             # Reset wpa_supplicant configuration
             self.console.print("[blue]1. Resetting Wi-Fi configuration...[/blue]")
             try:
-                subprocess.run(["sudo", "systemctl", "stop", "wpa_supplicant"], timeout=10)
+                run_cmd(["sudo", "systemctl", "stop", "wpa_supplicant"], timeout=10)
                 
                 # Backup and reset wpa_supplicant.conf
-                subprocess.run([
-                    "sudo", "cp", "/etc/wpa_supplicant/wpa_supplicant.conf",
-                    f"/etc/wpa_supplicant/wpa_supplicant.conf.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                ], timeout=5)
+                    run_cmd([
+                        "sudo", "cp", "/etc/wpa_supplicant/wpa_supplicant.conf",
+                        f"/etc/wpa_supplicant/wpa_supplicant.conf.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    ], timeout=5)
                 
                 # Create minimal wpa_supplicant.conf
                 minimal_config = """ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
@@ -175,12 +176,12 @@ country=US
                 with open("/tmp/wpa_supplicant_reset.conf", "w") as f:
                     f.write(minimal_config)
                 
-                subprocess.run([
+                run_cmd([
                     "sudo", "cp", "/tmp/wpa_supplicant_reset.conf", 
                     "/etc/wpa_supplicant/wpa_supplicant.conf"
                 ], timeout=5)
                 
-                subprocess.run(["sudo", "systemctl", "start", "wpa_supplicant"], timeout=10)
+                run_cmd(["sudo", "systemctl", "start", "wpa_supplicant"], timeout=10)
                 self.console.print("[green]✓ Wi-Fi configuration reset[/green]")
                 
             except Exception as e:
@@ -189,10 +190,10 @@ country=US
             # Reset network interfaces
             self.console.print("[blue]2. Resetting network interfaces...[/blue]")
             try:
-                subprocess.run(["sudo", "ip", "link", "set", self.wan_if, "down"], timeout=5)
-                subprocess.run(["sudo", "ip", "link", "set", self.wan_if, "up"], timeout=5)
-                subprocess.run(["sudo", "ip", "link", "set", self.lan_if, "down"], timeout=5)
-                subprocess.run(["sudo", "ip", "link", "set", self.lan_if, "up"], timeout=5)
+                 run_cmd(["sudo", "ip", "link", "set", self.wan_if, "down"], timeout=5)
+                 run_cmd(["sudo", "ip", "link", "set", self.wan_if, "up"], timeout=5)
+                 run_cmd(["sudo", "ip", "link", "set", self.lan_if, "down"], timeout=5)
+                 run_cmd(["sudo", "ip", "link", "set", self.lan_if, "up"], timeout=5)
                 self.console.print("[green]✓ Network interfaces reset[/green]")
             except Exception as e:
                 self.console.print(f"[red]✗ Interface reset failed: {e}[/red]")
@@ -200,12 +201,12 @@ country=US
             # Restart network services
             self.console.print("[blue]3. Restarting network services...[/blue]")
             services = ["dhcpcd", "hostapd"]
-            for service in services:
-                try:
-                    subprocess.run(["sudo", "systemctl", "restart", service], timeout=15)
-                    self.console.print(f"[green]✓ {service} restarted[/green]")
-                except Exception:
-                    self.console.print(f"[yellow]! {service} restart failed[/yellow]")
+                for service in services:
+                    try:
+                        run_cmd(["sudo", "systemctl", "restart", service], timeout=15)
+                        self.console.print(f"[green]✓ {service} restarted[/green]")
+                    except Exception:
+                        self.console.print(f"[yellow]! {service} restart failed[/yellow]")
             
             self.console.print("\n[bold green]Network configuration reset completed[/bold green]")
             
@@ -235,13 +236,13 @@ country=US
                 report.write("SYSTEM INFORMATION\n")
                 report.write("-" * 20 + "\n")
                 try:
-                    result = subprocess.run(["uname", "-a"], capture_output=True, text=True, timeout=5)
+                    result = run_cmd(["uname", "-a"], capture_output=True, text=True, timeout=5)
                     report.write(f"Kernel: {result.stdout.strip()}\n")
                 except Exception:
                     report.write("Kernel: Unable to determine\n")
                 
                 try:
-                    result = subprocess.run(["uptime"], capture_output=True, text=True, timeout=5)
+                    result = run_cmd(["uptime"], capture_output=True, text=True, timeout=5)
                     report.write(f"Uptime: {result.stdout.strip()}\n")
                 except Exception:
                     report.write("Uptime: Unable to determine\n")
@@ -294,7 +295,7 @@ country=US
                 services = ["azctl", "azctl-serve", "suricata", "opencanary", "vector"]
                 for service in services:
                     try:
-                        result = subprocess.run(
+                        result = run_cmd(
                             ["systemctl", "is-active", f"{service}.service"],
                             capture_output=True, text=True, timeout=5
                         )
@@ -309,14 +310,14 @@ country=US
                 report.write("SYSTEM RESOURCES\n")
                 report.write("-" * 17 + "\n")
                 try:
-                    result = subprocess.run(["free", "-h"], capture_output=True, text=True, timeout=5)
+                    result = run_cmd(["free", "-h"], capture_output=True, text=True, timeout=5)
                     report.write("Memory Usage:\n")
                     report.write(result.stdout)
                 except Exception:
                     report.write("Memory Usage: Unable to determine\n")
                 
                 try:
-                    result = subprocess.run(["df", "-h", "/"], capture_output=True, text=True, timeout=5)
+                    result = run_cmd(["df", "-h", "/"], capture_output=True, text=True, timeout=5)
                     report.write("\nDisk Usage:\n")
                     report.write(result.stdout)
                 except Exception:
@@ -328,7 +329,7 @@ country=US
                 report.write("RECENT SYSTEM LOGS\n")
                 report.write("-" * 19 + "\n")
                 try:
-                    result = subprocess.run(
+                    result = run_cmd(
                         ["journalctl", "-n", "20", "--no-pager"],
                         capture_output=True, text=True, timeout=10
                     )

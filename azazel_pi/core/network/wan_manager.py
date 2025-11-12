@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import yaml
+from azazel_pi.utils.cmd_runner import run as run_cmd
 
 from azazel_pi.utils.wan_state import (
     InterfaceSnapshot,
@@ -224,29 +225,17 @@ class WANManager:
         ip_addr: Optional[str] = None
 
         try:
-            res = subprocess.run(
-                ["ip", "link", "show", iface],
-                capture_output=True,
-                text=True,
-                timeout=2,
-                check=False,
-            )
+            res = run_cmd(["ip", "link", "show", iface], capture_output=True, text=True, timeout=2, check=False)
             exists = res.returncode == 0
             if exists:
-                link_up = "state UP" in res.stdout or "state UNKNOWN" in res.stdout
+                link_up = "state UP" in (res.stdout or "") or "state UNKNOWN" in (res.stdout or "")
         except Exception as exc:
             LOG.debug("ip link show %s failed: %s", iface, exc)
 
         if exists:
             try:
-                res = subprocess.run(
-                    ["ip", "-4", "addr", "show", iface],
-                    capture_output=True,
-                    text=True,
-                    timeout=2,
-                    check=False,
-                )
-                for line in res.stdout.splitlines():
+                res = run_cmd(["ip", "-4", "addr", "show", iface], capture_output=True, text=True, timeout=2, check=False)
+                for line in (res.stdout or "").splitlines():
                     if "inet " in line:
                         parts = line.strip().split()
                         if len(parts) >= 2:
@@ -287,14 +276,8 @@ class WANManager:
 
         # ethtool fallback (mostly for wired NICs)
         try:
-            res = subprocess.run(
-                ["ethtool", iface],
-                capture_output=True,
-                text=True,
-                timeout=2,
-                check=False,
-            )
-            for line in res.stdout.splitlines():
+            res = run_cmd(["ethtool", iface], capture_output=True, text=True, timeout=2, check=False)
+            for line in (res.stdout or "").splitlines():
                 if "Speed:" in line and "Mb/s" in line:
                     tokens = "".join(ch for ch in line if ch.isdigit())
                     if tokens:
@@ -306,14 +289,8 @@ class WANManager:
 
         # Wi-Fi bitrate via `iw`
         try:
-            res = subprocess.run(
-                ["iw", "dev", iface, "link"],
-                capture_output=True,
-                text=True,
-                timeout=2,
-                check=False,
-            )
-            for line in res.stdout.splitlines():
+            res = run_cmd(["iw", "dev", iface, "link"], capture_output=True, text=True, timeout=2, check=False)
+            for line in (res.stdout or "").splitlines():
                 if "tx bitrate" in line.lower():
                     parts = line.split()
                     for idx, token in enumerate(parts):
@@ -393,22 +370,15 @@ class WANManager:
         env = os.environ.copy()
         env["WAN_IF_OVERRIDE"] = iface
         try:
-            subprocess.run(
-                [str(self.traffic_init_script)],
-                cwd=str(self.repo_root),
-                env=env,
-                check=True,
-                text=True,
-            )
+            run_cmd([str(self.traffic_init_script)], cwd=str(self.repo_root), env=env, check=True, text=True)
             LOG.info("Re-applied traffic control on %s", iface)
         except subprocess.CalledProcessError as exc:
             LOG.error("Traffic control initialization failed: %s", exc)
 
     def _reapply_nat(self, iface: str) -> None:
         try:
-            subprocess.run(["iptables", "-t", "nat", "-F"], check=True)
-            subprocess.run(
-                [
+            run_cmd(["iptables", "-t", "nat", "-F"], check=True)
+            run_cmd([
                     "iptables",
                     "-t",
                     "nat",
@@ -420,9 +390,7 @@ class WANManager:
                     iface,
                     "-j",
                     "MASQUERADE",
-                ],
-                check=True,
-            )
+                ], check=True)
             LOG.info("NAT POSTROUTING updated for %s", iface)
         except FileNotFoundError:
             LOG.warning("iptables not available; skipping NAT reapply")
@@ -432,11 +400,7 @@ class WANManager:
     def _restart_services(self) -> None:
         for svc in self.services_to_restart:
             try:
-                subprocess.run(
-                    ["systemctl", "try-restart", svc],
-                    check=False,
-                    timeout=30,
-                )
+                run_cmd(["systemctl", "try-restart", svc], check=False, timeout=30)
                 LOG.info("Triggered restart for %s", svc)
             except FileNotFoundError:
                 LOG.warning("systemctl not found while restarting %s", svc)

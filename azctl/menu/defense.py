@@ -7,6 +7,7 @@ for the Azazel TUI menu system.
 """
 
 import subprocess
+from azazel_pi.utils.cmd_runner import run as run_cmd
 from pathlib import Path
 from typing import Optional, Dict, Any
 import os
@@ -214,10 +215,8 @@ class DefenseModule:
         # Add services status if available
         try:
             import subprocess
-            suricata_status = subprocess.run(['systemctl', 'is-active', 'suricata'], 
-                                           capture_output=True, text=True).stdout.strip()
-            canary_status = subprocess.run(['systemctl', 'is-active', 'opencanary'], 
-                                         capture_output=True, text=True).stdout.strip()
+            suricata_status = run_cmd(['systemctl', 'is-active', 'suricata'], capture_output=True, text=True).stdout.strip()
+            canary_status = run_cmd(['systemctl', 'is-active', 'opencanary'], capture_output=True, text=True).stdout.strip()
             
             services_info = f"Suricata: {'✅' if suricata_status == 'active' else '❌'} | Canary: {'✅' if canary_status == 'active' else '❌'}"
         except:
@@ -351,7 +350,7 @@ class DefenseModule:
             
             try:
                 # Process events with azctl
-                result = subprocess.run(
+                result = run_cmd(
                     ["python3", "-m", "azctl", "events", "--config", temp_config],
                     capture_output=True,
                     text=True,
@@ -424,7 +423,7 @@ class DefenseModule:
             
             try:
                 # Process events with azctl
-                result = subprocess.run(
+                result = run_cmd(
                     ["python3", "-m", "azctl", "events", "--config", temp_config_path],
                     capture_output=True,
                     text=True,

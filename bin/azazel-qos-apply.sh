@@ -7,13 +7,54 @@ run() {
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "+ $*"
   else
-    eval "$@"
+    local args=("$@")
+    local argc=${#args[@]}
+    if (( argc >= 2 )); then
+      local guard_idx=$((argc - 2))
+      local fallback_idx=$((argc - 1))
+      if [[ "${args[$guard_idx]}" == "||" ]]; then
+        local fallback="${args[$fallback_idx]}"
+        unset "args[$fallback_idx]"
+        unset "args[$guard_idx]"
+        args=("${args[@]}")
+        if "${args[@]}"; then
+          return 0
+        fi
+        eval "$fallback"
+        return $?
+      fi
+    fi
+    "${args[@]}"
   fi
+}
+
+run_nft_block() {
+  local snippet="$1"
+  if [[ "$DRY_RUN" == "1" ]]; then
+    printf "+ nft -f - <<'EOF'\n%s\nEOF\n" "$snippet"
+    return 0
+  fi
+  nft -f - <<<"$snippet"
 }
 
 CSV="${1:-configs/network/privileged.csv}"
 CFG="${CFG:-configs/network/azazel.yaml}"
 MODE="${MODE:-verify}"
+
+ensure_nft_primitives() {
+  if ! nft list table inet azazel >/dev/null 2>&1; then
+    run nft add table inet azazel
+  fi
+  if ! nft list chain inet azazel prerouting >/dev/null 2>&1; then
+    run_nft_block "add chain inet azazel prerouting { type filter hook prerouting priority mangle; }"
+  fi
+  if ! nft list set inet azazel v4ipmac >/dev/null 2>&1; then
+    run_nft_block "add set inet azazel v4ipmac { type ipv4_addr . ether_addr; }"
+  fi
+  if ! nft list set inet azazel v4priv >/dev/null 2>&1; then
+    run_nft_block "add set inet azazel v4priv { type ipv4_addr; flags interval; }"
+  fi
+}
 
 if [[ "$DRY_RUN" == "1" ]]; then
   for cmd in nft ip; do
@@ -45,7 +86,8 @@ else
   fi
 fi
 
-# Prepare sets
+# Prepare nftables table/sets so that flushing never fails
+ensure_nft_primitives
 run nft flush set inet azazel v4ipmac '||' true
 run nft flush set inet azazel v4priv '||' true
 
@@ -55,8 +97,8 @@ for line in "${LINES[@]}"; do
   IFS=',' read -r IP MAC NOTE <<<"$line"
   IP=$(echo "$IP" | xargs); MAC=$(echo "$MAC" | xargs)
   [[ -n "$IP" && -n "$MAC" ]] || continue
-  run nft add element inet azazel v4ipmac "{ $IP . $MAC : $MARK_PREMIUM }"
-  run nft add element inet azazel v4priv "{ $IP }"
+  run_nft_block "add element inet azazel v4ipmac { $IP . $MAC }"
+  run_nft_block "add element inet azazel v4priv { $IP }"
 done
 
 # Rebuild prerouting rules

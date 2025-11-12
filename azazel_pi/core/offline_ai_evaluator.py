@@ -131,16 +131,17 @@ class OfflineAIEvaluator:
         """Enhanced threat evaluation with ML-inspired scoring"""
         
         # Handle both direct signature and nested alert structure
-        signature = ""
-        if "signature" in alert_data:
-            signature = alert_data["signature"].lower()
-        elif "alert" in alert_data and "signature" in alert_data["alert"]:
-            signature = alert_data["alert"]["signature"].lower()
-        
-        src_ip = alert_data.get("src_ip", "")
-        payload = alert_data.get("payload_printable", "").lower()
-        dest_port = alert_data.get("dest_port", 0)
-        proto = alert_data.get("proto", "").lower()
+        sig_val = None
+        if isinstance(alert_data, dict):
+            sig_val = alert_data.get("signature")
+            if sig_val is None and isinstance(alert_data.get("alert"), dict):
+                sig_val = alert_data.get("alert", {}).get("signature")
+        signature = str(sig_val or "").lower()
+
+        src_ip = str(alert_data.get("src_ip", "") or "")
+        payload = str(alert_data.get("payload_printable", "") or "").lower()
+        dest_port = int(alert_data.get("dest_port") or 0)
+        proto = str(alert_data.get("proto", "") or "").lower()
         
         logger.debug(f"Evaluating signature: '{signature}'")
         

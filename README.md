@@ -497,6 +497,27 @@ Modern cyber attacks are increasingly fast and automated, making traditional hon
 
 The core philosophy recognizes that in asymmetric cyber warfare, defenders often cannot prevent initial compromise but can control the attacker's subsequent actions. By implementing strategic delays and misdirection, Azazel creates opportunities for detection, analysis, and response.
 
+### Developer notes and helper API
+
+The `TrafficControlEngine` exposes two helpers to make testing and development easier:
+
+- `TrafficControlEngine.set_subprocess_runner(runner_callable)`
+   - Inject a custom subprocess runner in tests to simulate `tc`/`nft` outputs without running system commands.
+   - The runner should accept `(cmd, **kwargs)` and return an object with attributes `returncode`, `stdout`, and `stderr` (a `subprocess.CompletedProcess` is ideal).
+   - Example usage in tests:
+
+      ```py
+      from azazel_pi.core.enforcer.traffic_control import get_traffic_control_engine, make_completed_process
+
+      engine = get_traffic_control_engine()
+      engine.set_subprocess_runner(lambda cmd, **kw: make_completed_process(cmd, 0, stdout='ok'))
+      ```
+
+- `make_completed_process(cmd, returncode=0, stdout='', stderr='')`
+   - Convenience factory (available at module level in `traffic_control.py`) to produce CompletedProcess-like objects for tests.
+
+These APIs make it simple to unit-test enforcer behavior without requiring root or modifying the host network stack.
+
 ## What's New
 
 ### Enhanced AI Integration (v3) - November 2024

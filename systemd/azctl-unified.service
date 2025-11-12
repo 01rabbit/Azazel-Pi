@@ -10,16 +10,18 @@ Type=simple
 WorkingDirectory=/home/azazel/Azazel-Pi
 Environment=PYTHONPATH=/home/azazel/Azazel-Pi
 
-# Ensure required directories exist (as root before switching to azazel user)
+# Ensure required directories exist (created as root).
+# This service runs as root to allow nft/tc operations; adjust permissions as needed.
 ExecStartPre=+/bin/mkdir -p /var/log/azazel
-ExecStartPre=+/bin/chown azazel:azazel /var/log/azazel
 
 # Unified startup command combining serve mode with config file support
 ExecStart=/usr/bin/env python3 -u -m azctl.cli serve --config /etc/azazel/azazel.yaml --suricata-eve /var/log/suricata/eve.json --decisions-log /var/log/azazel/decisions.log
 
 # Service management
-User=azazel
-Group=azazel
+# Run as root to allow privileged network operations (nft/tc). Be aware of
+# the security implications: consider using a restricted capability drop or
+# an additional wrapper if you want to limit privileges later.
+# (User/Group intentionally omitted to run as root)
 Restart=on-failure
 RestartSec=5
 KillMode=mixed

@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 def _load_notify_config() -> Dict[str, Any]:
     """通知設定を読み込む"""
+    repo_root = Path(__file__).resolve().parents[2]
     config_paths = [
         Path("/etc/azazel/notify.yaml"),
-        Path(__file__).parent.parent.parent / "configs" / "monitoring" / "notify.yaml",
-        Path(__file__).parent.parent / "configs" / "notify.yaml",
+        repo_root / "configs" / "notify.yaml",
     ]
     
     for config_path in config_paths:

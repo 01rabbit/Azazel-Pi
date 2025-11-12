@@ -519,7 +519,7 @@ sudo systemctl restart azctl-unified.service
 2. **内部ネットワーク設定**: wlan0インターフェースで172.16.0.254の内部APが動作することを確認
 3. **Mattermost設定**: http://172.16.0.254:8065 でWebhookとチャンネル設定を完了
 4. **防御モードのテスト**: 手動でモード遷移をトリガーして動作を確認
-5. **通知の設定**: configs/monitoring/notify.yaml でWebhook URLを設定
+5. **通知の設定**: configs/notify.yaml でWebhook URLを設定
 6. **パフォーマンス監視**: 内蔵ツールを使用してシステムヘルスを追跡
 7. **メンテナンス計画**: 更新とバックアップのスケジュールを確立
 

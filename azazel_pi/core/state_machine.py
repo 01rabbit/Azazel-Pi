@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from collections import deque
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Deque, Dict, List, Optional
@@ -23,10 +24,18 @@ class State:
 
 @dataclass(frozen=True)
 class Event:
-    """An external event that may trigger a transition."""
+    """An external event that may trigger a transition.
+
+    Extended to carry optional network/meta information so downstream
+    consumers (scorer, daemon, enforcer) can act on IP/signature data.
+    """
 
     name: str
     severity: int = 0
+    src_ip: str | None = None
+    dest_ip: str | None = None
+    signature: str | None = None
+    details: dict | None = None
 
 
 @dataclass
@@ -47,6 +56,8 @@ class StateMachine:
     transitions: List[Transition] = field(default_factory=list)
     config_path: str | Path | None = None
     window_size: int = 5
+    # EWMA time constant in seconds (used for decay / smoothing)
+    ewma_tau: float = 60.0
     clock: Callable[[], float] = field(default=time.monotonic, repr=False)
     current_state: State = field(init=False)
 
@@ -57,6 +68,9 @@ class StateMachine:
             self.add_transition(transition)
         self._config_cache: Dict[str, Any] | None = None
         self._score_window: Deque[int] = deque(maxlen=max(self.window_size, 1))
+        # Exponential moving average state
+        self._ewma: float = 0.0
+        self._last_ewma_ts: float = float(self.clock())
         self._unlock_until: Dict[str, float] = {}
         self._user_mode_until: float = 0.0  # Timer for user intervention modes
 
@@ -214,9 +228,30 @@ class StateMachine:
     # ------------------------------------------------------------------
     def evaluate_window(self, severity: int) -> Dict[str, Any]:
         """Append a severity score and compute moving average decisions."""
-
+        # Keep raw recent scores for display/backwards compatibility
         self._score_window.append(max(int(severity), 0))
-        average = sum(self._score_window) / len(self._score_window)
+
+        # Update EWMA using elapsed time to allow natural decay when events are sparse
+        now = self.clock()
+        try:
+            dt = max(0.0, now - self._last_ewma_ts)
+        except Exception:
+            dt = 0.0
+        tau = float(self.ewma_tau) if getattr(self, "ewma_tau", None) else 60.0
+        if tau <= 0 or dt <= 0:
+            alpha = 1.0
+        else:
+            alpha = 1.0 - math.exp(-dt / tau)
+
+        # Initialize EWMA on first sample
+        if not hasattr(self, "_ewma") or self._ewma is None or len(self._score_window) == 1:
+            self._ewma = float(max(int(severity), 0))
+        else:
+            self._ewma = alpha * float(max(int(severity), 0)) + (1.0 - alpha) * float(self._ewma)
+        self._last_ewma_ts = now
+
+        # Expose the EWMA as the 'average' used for decisions
+        average = float(self._ewma)
         thresholds = self.get_thresholds()
         
         # 閾値判定: t0_normal=20の場合、score<20がnormal, 20<=score<50がportal
@@ -230,6 +265,21 @@ class StateMachine:
         # average < t0 の場合、desired_mode = "normal" のまま
         
         return {"average": average, "desired_mode": desired_mode}
+
+    def get_current_score(self) -> Dict[str, Any]:
+        """Return current score metrics (EWMA + window avg/history) for display.
+
+        Returns:
+            Dict with keys: 'ewma', 'window_avg', 'history' (list newest-last)
+        """
+        window_avg = 0.0
+        if len(self._score_window) > 0:
+            window_avg = sum(self._score_window) / len(self._score_window)
+        return {
+            "ewma": float(getattr(self, "_ewma", 0.0)),
+            "window_avg": float(window_avg),
+            "history": list(self._score_window),
+        }
 
     def apply_score(self, severity: int) -> Dict[str, Any]:
         """Evaluate the score window and transition to the appropriate mode."""
@@ -308,8 +358,23 @@ class StateMachine:
 
     def _target_for_normal(self, now: float) -> str:
         """Target state when desired mode is normal - handles step-down from higher modes."""
-        # Normal mode can be reached from any mode when score is low enough
-        # No unlock delays apply when going to normal
+        # When score indicates 'normal', we normally step down to normal.
+        # However, if we're currently in a higher mode that has an unlock
+        # hold (e.g. lockdown -> shield unlock window), remain in the
+        # higher mode until its unlock timer expires.
+        if self.current_state.name == "lockdown":
+            unlock_at = self._unlock_until.get("shield", 0.0)
+            if now < unlock_at:
+                return "lockdown"
+            # unlock window expired: step down to shield first
+            return "shield"
+        if self.current_state.name == "shield":
+            unlock_at = self._unlock_until.get("portal", 0.0)
+            if now < unlock_at:
+                return "shield"
+            # unlock window expired: step down to portal
+            return "portal"
+        # otherwise allow normal
         return "normal"
 
     def _target_for_portal(self, now: float) -> str:

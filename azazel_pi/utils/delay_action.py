@@ -59,14 +59,15 @@ def load_opencanary_ip() -> str:
     return OPENCANARY_IP
 
 
+from azazel_pi.utils.cmd_runner import run as run_cmd
+
+
 def check_nft_table_exists(table_name: str = "azazel") -> bool:
     """nftablesテーブルが存在するかチェック"""
     try:
-        import subprocess
-        result = subprocess.run(
-            ["nft", "list", "table", "inet", table_name],
-            capture_output=True, text=True, timeout=10
-        )
+        result = run_cmd([
+            "nft", "list", "table", "inet", table_name
+        ], capture_output=True, text=True, timeout=10)
         return result.returncode == 0
     except Exception as e:
         logger.error(f"Failed to check nft table: {e}")
@@ -76,19 +77,15 @@ def check_nft_table_exists(table_name: str = "azazel") -> bool:
 def ensure_nft_table_and_chain():
     """必要なnftablesテーブルとチェーンを作成"""
     try:
-        import subprocess
         # テーブル作成（既存の場合は無視）
-        subprocess.run(
-            ["nft", "add", "table", "inet", "azazel"],
-            capture_output=True, timeout=10
-        )
-        
+        run_cmd(["nft", "add", "table", "inet", "azazel"], capture_output=True, timeout=10)
+
         # DNATチェーン作成
-        subprocess.run([
+        run_cmd([
             "nft", "add", "chain", "inet", "azazel", "prerouting",
             "{ type nat hook prerouting priority -100; }"
         ], capture_output=True, timeout=10)
-        
+
         logger.info("nftables table and chain ensured")
         return True
         
@@ -144,7 +141,6 @@ def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -
         return False
     
     try:
-        import subprocess
         
         # DNATルールを構築
         if dest_port:
@@ -161,9 +157,9 @@ def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -
             "nft", "add", "rule", "inet", "azazel", "prerouting",
             rule_match, rule_action
         ]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-        
+
+        result = run_cmd(cmd, capture_output=True, text=True, timeout=15)
+
         if result.returncode == 0:
             logger.info(f"[Legacy] DNAT rule added: {src_ip} -> {canary_ip}" + 
                        (f":{dest_port}" if dest_port else ""))
@@ -171,13 +167,12 @@ def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -
         else:
             logger.error(f"nft rule add failed: {result.stderr}")
             return False
-            
-    except subprocess.TimeoutExpired:
-        logger.error("nft command timeout")
-        return False
+
     except Exception as e:
-        logger.error(f"Failed to add DNAT rule: {e}")
+        # run_cmd may raise various exceptions; treat as failure
+        logger.error(f"nft command failed or timed out: {e}")
         return False
+    
 
 
 def remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> bool:
@@ -213,25 +208,21 @@ def _legacy_remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> 
     logger.warning("⚠️ _legacy_remove_divert_rule は非推奨です。統合システムの修復を推奨します。")
     
     try:
-        import subprocess
-        
         # 該当するルールのハンドルを検索して削除
         if dest_port:
             search_pattern = f"ip saddr {src_ip} tcp dport {dest_port}"
         else:
             search_pattern = f"ip saddr {src_ip}"
-        
+
         # ルール一覧取得
-        result = subprocess.run([
-            "nft", "-a", "list", "table", "inet", "azazel"
-        ], capture_output=True, text=True, timeout=10)
-        
+        result = run_cmd(["nft", "-a", "list", "table", "inet", "azazel"], capture_output=True, text=True, timeout=10)
+
         if result.returncode != 0:
             logger.warning("Failed to list nft rules")
             return False
-        
+
         # 該当ルールのハンドルを探す
-        for line in result.stdout.split('\n'):
+        for line in (result.stdout or "").split('\n'):
             if search_pattern in line and "handle" in line:
                 # ハンドル番号を抽出
                 handle = line.split("handle")[-1].strip()
@@ -241,15 +232,15 @@ def _legacy_remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> 
                         "nft", "delete", "rule", "inet", "azazel", "prerouting", 
                         "handle", handle
                     ]
-                    delete_result = subprocess.run(delete_cmd, capture_output=True, timeout=10)
-                    
+                    delete_result = run_cmd(delete_cmd, capture_output=True, timeout=10)
+
                     if delete_result.returncode == 0:
                         logger.info(f"[Legacy] DNAT rule removed: {src_ip}")
                         return True
-        
+
         logger.warning(f"No matching DNAT rule found for {src_ip}")
         return False
-        
+
     except Exception as e:
         logger.error(f"Failed to remove DNAT rule: {e}")
         return False
@@ -286,11 +277,7 @@ def _legacy_list_active_diversions() -> list:
     logger.warning("⚠️ _legacy_list_active_diversions は非推奨です。統合システムの修復を推奨します。")
     
     try:
-        import subprocess
-        
-        result = subprocess.run([
-            "nft", "list", "table", "inet", "azazel"
-        ], capture_output=True, text=True, timeout=10)
+        result = run_cmd(["nft", "list", "table", "inet", "azazel"], capture_output=True, text=True, timeout=10)
         
         if result.returncode != 0:
             return []
