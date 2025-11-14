@@ -121,13 +121,18 @@ class EmergencyModule:
             
             # Step 4: Stop services
             self.console.print("[blue]4. Stopping non-essential services...[/blue]")
-            services_to_stop = ["vector", "opencanary"]
+            services_to_stop = ["vector"]
             for service in services_to_stop:
                 try:
                     run_cmd(["sudo", "systemctl", "stop", f"{service}.service"], timeout=15)
                     self.console.print(f"[green]✓ {service} stopped[/green]")
                 except Exception:
                     self.console.print(f"[yellow]! {service} stop failed[/yellow]")
+            try:
+                run_cmd(["sudo", "docker", "stop", "azazel_opencanary"], timeout=30)
+                self.console.print("[green]✓ azazel_opencanary stopped[/green]")
+            except Exception:
+                self.console.print("[yellow]! azazel_opencanary stop failed[/yellow]")
             
             self.console.print("\n[bold red]EMERGENCY LOCKDOWN COMPLETED[/bold red]")
             self.console.print("[yellow]System is now in maximum security lockdown mode.[/yellow]")
@@ -163,10 +168,10 @@ class EmergencyModule:
                 run_cmd(["sudo", "systemctl", "stop", "wpa_supplicant"], timeout=10)
                 
                 # Backup and reset wpa_supplicant.conf
-                    run_cmd([
-                        "sudo", "cp", "/etc/wpa_supplicant/wpa_supplicant.conf",
-                        f"/etc/wpa_supplicant/wpa_supplicant.conf.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                    ], timeout=5)
+                run_cmd([
+                    "sudo", "cp", "/etc/wpa_supplicant/wpa_supplicant.conf",
+                    f"/etc/wpa_supplicant/wpa_supplicant.conf.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                ], timeout=5)
                 
                 # Create minimal wpa_supplicant.conf
                 minimal_config = """ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
@@ -190,10 +195,10 @@ country=US
             # Reset network interfaces
             self.console.print("[blue]2. Resetting network interfaces...[/blue]")
             try:
-                 run_cmd(["sudo", "ip", "link", "set", self.wan_if, "down"], timeout=5)
-                 run_cmd(["sudo", "ip", "link", "set", self.wan_if, "up"], timeout=5)
-                 run_cmd(["sudo", "ip", "link", "set", self.lan_if, "down"], timeout=5)
-                 run_cmd(["sudo", "ip", "link", "set", self.lan_if, "up"], timeout=5)
+                run_cmd(["sudo", "ip", "link", "set", self.wan_if, "down"], timeout=5)
+                run_cmd(["sudo", "ip", "link", "set", self.wan_if, "up"], timeout=5)
+                run_cmd(["sudo", "ip", "link", "set", self.lan_if, "down"], timeout=5)
+                run_cmd(["sudo", "ip", "link", "set", self.lan_if, "up"], timeout=5)
                 self.console.print("[green]✓ Network interfaces reset[/green]")
             except Exception as e:
                 self.console.print(f"[red]✗ Interface reset failed: {e}[/red]")
@@ -201,12 +206,12 @@ country=US
             # Restart network services
             self.console.print("[blue]3. Restarting network services...[/blue]")
             services = ["dhcpcd", "hostapd"]
-                for service in services:
-                    try:
-                        run_cmd(["sudo", "systemctl", "restart", service], timeout=15)
-                        self.console.print(f"[green]✓ {service} restarted[/green]")
-                    except Exception:
-                        self.console.print(f"[yellow]! {service} restart failed[/yellow]")
+            for service in services:
+                try:
+                    run_cmd(["sudo", "systemctl", "restart", service], timeout=15)
+                    self.console.print(f"[green]✓ {service} restarted[/green]")
+                except Exception:
+                    self.console.print(f"[yellow]! {service} restart failed[/yellow]")
             
             self.console.print("\n[bold green]Network configuration reset completed[/bold green]")
             
@@ -292,7 +297,7 @@ country=US
                 # Service status
                 report.write("SERVICE STATUS\n")
                 report.write("-" * 15 + "\n")
-                services = ["azctl", "azctl-serve", "suricata", "opencanary", "vector"]
+                services = ["azctl", "azctl-serve", "suricata", "vector"]
                 for service in services:
                     try:
                         result = run_cmd(
@@ -303,6 +308,7 @@ country=US
                         report.write(f"{service}: {status}\n")
                     except Exception:
                         report.write(f"{service}: UNKNOWN\n")
+                report.write(f"azazel_opencanary (Docker): {'ACTIVE' if self._is_container_running('azazel_opencanary') else 'INACTIVE'}\n")
                 
                 report.write("\n")
                 
@@ -403,3 +409,17 @@ country=US
     def _pause(self) -> None:
         """Pause for user input."""
         Prompt.ask("\n[dim]Press Enter to continue[/dim]", default="", show_default=False)
+
+    def _is_container_running(self, container_name: str) -> bool:
+        """Check whether a Docker container is running."""
+        try:
+            result = run_cmd(
+                ["docker", "inspect", "-f", "{{.State.Running}}", container_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return result.returncode == 0 and (result.stdout or "").strip().lower() == "true"
+        except Exception:
+            return False

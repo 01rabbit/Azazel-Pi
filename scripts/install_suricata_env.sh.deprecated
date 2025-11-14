@@ -187,18 +187,34 @@ fi
 
 # 11) Dockerメモリ制限設定
 DOCKER_CONFIG_FILE="/etc/docker/daemon.json"
-cat > "$DOCKER_CONFIG_FILE" <<'EOF'
+# If system config is symlinked to repo, avoid overwriting it
+if /bin/bash "${PWD}/scripts/prevent_installer_overwrite.sh" >/dev/null 2>&1; then
+  if /bin/bash -c "source ${PWD}/scripts/prevent_installer_overwrite.sh; prevent_overwrite '$DOCKER_CONFIG_FILE'"; then
+    echo "Skipping $DOCKER_CONFIG_FILE (managed by repo symlink)"
+  else
+    cat > "$DOCKER_CONFIG_FILE" <<'EOF'
 {
-  "default-runtime": "runc",
-  "runtimes": {"runc": {"path": "runc"}},
   "storage-driver": "overlay2",
   "log-driver": "json-file",
   "log-opts": {"max-size": "10m", "max-file": "3"},
   "default-ulimits": {"memlock": {"Name": "memlock", "Hard": 524288000, "Soft": 524288000}}
 }
 EOF
-chown root:root "$DOCKER_CONFIG_FILE"
-chmod 644 "$DOCKER_CONFIG_FILE"
+    chown root:root "$DOCKER_CONFIG_FILE"
+    chmod 644 "$DOCKER_CONFIG_FILE"
+  fi
+else
+  cat > "$DOCKER_CONFIG_FILE" <<'EOF'
+{
+  "storage-driver": "overlay2",
+  "log-driver": "json-file",
+  "log-opts": {"max-size": "10m", "max-file": "3"},
+  "default-ulimits": {"memlock": {"Name": "memlock", "Hard": 524288000, "Soft": 524288000}}
+}
+EOF
+  chown root:root "$DOCKER_CONFIG_FILE"
+  chmod 644 "$DOCKER_CONFIG_FILE"
+fi
 if systemctl list-unit-files | grep -q '^docker.service'; then
   systemctl restart docker.service || true
 fi

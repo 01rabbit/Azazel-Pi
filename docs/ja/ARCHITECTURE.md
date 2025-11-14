@@ -384,7 +384,7 @@ WantedBy=multi-user.target
 |----------|----------|------|
 | azctl-unified.service | ネットワーク | メインコントローラー |
 | suricata.service | ネットワーク | IDS/IPS |
-| opencanary.service | なし | ハニーポット |
+| azazel_opencanary (Docker) | Docker | ハニーポット |
 | vector.service | ログディレクトリ | ログ処理 |
 | mattermost.service | データベース | アラート通知 |
 | nginx.service | mattermost | リバースプロキシ |

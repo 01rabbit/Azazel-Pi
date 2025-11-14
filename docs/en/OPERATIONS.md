@@ -307,7 +307,7 @@ sudo nano /etc/default/azazel-epd
 # Set UPDATE_INTERVAL=30
 
 # OpenCanary service selective enabling
-sudo nano /etc/azazel/opencanary/opencanary.conf
+sudo nano /opt/azazel/config/opencanary.conf
 # Disable unnecessary services
 ```
 

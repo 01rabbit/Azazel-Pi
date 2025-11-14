@@ -283,7 +283,8 @@ sudo journalctl -u azctl-unified.service --since "10 minutes ago"
 sudo systemctl status azctl-unified.service mattermost nginx docker
 
 # Check security services
-sudo systemctl status suricata opencanary vector
+sudo systemctl status suricata vector
+docker ps --filter name=azazel_opencanary
 
 # Check E-Paper service (if installed)
 sudo systemctl status azazel-epd.service
@@ -568,8 +569,8 @@ sudo systemctl list-dependencies azctl-unified.service
 
 # Start services individually
 sudo systemctl start suricata
-sudo systemctl start opencanary
 sudo systemctl start vector
+docker start azazel_opencanary
 sudo systemctl start azctl-unified.service
 
 # Check for configuration errors
@@ -707,11 +708,11 @@ curl -s http://eicar.org/download/eicar.com.txt
 
 ```bash
 # Check OpenCanary status
-sudo systemctl status opencanary
-sudo journalctl -u opencanary --no-pager
+docker ps --filter name=azazel_opencanary
+docker logs --tail 100 azazel_opencanary
 
 # Verify configuration
-sudo cat /etc/azazel/opencanary/opencanary.conf
+sudo cat /opt/azazel/config/opencanary.conf
 
 # Test honeypot services
 nmap -sS -O localhost
@@ -720,7 +721,7 @@ nmap -sS -O localhost
 sudo netstat -tuln | grep -E ':(22|23|80|443|21)'
 
 # Restart OpenCanary
-sudo systemctl restart opencanary
+docker restart azazel_opencanary
 ```
 
 #### Problem: Firewall blocking legitimate traffic

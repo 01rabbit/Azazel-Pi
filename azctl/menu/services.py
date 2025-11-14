@@ -6,9 +6,8 @@ Provides system service control and monitoring functionality
 for the Azazel TUI menu system.
 """
 
-import subprocess
 from azazel_pi.utils.cmd_runner import run as run_cmd
-from typing import List, Tuple
+from typing import Tuple
 
 from rich.console import Console
 from rich.table import Table
@@ -32,7 +31,7 @@ class ServicesModule:
             actions=[
                 MenuAction("Service Status Overview", "View all Azazel services status", self._service_status),
                 MenuAction("Start/Stop Suricata 🔒", "Control Suricata IDS service", lambda: self._manage_service("suricata.service", "Suricata IDS"), requires_root=True),
-                MenuAction("Start/Stop OpenCanary 🔒", "Control OpenCanary honeypot service", lambda: self._manage_service("opencanary.service", "OpenCanary Honeypot"), requires_root=True),
+                MenuAction("Start/Stop OpenCanary 🔒", "Control OpenCanary honeypot container", self._manage_opencanary_container, requires_root=True),
                 MenuAction("Start/Stop Vector 🔒", "Control Vector log processing service", lambda: self._manage_service("vector.service", "Vector Log Processor"), requires_root=True),
                 MenuAction("Restart All Services 🔒 ⚠️", "Restart all Azazel services", self._restart_all_services, requires_root=True, dangerous=True),
             ]
@@ -46,11 +45,11 @@ class ServicesModule:
         
         # Define Azazel services to monitor
         azazel_services = [
-            ("azctl-unified.service", "Azazel Unified Control Daemon"),
-            ("suricata.service", "Suricata IDS/IPS"),
-            ("opencanary.service", "OpenCanary Honeypot"),
-            ("vector.service", "Vector Log Processor"),
-            ("azazel-epd.service", "E-Paper Display"),
+            ("azctl-unified.service", "Azazel Unified Control Daemon", "systemd"),
+            ("suricata.service", "Suricata IDS/IPS", "systemd"),
+            ("azazel_opencanary", "OpenCanary Honeypot (Docker)", "container"),
+            ("vector.service", "Vector Log Processor", "systemd"),
+            ("azazel-epd.service", "E-Paper Display", "systemd"),
         ]
         
         # Create services table
@@ -61,8 +60,11 @@ class ServicesModule:
         table.add_column("Active Since", style="cyan", width=15)
         table.add_column("Actions", style="yellow", width=15)
         
-        for service_name, description in azazel_services:
-            status, since, actions = self._get_service_info(service_name)
+        for service_name, description, svc_type in azazel_services:
+            if svc_type == "container":
+                status, since, actions = self._get_container_info(service_name)
+            else:
+                status, since, actions = self._get_service_info(service_name)
             table.add_row(service_name, description, status, since, actions)
         
         self.console.print(table)
@@ -117,6 +119,47 @@ class ServicesModule:
             actions = "check"
         
         return status, since, actions
+
+    def _get_container_info(self, container_name: str) -> Tuple[str, str, str]:
+        """Get Docker container status information."""
+        try:
+            result = run_cmd(
+                [
+                    "docker",
+                    "ps",
+                    "-a",
+                    "--filter",
+                    f"name=^{container_name}$",
+                    "--format",
+                    "{{.Status}}|{{.RunningFor}}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+
+            data = (result.stdout or "").strip()
+            if not data:
+                return "🔴 STOPPED", "─", "start"
+
+            parts = data.split("|", 1)
+            status_str = parts[0]
+            running_for = parts[1] if len(parts) > 1 else ""
+
+            if status_str.startswith("Up"):
+                status = "🟢 ACTIVE"
+                actions = "stop | restart"
+                since = running_for or "active"
+            else:
+                status = "🔴 STOPPED"
+                actions = "start"
+                since = "─"
+
+            return status, since, actions
+
+        except Exception:
+            return "❓ UNKNOWN", "─", "check"
     
     def _manage_service(self, service_name: str, display_name: str) -> None:
         """Generic service management interface."""
@@ -179,6 +222,63 @@ class ServicesModule:
             
         except Exception as e:
             self.console.print(f"[red]Error checking service status: {e}[/red]")
+            self._pause()
+
+    def _manage_opencanary_container(self) -> None:
+        """Management interface for the OpenCanary Docker container."""
+        container_name = "azazel_opencanary"
+        display_name = "OpenCanary Honeypot (Docker)"
+
+        self.console.clear()
+        title = Text(f"{display_name} Management", style="bold")
+        self.console.print(title)
+        self.console.print(Text("─" * len(f"{display_name} Management"), style="dim"))
+
+        try:
+            is_running = self._is_container_running(container_name)
+
+            if is_running:
+                self.console.print(f"[green]✓ {display_name} is currently ACTIVE[/green]")
+                self.console.print()
+                self.console.print("[cyan]1.[/cyan] Stop Container")
+                self.console.print("[cyan]2.[/cyan] Restart Container")
+                self.console.print("[cyan]3.[/cyan] View Recent Logs")
+                self.console.print("[cyan]4.[/cyan] View Container Details")
+            else:
+                self.console.print(f"[red]✗ {display_name} is currently STOPPED[/red]")
+                self.console.print()
+                self.console.print("[cyan]1.[/cyan] Start Container")
+                self.console.print("[cyan]2.[/cyan] View Recent Logs")
+                self.console.print("[cyan]3.[/cyan] View Container Details")
+
+            self.console.print()
+            self.console.print("[cyan]b.[/cyan] Back to Service Management")
+            self.console.print()
+
+            choice = Prompt.ask("Select action", default="b")
+
+            if choice == "b":
+                return
+            elif choice == "1":
+                if is_running:
+                    self._control_container(container_name, "stop", display_name)
+                else:
+                    self._control_container(container_name, "start", display_name)
+            elif choice == "2":
+                if is_running:
+                    self._control_container(container_name, "restart", display_name)
+                else:
+                    self._show_container_logs(container_name, display_name)
+            elif choice == "3":
+                if is_running:
+                    self._show_container_logs(container_name, display_name)
+                else:
+                    self._show_container_details(container_name, display_name)
+            elif choice == "4" and is_running:
+                self._show_container_details(container_name, display_name)
+
+        except Exception as e:
+            self.console.print(f"[red]Error managing container: {e}[/red]")
             self._pause()
     
     def _control_service(self, service_name: str, action: str, display_name: str) -> None:
@@ -273,6 +373,106 @@ class ServicesModule:
             self.console.print(f"[red]Error getting service details: {e}[/red]")
         
         self._pause()
+
+    def _control_container(self, container_name: str, action: str, display_name: str) -> None:
+        """Control a Docker container."""
+        if action in ["stop", "restart"] and not Confirm.ask(f"{action.title()} {display_name}?", default=False):
+            return
+
+        self.console.print(f"[blue]{action.title()}ing {display_name}...[/blue]")
+
+        try:
+            result = run_cmd(
+                ["sudo", "docker", action, container_name],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            if result.returncode == 0:
+                self.console.print(f"[green]✓ {display_name} {action}ed successfully[/green]")
+            else:
+                err = result.stderr.strip() or "Unknown error"
+                self.console.print(f"[red]✗ Failed to {action} {display_name}: {err}[/red]")
+
+        except Exception as e:
+            self.console.print(f"[red]Error {action}ing container: {e}[/red]")
+
+        self._pause()
+
+    def _show_container_logs(self, container_name: str, display_name: str) -> None:
+        """Show recent Docker container logs."""
+        title = Text(f"{display_name} Recent Logs", style="bold")
+        self.console.print(title)
+        self.console.print(Text("─" * len(f"{display_name} Recent Logs"), style="dim"))
+
+        try:
+            result = run_cmd(
+                ["docker", "logs", "--tail", "50", container_name],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                check=False,
+            )
+
+            if result.returncode == 0:
+                logs = result.stdout.strip() or "(no logs)"
+                self.console.print(logs)
+            else:
+                self.console.print(f"[red]Failed to retrieve logs: {result.stderr.strip()}[/red]")
+
+        except Exception as e:
+            self.console.print(f"[red]Error retrieving logs: {e}[/red]")
+
+        self._pause()
+
+    def _show_container_details(self, container_name: str, display_name: str) -> None:
+        """Show Docker container status details."""
+        title = Text(f"{display_name} Details", style="bold")
+        self.console.print(title)
+        self.console.print(Text("─" * len(f"{display_name} Details"), style="dim"))
+
+        try:
+            result = run_cmd(
+                [
+                    "docker",
+                    "ps",
+                    "-a",
+                    "--filter",
+                    f"name=^{container_name}$",
+                    "--format",
+                    "table {{.Names}}\t{{.Status}}\t{{.RunningFor}}\t{{.Image}}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+
+            output = result.stdout.strip()
+            if output:
+                self.console.print(output)
+            else:
+                self.console.print("[yellow]Container not found[/yellow]")
+
+        except Exception as e:
+            self.console.print(f"[red]Error retrieving container details: {e}[/red]")
+
+        self._pause()
+
+    def _is_container_running(self, container_name: str) -> bool:
+        """Check whether a Docker container is running."""
+        try:
+            result = run_cmd(
+                ["docker", "inspect", "-f", "{{.State.Running}}", container_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return result.returncode == 0 and (result.stdout or "").strip().lower() == "true"
+        except Exception:
+            return False
     
     def _restart_all_services(self) -> None:
         """Restart all Azazel services."""
@@ -283,7 +483,6 @@ class ServicesModule:
         services = [
             "azctl-unified.service",
             "suricata.service",
-            "opencanary.service",
             "vector.service",
         ]
         
@@ -305,6 +504,23 @@ class ServicesModule:
                     
             except Exception as e:
                 self.console.print(f"[red]✗ Error restarting {service}: {e}[/red]")
+
+        self.console.print(f"[blue]Restarting azazel_opencanary container...[/blue]")
+        try:
+            result = run_cmd(
+                ["sudo", "docker", "restart", "azazel_opencanary"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+                check=False,
+            )
+            if result.returncode == 0:
+                self.console.print("[green]✓ azazel_opencanary restarted[/green]")
+            else:
+                err = result.stderr.strip() or "Unknown error"
+                self.console.print(f"[red]✗ Failed to restart azazel_opencanary: {err}[/red]")
+        except Exception as e:
+            self.console.print(f"[red]✗ Error restarting azazel_opencanary: {e}[/red]")
         
         self.console.print("\n[bold]All services restart attempts completed.[/bold]")
         self._pause()

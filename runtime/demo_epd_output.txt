@@ -1,0 +1,878 @@
+2025-11-12T22:34:47.663241 | 198.51.100.62 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=portal
+2025-11-12T22:34:47.727843 | 198.51.100.220 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=portal
+2025-11-12T22:36:07.519243 | 198.51.100.81 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=portal
+2025-11-12T22:36:07.546786 | 198.51.100.218 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=portal
+2025-11-12T22:37:46.098524 | 198.51.100.143 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=portal
+2025-11-12T22:37:46.227630 | 198.51.100.22 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=portal
+2025-11-12T22:37:46.238496 | 198.51.100.29 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=portal
+2025-11-12T22:37:46.381958 | 198.51.100.218 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=shield
+2025-11-12T22:37:46.495123 | 198.51.100.25 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=shield
+2025-11-12T22:37:46.609795 | 198.51.100.173 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=shield
+2025-11-12T22:37:46.720305 | 198.51.100.93 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=shield
+2025-11-12T22:37:46.831357 | 198.51.100.205 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=shield
+2025-11-12T22:37:46.866521 | 198.51.100.192 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:46.977839 | 198.51.100.8 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:47.088359 | 198.51.100.86 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:47.199857 | 198.51.100.47 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:47.310613 | 198.51.100.218 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:47.421676 | 198.51.100.190 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:47.532480 | 198.51.100.38 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:47.543670 | 198.51.100.205 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:47.655500 | 198.51.100.65 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:47.765885 | 198.51.100.58 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:47.876584 | 198.51.100.124 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:47.987311 | 198.51.100.224 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:48.098095 | 198.51.100.237 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:37:48.209181 | 198.51.100.202 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:48.322330 | 198.51.100.61 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:48.432794 | 198.51.100.94 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:48.443632 | 198.51.100.157 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:48.555350 | 198.51.100.130 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:48.667819 | 198.51.100.36 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:48.778541 | 198.51.100.158 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:37:48.889883 | 198.51.100.236 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:49.000493 | 198.51.100.61 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:49.114585 | 198.51.100.242 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:49.228652 | 198.51.100.149 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:49.242843 | 198.51.100.130 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:49.357240 | 198.51.100.109 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:49.471447 | 198.51.100.13 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:49.586175 | 198.51.100.127 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:49.700423 | 198.51.100.205 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:49.814858 | 198.51.100.191 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:49.928853 | 198.51.100.31 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:50.042260 | 198.51.100.40 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:50.056089 | 198.51.100.137 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:37:50.171690 | 198.51.100.47 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:50.286258 | 198.51.100.99 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:50.402397 | 198.51.100.193 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:50.517176 | 198.51.100.196 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:50.634243 | 198.51.100.243 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:50.648179 | 198.51.100.32 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:50.763118 | 198.51.100.238 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:37:50.877005 | 198.51.100.154 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:50.990761 | 198.51.100.144 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:51.105574 | 198.51.100.61 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:51.222896 | 198.51.100.191 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:51.337545 | 198.51.100.231 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:51.351548 | 198.51.100.166 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:51.466267 | 198.51.100.236 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:51.580343 | 198.51.100.8 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:51.695275 | 198.51.100.31 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:51.811008 | 198.51.100.10 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:51.925175 | 198.51.100.72 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:52.041314 | 198.51.100.169 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:52.055792 | 198.51.100.247 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:52.172382 | 198.51.100.158 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:52.286460 | 198.51.100.49 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:52.401251 | 198.51.100.127 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:52.517156 | 198.51.100.69 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:52.632808 | 198.51.100.155 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:52.747503 | 198.51.100.176 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:52.761840 | 198.51.100.53 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:52.877945 | 198.51.100.239 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:52.991813 | 198.51.100.174 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:53.108215 | 198.51.100.170 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:53.223092 | 198.51.100.143 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:53.338814 | 198.51.100.192 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:53.453028 | 198.51.100.37 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:53.468364 | 198.51.100.198 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:53.585698 | 198.51.100.98 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:53.699708 | 198.51.100.81 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:53.816100 | 198.51.100.62 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:53.928486 | 198.51.100.117 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:54.039278 | 198.51.100.186 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:54.150493 | 198.51.100.85 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:54.162065 | 198.51.100.230 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:54.273045 | 198.51.100.37 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:54.383672 | 198.51.100.50 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:54.494369 | 198.51.100.214 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:54.605143 | 198.51.100.126 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:54.716195 | 198.51.100.8 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:54.827263 | 198.51.100.195 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:54.938245 | 198.51.100.69 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:55.048548 | 198.51.100.70 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:55.062198 | 198.51.100.20 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:55.173282 | 198.51.100.221 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:55.284088 | 198.51.100.139 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:55.395800 | 198.51.100.240 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:55.506566 | 198.51.100.240 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:55.617221 | 198.51.100.107 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:55.727598 | 198.51.100.189 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:55.838302 | 198.51.100.40 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:55.948675 | 198.51.100.148 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:56.059462 | 198.51.100.215 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:56.072845 | 198.51.100.4 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:56.184277 | 198.51.100.150 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:56.300033 | 198.51.100.221 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:56.412004 | 198.51.100.119 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:37:56.522701 | 198.51.100.119 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:56.633471 | 198.51.100.166 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:37:56.744431 | 198.51.100.134 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:56.854778 | 198.51.100.25 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:37:56.866153 | 198.51.100.226 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:56.976863 | 198.51.100.243 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:57.087550 | 198.51.100.240 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:57.199155 | 198.51.100.202 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:57.310732 | 198.51.100.160 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:57.421124 | 198.51.100.241 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:57.531701 | 198.51.100.19 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:57.642585 | 198.51.100.45 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:57.753454 | 198.51.100.170 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:57.864096 | 198.51.100.143 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:57.874528 | 198.51.100.206 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:57.985410 | 198.51.100.88 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:58.095988 | 198.51.100.35 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:58.207011 | 198.51.100.138 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:37:58.317977 | 198.51.100.5 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:58.429994 | 198.51.100.85 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:58.540661 | 198.51.100.83 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:58.650969 | 198.51.100.38 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:37:58.762129 | 198.51.100.177 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:37:58.773211 | 198.51.100.148 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:37:58.884248 | 198.51.100.137 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:58.999218 | 198.51.100.118 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:37:59.113222 | 198.51.100.132 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:59.228583 | 198.51.100.220 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:37:59.343652 | 198.51.100.220 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:37:59.457978 | 198.51.100.191 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:37:59.572645 | 198.51.100.195 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:37:59.588719 | 198.51.100.206 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:37:59.705752 | 198.51.100.140 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:37:59.821877 | 198.51.100.33 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:37:59.937122 | 198.51.100.223 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:38:00.051952 | 198.51.100.23 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:38:00.167059 | 198.51.100.172 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:38:00.182282 | 198.51.100.126 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:38:00.297127 | 198.51.100.142 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:38:00.411356 | 198.51.100.118 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:00.526941 | 198.51.100.179 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:38:00.641860 | 198.51.100.134 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:38:00.754966 | 198.51.100.154 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:38:00.869633 | 198.51.100.158 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:38:00.883735 | 198.51.100.166 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:38:00.998760 | 198.51.100.10 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:01.113744 | 198.51.100.213 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:38:01.230434 | 198.51.100.36 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:38:01.345484 | 198.51.100.62 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:01.459604 | 198.51.100.199 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:38:01.573445 | 198.51.100.71 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:38:01.587372 | 198.51.100.15 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:38:01.703303 | 198.51.100.200 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:01.817162 | 198.51.100.187 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:38:01.931129 | 198.51.100.161 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:38:02.044724 | 198.51.100.223 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:38:02.158475 | 198.51.100.163 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:38:02.273730 | 198.51.100.249 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:38:02.287742 | 198.51.100.34 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:38:02.401115 | 198.51.100.201 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:38:02.519609 | 198.51.100.224 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:38:02.634357 | 198.51.100.218 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:38:02.750050 | 198.51.100.84 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:38:02.864857 | 198.51.100.20 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:02.978790 | 198.51.100.66 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:02.993898 | 198.51.100.212 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:03.108432 | 198.51.100.187 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:03.228008 | 198.51.100.232 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:03.343833 | 198.51.100.20 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:03.459382 | 198.51.100.68 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:38:03.573583 | 198.51.100.192 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:38:03.588359 | 198.51.100.99 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:38:03.702087 | 198.51.100.13 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:38:03.816583 | 198.51.100.158 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:38:03.930743 | 198.51.100.70 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:04.046946 | 198.51.100.59 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:04.161050 | 198.51.100.236 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:38:04.275801 | 198.51.100.91 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:04.389399 | 198.51.100.182 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:38:04.403685 | 198.51.100.13 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:04.519116 | 198.51.100.227 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:04.635178 | 198.51.100.124 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:04.754557 | 198.51.100.176 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:38:04.870559 | 198.51.100.23 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:38:04.990147 | 198.51.100.57 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:38:05.005649 | 198.51.100.33 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:05.122456 | 198.51.100.199 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:38:05.243652 | 198.51.100.65 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:38:05.358688 | 198.51.100.12 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:05.472561 | 198.51.100.99 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:05.586575 | 198.51.100.90 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:38:05.601707 | 198.51.100.135 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:38:05.717479 | 198.51.100.221 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:38:05.833676 | 198.51.100.200 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:38:05.949352 | 198.51.100.68 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:38:06.065931 | 198.51.100.201 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:07.936949 | 198.51.100.52 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=portal
+2025-11-12T22:39:07.964139 | 198.51.100.233 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=portal
+2025-11-12T22:39:49.729469 | 198.51.100.21 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=portal
+2025-11-12T22:39:49.856848 | 198.51.100.115 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=portal
+2025-11-12T22:39:49.869495 | 198.51.100.168 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=portal
+2025-11-12T22:39:49.981397 | 198.51.100.38 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=portal
+2025-11-12T22:39:50.092558 | 198.51.100.116 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=portal
+2025-11-12T22:39:50.203388 | 198.51.100.15 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=portal
+2025-11-12T22:39:50.345642 | 198.51.100.93 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=shield
+2025-11-12T22:39:50.456779 | 198.51.100.221 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=shield
+2025-11-12T22:39:50.467530 | 198.51.100.181 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=shield
+2025-11-12T22:39:50.578037 | 198.51.100.54 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=shield
+2025-11-12T22:39:50.710723 | 198.51.100.171 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:50.823219 | 198.51.100.48 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:50.933366 | 198.51.100.92 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:51.043771 | 198.51.100.89 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:39:51.154125 | 198.51.100.25 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:51.264686 | 198.51.100.250 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:39:51.275666 | 198.51.100.112 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:51.387174 | 198.51.100.25 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:51.497532 | 198.51.100.131 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:51.608566 | 198.51.100.239 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:51.719349 | 198.51.100.19 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:51.829950 | 198.51.100.238 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:51.940813 | 198.51.100.245 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:52.051802 | 198.51.100.220 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:52.162936 | 198.51.100.97 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:52.175758 | 198.51.100.144 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:39:52.288031 | 198.51.100.114 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:52.399045 | 198.51.100.212 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:52.510335 | 198.51.100.133 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:52.621394 | 198.51.100.245 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:52.733182 | 198.51.100.157 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:39:52.844396 | 198.51.100.91 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:52.955396 | 198.51.100.57 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:53.065795 | 198.51.100.135 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:53.076860 | 198.51.100.50 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:53.187878 | 198.51.100.124 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:53.299586 | 198.51.100.135 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:53.411373 | 198.51.100.139 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:39:53.521859 | 198.51.100.45 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:53.633082 | 198.51.100.134 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:53.743786 | 198.51.100.110 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:53.854564 | 198.51.100.224 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:53.965478 | 198.51.100.202 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:53.976390 | 198.51.100.113 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:54.087679 | 198.51.100.127 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:54.199187 | 198.51.100.129 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:39:54.309800 | 198.51.100.156 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:54.421030 | 198.51.100.126 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:54.531589 | 198.51.100.69 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:54.642421 | 198.51.100.34 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:39:54.757615 | 198.51.100.73 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:39:54.871536 | 198.51.100.154 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:54.886213 | 198.51.100.204 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:55.000657 | 198.51.100.211 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:55.113548 | 198.51.100.16 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:55.229035 | 198.51.100.133 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:55.344045 | 198.51.100.143 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:55.458251 | 198.51.100.54 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:39:55.572405 | 198.51.100.148 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:39:55.586936 | 198.51.100.173 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:39:55.701031 | 198.51.100.210 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:55.814546 | 198.51.100.6 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:55.928710 | 198.51.100.85 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:56.042997 | 198.51.100.177 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:56.157302 | 198.51.100.116 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:56.274301 | 198.51.100.190 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:39:56.287397 | 198.51.100.178 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:56.399997 | 198.51.100.45 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:56.514188 | 198.51.100.19 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:56.628656 | 198.51.100.122 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:56.743240 | 198.51.100.163 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:56.857839 | 198.51.100.203 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:56.971932 | 198.51.100.87 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:56.985669 | 198.51.100.20 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:39:57.099962 | 198.51.100.83 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:57.214139 | 198.51.100.13 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:57.329484 | 198.51.100.222 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:57.444373 | 198.51.100.224 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:57.559916 | 198.51.100.190 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:39:57.673941 | 198.51.100.46 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:57.691940 | 198.51.100.135 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:57.807184 | 198.51.100.162 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:57.920804 | 198.51.100.174 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:58.035935 | 198.51.100.51 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:58.152643 | 198.51.100.231 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:39:58.267067 | 198.51.100.105 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:39:58.381228 | 198.51.100.250 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:39:58.394848 | 198.51.100.204 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:58.509337 | 198.51.100.179 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:58.622600 | 198.51.100.28 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:39:58.736465 | 198.51.100.71 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:58.851480 | 198.51.100.239 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:58.966780 | 198.51.100.97 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:39:59.080482 | 198.51.100.201 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:59.097461 | 198.51.100.33 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:39:59.214745 | 198.51.100.165 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:39:59.328287 | 198.51.100.234 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:59.442307 | 198.51.100.169 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:39:59.556770 | 198.51.100.12 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:39:59.670479 | 198.51.100.192 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:59.784996 | 198.51.100.166 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:39:59.799030 | 198.51.100.208 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:39:59.915338 | 198.51.100.93 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:00.029714 | 198.51.100.194 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:00.144287 | 198.51.100.184 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:00.258709 | 198.51.100.63 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:00.373159 | 198.51.100.250 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:00.486792 | 198.51.100.104 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:00.500433 | 198.51.100.220 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:00.614730 | 198.51.100.18 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:00.727930 | 198.51.100.107 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:00.842853 | 198.51.100.139 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:00.957000 | 198.51.100.15 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:01.071255 | 198.51.100.96 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:01.186025 | 198.51.100.175 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:01.201114 | 198.51.100.208 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:01.320880 | 198.51.100.93 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:01.436788 | 198.51.100.140 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:01.551156 | 198.51.100.119 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:01.666652 | 198.51.100.46 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:01.781416 | 198.51.100.85 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:01.796529 | 198.51.100.67 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:01.911219 | 198.51.100.202 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:02.024532 | 198.51.100.214 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:02.138812 | 198.51.100.81 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:02.256307 | 198.51.100.228 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:02.371178 | 198.51.100.132 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:02.486974 | 198.51.100.211 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:02.501392 | 198.51.100.45 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:02.617418 | 198.51.100.139 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:02.732793 | 198.51.100.235 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:40:02.851038 | 198.51.100.30 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:02.964833 | 198.51.100.59 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:03.079826 | 198.51.100.38 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:03.193736 | 198.51.100.80 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:03.208179 | 198.51.100.118 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:03.322269 | 198.51.100.113 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:40:03.436071 | 198.51.100.101 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:03.550548 | 198.51.100.31 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:03.665084 | 198.51.100.238 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:03.778941 | 198.51.100.182 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:03.893613 | 198.51.100.66 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:03.909038 | 198.51.100.36 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:04.026503 | 198.51.100.94 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:04.140537 | 198.51.100.144 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:04.255436 | 198.51.100.10 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:04.370492 | 198.51.100.199 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:40:04.484536 | 198.51.100.212 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:04.598807 | 198.51.100.62 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:04.612998 | 198.51.100.165 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:04.726730 | 198.51.100.72 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:04.841571 | 198.51.100.80 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:04.955744 | 198.51.100.230 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:05.070430 | 198.51.100.136 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:05.185427 | 198.51.100.74 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:05.299205 | 198.51.100.247 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:05.313273 | 198.51.100.65 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:05.438102 | 198.51.100.144 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:05.551385 | 198.51.100.136 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:40:05.662149 | 198.51.100.223 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:05.773299 | 198.51.100.205 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:05.883691 | 198.51.100.118 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:05.994232 | 198.51.100.60 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:06.104947 | 198.51.100.114 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:06.115411 | 198.51.100.192 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:06.226756 | 198.51.100.166 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:06.337549 | 198.51.100.125 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:06.448515 | 198.51.100.181 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:06.559497 | 198.51.100.61 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:06.670306 | 198.51.100.20 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:06.781613 | 198.51.100.137 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:06.892034 | 198.51.100.43 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:07.002343 | 198.51.100.114 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:07.012935 | 198.51.100.112 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:40:07.123747 | 198.51.100.166 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:40:07.233890 | 198.51.100.33 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:07.344917 | 198.51.100.160 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:40:07.455735 | 198.51.100.230 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:07.566195 | 198.51.100.14 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:40:07.676720 | 198.51.100.145 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:07.789057 | 198.51.100.22 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:40:07.899694 | 198.51.100.82 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:08.010656 | 198.51.100.143 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:08.021147 | 198.51.100.127 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:08.132186 | 198.51.100.25 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:40:08.242454 | 198.51.100.47 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:08.352881 | 198.51.100.16 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:08.463193 | 198.51.100.16 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:08.573402 | 198.51.100.109 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:40:08.683761 | 198.51.100.246 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:40:08.795317 | 198.51.100.95 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:08.906355 | 198.51.100.67 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:40:08.917040 | 198.51.100.196 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:09.029145 | 198.51.100.99 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:09.139607 | 198.51.100.74 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:40:09.249910 | 198.51.100.115 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:09.364324 | 198.51.100.201 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:40:09.474880 | 198.51.100.99 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:40:09.586396 | 198.51.100.26 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:40:09.697473 | 198.51.100.56 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:42:44.946515 | 198.51.100.237 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=portal
+2025-11-12T22:42:44.977958 | 198.51.100.216 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=portal
+2025-11-12T22:42:44.994416 | 198.51.100.231 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=portal
+2025-11-12T22:42:45.007847 | 198.51.100.53 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=portal
+2025-11-12T22:45:33.521032 | 198.51.100.250 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=portal
+2025-11-12T22:45:33.552305 | 198.51.100.8 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=portal
+2025-11-12T22:45:33.566246 | 198.51.100.136 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=portal
+2025-11-12T22:45:33.612517 | 198.51.100.88 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=shield
+2025-11-12T22:46:54.589652 | 198.51.100.180 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=portal
+2025-11-12T22:46:54.619785 | 198.51.100.127 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=portal
+2025-11-12T22:47:53.381987 | 198.51.100.40 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=portal
+2025-11-12T22:47:53.513824 | 198.51.100.31 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=portal
+2025-11-12T22:47:53.629550 | 198.51.100.231 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=portal
+2025-11-12T22:47:53.678253 | 198.51.100.162 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=shield
+2025-11-12T22:47:53.794059 | 198.51.100.144 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=shield
+2025-11-12T22:47:53.908884 | 198.51.100.175 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=shield
+2025-11-12T22:47:54.023831 | 198.51.100.229 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=shield
+2025-11-12T22:47:54.137853 | 198.51.100.51 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=shield
+2025-11-12T22:47:54.151853 | 198.51.100.122 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=shield
+2025-11-12T22:47:54.288150 | 198.51.100.44 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:54.406785 | 198.51.100.150 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:47:54.521302 | 198.51.100.167 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:54.636255 | 198.51.100.233 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:47:54.650397 | 198.51.100.197 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:47:54.765441 | 198.51.100.66 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:54.880129 | 198.51.100.180 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:47:54.995004 | 198.51.100.64 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:47:55.108911 | 198.51.100.200 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:47:55.222952 | 198.51.100.162 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:47:55.337389 | 198.51.100.175 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:55.353829 | 198.51.100.203 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:55.467842 | 198.51.100.183 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:47:55.585127 | 198.51.100.88 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:55.699839 | 198.51.100.45 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:47:55.814497 | 198.51.100.225 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:55.929088 | 198.51.100.98 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:47:56.043622 | 198.51.100.9 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:47:56.058056 | 198.51.100.152 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:47:56.173654 | 198.51.100.139 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:47:56.288159 | 198.51.100.156 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:56.403113 | 198.51.100.177 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:47:56.517880 | 198.51.100.153 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:47:56.632501 | 198.51.100.167 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:47:56.650075 | 198.51.100.94 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:56.767165 | 198.51.100.200 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:56.881627 | 198.51.100.64 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:56.995878 | 198.51.100.115 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:57.111888 | 198.51.100.228 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:57.226666 | 198.51.100.216 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:47:57.340966 | 198.51.100.79 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:47:57.355505 | 198.51.100.163 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:47:57.469407 | 198.51.100.243 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:57.583803 | 198.51.100.237 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:47:57.698241 | 198.51.100.137 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:47:57.812381 | 198.51.100.86 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:47:57.928814 | 198.51.100.79 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:47:58.042881 | 198.51.100.100 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:47:58.056991 | 198.51.100.51 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:58.170990 | 198.51.100.172 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:58.285886 | 198.51.100.143 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:47:58.400467 | 198.51.100.205 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:47:58.521290 | 198.51.100.221 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:47:58.640372 | 198.51.100.211 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:58.659025 | 198.51.100.236 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:47:58.780684 | 198.51.100.157 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:47:58.902238 | 198.51.100.166 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:47:59.023258 | 198.51.100.13 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:59.137690 | 198.51.100.129 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:47:59.158321 | 198.51.100.175 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:47:59.276260 | 198.51.100.36 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:47:59.390364 | 198.51.100.39 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:47:59.504764 | 198.51.100.250 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:59.619420 | 198.51.100.60 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:59.733534 | 198.51.100.96 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:47:59.847611 | 198.51.100.143 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:47:59.867016 | 198.51.100.58 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:47:59.982969 | 198.51.100.151 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:00.098771 | 198.51.100.171 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:00.214315 | 198.51.100.221 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:00.328875 | 198.51.100.80 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:00.447672 | 198.51.100.91 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:00.462730 | 198.51.100.113 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:00.577107 | 198.51.100.139 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:00.691835 | 198.51.100.154 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:00.805863 | 198.51.100.54 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:00.919744 | 198.51.100.2 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:01.039920 | 198.51.100.176 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:01.154492 | 198.51.100.135 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:01.169232 | 198.51.100.146 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:01.283745 | 198.51.100.146 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:01.398123 | 198.51.100.41 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:01.512214 | 198.51.100.16 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:01.630478 | 198.51.100.49 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:01.746163 | 198.51.100.152 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:01.760718 | 198.51.100.68 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:01.876567 | 198.51.100.219 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:01.991505 | 198.51.100.69 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:02.106596 | 198.51.100.25 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:02.221655 | 198.51.100.246 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:02.336163 | 198.51.100.35 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:02.453005 | 198.51.100.175 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:02.467309 | 198.51.100.126 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:02.581902 | 198.51.100.86 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:02.695947 | 198.51.100.47 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:02.811183 | 198.51.100.34 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:02.926211 | 198.51.100.13 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:03.040517 | 198.51.100.234 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:03.154804 | 198.51.100.180 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:03.169061 | 198.51.100.239 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:03.283601 | 198.51.100.142 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:03.398098 | 198.51.100.42 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:03.512378 | 198.51.100.69 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:03.627191 | 198.51.100.131 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:03.741936 | 198.51.100.107 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:03.855941 | 198.51.100.219 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:03.870279 | 198.51.100.97 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:03.984410 | 198.51.100.34 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:04.103797 | 198.51.100.111 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:04.223660 | 198.51.100.191 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:04.342069 | 198.51.100.77 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:04.461852 | 198.51.100.232 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:04.482082 | 198.51.100.92 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:04.606736 | 198.51.100.176 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:04.723908 | 198.51.100.144 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:04.843226 | 198.51.100.126 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:04.966315 | 198.51.100.63 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:04.987165 | 198.51.100.160 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:05.106509 | 198.51.100.186 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:05.224842 | 198.51.100.72 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:05.347695 | 198.51.100.213 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:05.370602 | 198.51.100.57 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:05.489812 | 198.51.100.26 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:05.608577 | 198.51.100.239 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:05.728513 | 198.51.100.172 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:05.846744 | 198.51.100.183 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:05.968149 | 198.51.100.208 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:05.988248 | 198.51.100.70 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:06.110779 | 198.51.100.73 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:06.230039 | 198.51.100.141 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:06.349800 | 198.51.100.125 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:06.469904 | 198.51.100.159 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:06.492332 | 198.51.100.23 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:06.618128 | 198.51.100.136 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:06.737517 | 198.51.100.139 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:06.857278 | 198.51.100.98 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:06.877850 | 198.51.100.162 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:07.001385 | 198.51.100.223 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:07.121357 | 198.51.100.88 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:07.241907 | 198.51.100.145 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:07.360951 | 198.51.100.53 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:07.380582 | 198.51.100.15 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:07.502257 | 198.51.100.136 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:07.620254 | 198.51.100.114 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:07.743202 | 198.51.100.6 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:07.863643 | 198.51.100.235 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:07.884239 | 198.51.100.59 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:08.005566 | 198.51.100.119 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:08.126260 | 198.51.100.208 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:08.246625 | 198.51.100.29 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:08.366058 | 198.51.100.51 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:08.385064 | 198.51.100.180 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:08.508196 | 198.51.100.72 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:08.626795 | 198.51.100.199 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:08.746100 | 198.51.100.81 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:08.866332 | 198.51.100.48 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:08.884455 | 198.51.100.140 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:09.006650 | 198.51.100.4 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:09.125587 | 198.51.100.180 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:09.245710 | 198.51.100.209 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:09.365465 | 198.51.100.154 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:09.384112 | 198.51.100.26 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:09.504229 | 198.51.100.204 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:09.624783 | 198.51.100.216 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:09.743509 | 198.51.100.174 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:09.863741 | 198.51.100.32 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:09.982779 | 198.51.100.31 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:10.002554 | 198.51.100.153 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:10.124165 | 198.51.100.153 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:10.241837 | 198.51.100.98 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:10.361971 | 198.51.100.152 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:10.480503 | 198.51.100.99 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:48:10.499507 | 198.51.100.124 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:10.619388 | 198.51.100.225 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:10.738185 | 198.51.100.31 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:10.858649 | 198.51.100.136 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:10.979206 | 198.51.100.5 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:48:10.999618 | 198.51.100.230 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:11.119450 | 198.51.100.109 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:11.239361 | 198.51.100.160 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:11.360395 | 198.51.100.238 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:11.478707 | 198.51.100.5 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:11.497960 | 198.51.100.100 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:48:11.617408 | 198.51.100.158 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:11.736518 | 198.51.100.125 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:11.856554 | 198.51.100.149 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:11.976201 | 198.51.100.70 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:11.995688 | 198.51.100.126 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:48:12.115761 | 198.51.100.153 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:12.238035 | 198.51.100.69 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:48:12.356932 | 198.51.100.22 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:48:12.477857 | 198.51.100.86 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:12.497337 | 198.51.100.222 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:12.615821 | 198.51.100.208 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:48:12.734552 | 198.51.100.92 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:12.854380 | 198.51.100.143 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:48:12.982183 | 198.51.100.125 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:48:13.000490 | 198.51.100.146 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:13.119237 | 198.51.100.140 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:48:13.234771 | 198.51.100.134 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:48:13.349551 | 198.51.100.129 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:19.146832 | 198.51.100.221 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=portal
+2025-11-12T22:53:19.182208 | 198.51.100.58 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=portal
+2025-11-12T22:53:43.433588 | 198.51.100.189 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=portal
+2025-11-12T22:53:43.563478 | 198.51.100.113 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=portal
+2025-11-12T22:53:43.636148 | 198.51.100.250 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=shield
+2025-11-12T22:53:43.751387 | 198.51.100.118 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=shield
+2025-11-12T22:53:43.865397 | 198.51.100.6 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-12T22:53:43.886611 | 198.51.100.248 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=shield
+2025-11-12T22:53:44.006520 | 198.51.100.157 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=shield
+2025-11-12T22:53:44.125764 | 198.51.100.241 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=shield
+2025-11-12T22:53:44.246773 | 198.51.100.226 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=shield
+2025-11-12T22:53:44.366108 | 198.51.100.6 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-12T22:53:44.386319 | 198.51.100.26 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-12T22:53:44.505982 | 198.51.100.7 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=shield
+2025-11-12T22:53:44.637431 | 198.51.100.92 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-12T22:53:44.720783 | 198.51.100.112 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:44.854003 | 198.51.100.124 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:44.902395 | 198.51.100.93 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:45.057023 | 198.51.100.75 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:45.171434 | 198.51.100.130 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:45.186111 | 198.51.100.77 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:45.301513 | 198.51.100.187 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:45.416453 | 198.51.100.182 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:45.530734 | 198.51.100.64 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:45.645584 | 198.51.100.39 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:45.760030 | 198.51.100.103 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:45.775026 | 198.51.100.61 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:45.889158 | 198.51.100.196 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:46.003201 | 198.51.100.238 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:46.117487 | 198.51.100.207 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:46.232291 | 198.51.100.162 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:46.346434 | 198.51.100.53 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:46.462049 | 198.51.100.185 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:46.576425 | 198.51.100.232 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:46.590719 | 198.51.100.19 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:46.706670 | 198.51.100.186 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:46.821116 | 198.51.100.60 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:46.936572 | 198.51.100.221 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:47.050446 | 198.51.100.77 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:47.164581 | 198.51.100.125 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:47.180284 | 198.51.100.244 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:47.296804 | 198.51.100.195 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:47.412025 | 198.51.100.250 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:47.526352 | 198.51.100.100 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:47.640225 | 198.51.100.21 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:47.754465 | 198.51.100.67 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:47.868646 | 198.51.100.37 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:47.882891 | 198.51.100.25 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:47.997576 | 198.51.100.129 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:48.111857 | 198.51.100.203 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:48.226027 | 198.51.100.179 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:48.340476 | 198.51.100.182 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:48.454213 | 198.51.100.73 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:48.569005 | 198.51.100.63 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:48.586759 | 198.51.100.224 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:48.701485 | 198.51.100.211 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:48.815951 | 198.51.100.214 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:48.930089 | 198.51.100.18 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:49.044236 | 198.51.100.83 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:49.158591 | 198.51.100.245 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:49.274039 | 198.51.100.82 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:49.288181 | 198.51.100.228 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:49.403300 | 198.51.100.232 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:49.517835 | 198.51.100.114 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:49.632573 | 198.51.100.167 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:49.752342 | 198.51.100.208 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:49.875966 | 198.51.100.132 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:49.896484 | 198.51.100.29 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:50.024509 | 198.51.100.26 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:50.146152 | 198.51.100.116 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:50.266764 | 198.51.100.127 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:50.286561 | 198.51.100.224 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:50.405930 | 198.51.100.7 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:50.524994 | 198.51.100.5 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:50.645647 | 198.51.100.160 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:50.764567 | 198.51.100.94 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:50.887374 | 198.51.100.137 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:50.905330 | 198.51.100.108 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:51.024940 | 198.51.100.148 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:51.144164 | 198.51.100.59 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:51.262723 | 198.51.100.167 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:51.382365 | 198.51.100.134 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:51.405895 | 198.51.100.90 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:51.527621 | 198.51.100.143 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:51.649018 | 198.51.100.215 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:51.769593 | 198.51.100.110 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:51.890704 | 198.51.100.98 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:51.914418 | 198.51.100.33 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:52.034441 | 198.51.100.133 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:52.154552 | 198.51.100.234 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:52.277810 | 198.51.100.192 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:52.296969 | 198.51.100.205 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:52.416165 | 198.51.100.166 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:52.537351 | 198.51.100.170 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:52.656714 | 198.51.100.55 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:52.777571 | 198.51.100.170 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:52.798030 | 198.51.100.119 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:52.917367 | 198.51.100.37 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:53.039309 | 198.51.100.117 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:53.182173 | 198.51.100.83 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:53.235175 | 198.51.100.148 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:53.376375 | 198.51.100.95 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:53.499801 | 198.51.100.246 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:53.521828 | 198.51.100.197 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:53.638173 | 198.51.100.109 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:53.753344 | 198.51.100.38 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:53.868180 | 198.51.100.135 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:53.982613 | 198.51.100.70 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:54.099770 | 198.51.100.141 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:54.128236 | 198.51.100.152 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:54.260135 | 198.51.100.136 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:54.395553 | 198.51.100.230 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:54.454911 | 198.51.100.117 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:54.577632 | 198.51.100.238 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:54.693320 | 198.51.100.98 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:54.707154 | 198.51.100.249 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:54.822427 | 198.51.100.65 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:54.936382 | 198.51.100.249 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:55.053306 | 198.51.100.30 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:55.169303 | 198.51.100.40 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:55.284912 | 198.51.100.44 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:55.400019 | 198.51.100.204 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:55.414557 | 198.51.100.235 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:55.528829 | 198.51.100.75 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:55.644316 | 198.51.100.195 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:55.758737 | 198.51.100.249 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:55.874311 | 198.51.100.163 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:55.989689 | 198.51.100.91 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:56.104240 | 198.51.100.119 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:56.118695 | 198.51.100.177 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:56.233768 | 198.51.100.190 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:56.347845 | 198.51.100.245 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:56.461910 | 198.51.100.239 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:56.576515 | 198.51.100.231 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:53:56.690656 | 198.51.100.201 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:56.804827 | 198.51.100.213 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:56.822601 | 198.51.100.203 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:56.939802 | 198.51.100.131 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:57.054857 | 198.51.100.170 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:57.169987 | 198.51.100.102 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:57.289175 | 198.51.100.59 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:57.404094 | 198.51.100.103 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:57.418002 | 198.51.100.49 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:57.532750 | 198.51.100.66 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:57.646887 | 198.51.100.117 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:53:57.762723 | 198.51.100.187 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:57.877014 | 198.51.100.150 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:57.991312 | 198.51.100.60 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:58.105887 | 198.51.100.120 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:58.120272 | 198.51.100.219 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:58.241955 | 198.51.100.203 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:58.361493 | 198.51.100.93 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:53:58.482564 | 198.51.100.200 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:58.602740 | 198.51.100.105 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:58.621147 | 198.51.100.42 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:58.740617 | 198.51.100.52 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:58.860866 | 198.51.100.182 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:58.981424 | 198.51.100.16 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:53:59.102902 | 198.51.100.3 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T22:53:59.121799 | 198.51.100.6 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:53:59.241311 | 198.51.100.30 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:59.359406 | 198.51.100.10 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:53:59.479382 | 198.51.100.125 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:53:59.599535 | 198.51.100.154 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:53:59.718273 | 198.51.100.100 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:59.739072 | 198.51.100.214 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:53:59.864057 | 198.51.100.186 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:53:59.984779 | 198.51.100.35 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:54:00.105772 | 198.51.100.120 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:54:00.124583 | 198.51.100.210 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:54:00.243864 | 198.51.100.124 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:54:00.363291 | 198.51.100.137 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:54:00.482271 | 198.51.100.58 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T22:54:00.602423 | 198.51.100.39 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:54:00.721104 | 198.51.100.222 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:54:00.740605 | 198.51.100.163 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:54:00.862244 | 198.51.100.12 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:54:00.983992 | 198.51.100.19 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:54:01.103975 | 198.51.100.193 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:54:01.222452 | 198.51.100.83 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:54:01.242860 | 198.51.100.152 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:54:01.363708 | 198.51.100.166 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:54:01.483029 | 198.51.100.87 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:54:01.607783 | 198.51.100.79 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:54:01.632546 | 198.51.100.62 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:54:01.753774 | 198.51.100.66 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T22:54:01.868710 | 198.51.100.74 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T22:54:01.987623 | 198.51.100.202 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:54:02.103241 | 198.51.100.71 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:54:02.217601 | 198.51.100.201 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-12T22:54:02.231764 | 198.51.100.117 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:54:02.346742 | 198.51.100.136 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:54:02.461488 | 198.51.100.226 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T22:54:02.577808 | 198.51.100.45 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:54:02.693256 | 198.51.100.121 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-12T22:54:02.807848 | 198.51.100.3 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:54:02.921839 | 198.51.100.170 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:54:02.936345 | 198.51.100.9 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-12T22:54:03.050687 | 198.51.100.142 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-12T22:54:03.164737 | 198.51.100.168 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T22:54:03.279511 | 198.51.100.63 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-12T22:54:03.394170 | 198.51.100.62 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T23:04:35.006792 | 198.51.100.69 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=portal
+2025-11-12T23:04:35.038315 | 198.51.100.20 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=portal
+2025-11-12T23:04:35.053965 | 198.51.100.139 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=portal
+2025-11-12T23:04:35.067824 | 198.51.100.237 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=portal
+2025-11-12T23:04:35.082342 | 198.51.100.68 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=portal
+2025-11-12T23:04:35.131475 | 198.51.100.99 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=shield
+2025-11-12T23:04:35.146841 | 198.51.100.178 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=shield
+2025-11-12T23:04:35.162695 | 198.51.100.159 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=shield
+2025-11-12T23:04:35.176783 | 198.51.100.68 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=shield
+2025-11-12T23:04:35.190641 | 198.51.100.236 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=shield
+2025-11-12T23:04:35.204730 | 198.51.100.30 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=shield
+2025-11-12T23:04:35.241071 | 198.51.100.79 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-12T23:04:35.255133 | 198.51.100.122 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-12T23:04:35.292612 | 198.51.100.2 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-12T23:04:35.307916 | 198.51.100.54 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T23:04:35.322083 | 198.51.100.182 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-12T23:04:35.337514 | 198.51.100.4 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T23:04:35.352439 | 198.51.100.39 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-12T23:04:35.366387 | 198.51.100.25 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-12T23:04:35.380512 | 198.51.100.182 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=lockdown
+2025-11-13T18:48:41.177460 | 198.51.100.82 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=portal
+2025-11-13T18:48:41.225264 | 198.51.100.31 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=portal
+2025-11-13T18:48:41.241644 | 198.51.100.229 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=portal
+2025-11-13T18:48:41.360030 | 198.51.100.202 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=portal
+2025-11-13T18:48:41.374730 | 198.51.100.15 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=portal
+2025-11-13T18:48:41.428360 | 198.51.100.236 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=shield
+2025-11-13T18:48:41.442797 | 198.51.100.99 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=shield
+2025-11-13T18:48:41.557854 | 198.51.100.124 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-13T18:48:41.571885 | 198.51.100.132 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=shield
+2025-11-13T18:48:41.588053 | 198.51.100.208 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=shield
+2025-11-13T18:51:16.987820 | 198.51.100.183 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=portal
+2025-11-13T18:51:17.021357 | 198.51.100.123 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=2 | mode=portal
+2025-11-13T18:51:17.042627 | 198.51.100.129 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=portal
+2025-11-13T18:51:17.090084 | 198.51.100.110 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=shield
+2025-11-13T18:51:17.105991 | 198.51.100.206 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-13T18:51:17.120742 | 198.51.100.3 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=shield
+2025-11-13T18:51:17.135470 | 198.51.100.62 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=shield
+2025-11-13T18:51:17.149536 | 198.51.100.165 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=shield
+2025-11-13T18:51:17.188133 | 198.51.100.121 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-13T18:51:17.205149 | 198.51.100.240 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-13T18:51:17.220703 | 198.51.100.5 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=3 | mode=lockdown
+2025-11-13T18:51:17.238372 | 198.51.100.47 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=3 | mode=lockdown
+2025-11-13T18:51:17.255006 | 198.51.100.13 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-13T18:51:17.271084 | 198.51.100.210 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-13T18:51:17.287837 | 198.51.100.6 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-13T18:51:17.304151 | 198.51.100.230 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-13T18:51:17.319092 | 198.51.100.81 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-13T18:51:17.335944 | 198.51.100.202 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-13T18:51:17.351074 | 198.51.100.91 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=4 | mode=lockdown
+2025-11-13T18:51:17.367574 | 198.51.100.207 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-13T18:51:17.382176 | 198.51.100.65 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-13T18:51:17.399085 | 198.51.100.54 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=3 | mode=lockdown
+2025-11-13T18:51:17.414593 | 198.51.100.10 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-13T18:51:17.429397 | 198.51.100.192 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=5 | mode=lockdown
+2025-11-13T18:51:17.445028 | 198.51.100.129 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown
+2025-11-13T18:51:17.459422 | 198.51.100.17 -> 172.16.0.10 | ET SCAN Potential scan detected (NMAP) | risk=4 | mode=lockdown
+2025-11-13T18:51:17.474502 | 198.51.100.73 -> 172.16.0.10 | ET BRUTEFORCE SSH Brute force attempt | risk=2 | mode=lockdown
+2025-11-13T18:51:17.489643 | 198.51.100.250 -> 172.16.0.10 | ET EXPLOIT Possible buffer overflow | risk=4 | mode=lockdown
+2025-11-13T18:51:17.507107 | 198.51.100.100 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=4 | mode=lockdown
+2025-11-13T18:51:17.521946 | 198.51.100.195 -> 172.16.0.10 | ET DOS Possible DDoS amplification | risk=2 | mode=lockdown

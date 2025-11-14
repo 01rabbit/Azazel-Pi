@@ -410,7 +410,7 @@ sudo tail -f /var/log/suricata/fast.log
 sudo tcpdump -i <interface> -n -c 100
 
 # Check OpenCanary honeypot logs
-sudo journalctl -u opencanary -f
+docker logs -f azazel_opencanary
 ```
 
 ## Legacy Network Configurations

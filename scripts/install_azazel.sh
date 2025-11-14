@@ -371,46 +371,16 @@ UNIT
   fi
 fi
 
-if ! command -v opencanaryd >/dev/null 2>&1; then
-  log "Installing OpenCanary in dedicated venv to avoid system pip conflicts"
+log "Configuring OpenCanary Docker deployment"
+OPEN_CANARY_CONFIG_DIR="/opt/azazel/config"
+mkdir -p "$OPEN_CANARY_CONFIG_DIR" /opt/azazel/logs
+chmod 755 /opt/azazel/logs || true
 
-  VENV_DIR="/opt/opencanary-venv"
-  mkdir -p "$(dirname "$VENV_DIR")"
-  python3 -m venv "$VENV_DIR"
-
-  # Upgrade pip inside the venv only
-  "$VENV_DIR/bin/python" -m pip install --upgrade pip
-  # Install OpenCanary and dependencies inside the venv
-  "$VENV_DIR/bin/python" -m pip install opencanary scapy
-
-  # Create required directories for OpenCanary
-  mkdir -p /etc/azazel/opencanary /var/log/azazel
-  chmod 755 /var/log/azazel
-
-  # Make opencanaryd visible system-wide without touching system pip
-  install -d /usr/local/bin
-  ln -sf "$VENV_DIR/bin/opencanaryd" /usr/local/bin/opencanaryd
-
-  # Provide a minimal systemd unit for OpenCanary if missing
-  if [[ ! -f /etc/systemd/system/opencanary.service ]]; then
-    cat >/etc/systemd/system/opencanary.service <<'UNIT'
-[Unit]
-Description=OpenCanary honeypot (venv)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-Environment=OPENCANARY_CONFIG=/etc/azazel/opencanary/opencanary.conf
-ExecStart=/opt/opencanary-venv/bin/opencanaryd --dev --uid nobody --gid nogroup
-Restart=always
-RestartSec=2
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-    log "Installed systemd unit for OpenCanary."
-  fi
+if [[ -f "$REPO_ROOT/deploy/opencanary.conf" ]]; then
+  install -m 0644 "$REPO_ROOT/deploy/opencanary.conf" "$OPEN_CANARY_CONFIG_DIR/opencanary.conf"
+  log "Installed OpenCanary config at $OPEN_CANARY_CONFIG_DIR/opencanary.conf"
+else
+  warn "deploy/opencanary.conf not found; create $OPEN_CANARY_CONFIG_DIR/opencanary.conf manually"
 fi
 
 log "Staging Azazel runtime under $TARGET_ROOT"
@@ -492,7 +462,7 @@ if (( START_SERVICES )); then
 fi
 
 log "Next steps:" 
-log "  * Adjust Suricata, Vector, OpenCanary, and Mattermost configs under /etc/azazel and /opt/mattermost"
+log "  * Adjust Suricata, Vector, and Mattermost configs under /etc/azazel and /opt/mattermost; edit /opt/azazel/config/opencanary.conf for honeypot settings"
 log "  * Configure Mattermost webhooks at http://172.16.0.254:8065 (internal network gateway)"
 log "  * Update webhook URLs in /etc/azazel/monitoring/notify.yaml to match your Mattermost setup"
 log "  * Run 'systemctl restart azctl-unified.service' after making Azazel changes"

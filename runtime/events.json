@@ -1,0 +1,24 @@
+{"timestamp": "2025-11-12T13:46:54.522454+00:00", "src_ip": "198.51.100.180", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T13:46:54.532677+00:00", "src_ip": "198.51.100.127", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T13:53:19.088547+00:00", "src_ip": "198.51.100.221", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET EXPLOIT Possible buffer overflow", "severity": 80}}
+{"timestamp": "2025-11-12T13:53:19.098771+00:00", "src_ip": "198.51.100.58", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET BRUTEFORCE SSH Brute force attempt", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.938723+00:00", "src_ip": "198.51.100.69", "dest_ip": "172.16.0.10", "proto": "ICMP", "alert": {"signature": "ET SCAN Potential scan detected (NMAP)", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.948998+00:00", "src_ip": "198.51.100.20", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.959195+00:00", "src_ip": "198.51.100.139", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET EXPLOIT Possible buffer overflow", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.969331+00:00", "src_ip": "198.51.100.237", "dest_ip": "172.16.0.10", "proto": "ICMP", "alert": {"signature": "ET SCAN Potential scan detected (NMAP)", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.979472+00:00", "src_ip": "198.51.100.68", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET BRUTEFORCE SSH Brute force attempt", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.989611+00:00", "src_ip": "198.51.100.99", "dest_ip": "172.16.0.10", "proto": "ICMP", "alert": {"signature": "ET SCAN Potential scan detected (NMAP)", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:34.999744+00:00", "src_ip": "198.51.100.178", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET EXPLOIT Possible buffer overflow", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.009886+00:00", "src_ip": "198.51.100.159", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.020022+00:00", "src_ip": "198.51.100.68", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.030196+00:00", "src_ip": "198.51.100.236", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET BRUTEFORCE SSH Brute force attempt", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.040422+00:00", "src_ip": "198.51.100.30", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.050637+00:00", "src_ip": "198.51.100.79", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET BRUTEFORCE SSH Brute force attempt", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.060874+00:00", "src_ip": "198.51.100.122", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.071101+00:00", "src_ip": "198.51.100.2", "dest_ip": "172.16.0.10", "proto": "UDP", "alert": {"signature": "ET DOS Possible DDoS amplification", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.081302+00:00", "src_ip": "198.51.100.54", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET EXPLOIT Possible buffer overflow", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.091530+00:00", "src_ip": "198.51.100.182", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET BRUTEFORCE SSH Brute force attempt", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.101786+00:00", "src_ip": "198.51.100.4", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET EXPLOIT Possible buffer overflow", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.112008+00:00", "src_ip": "198.51.100.39", "dest_ip": "172.16.0.10", "proto": "ICMP", "alert": {"signature": "ET SCAN Potential scan detected (NMAP)", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.122245+00:00", "src_ip": "198.51.100.25", "dest_ip": "172.16.0.10", "proto": "TCP", "alert": {"signature": "ET EXPLOIT Possible buffer overflow", "severity": 80}}
+{"timestamp": "2025-11-12T14:04:35.132488+00:00", "src_ip": "198.51.100.182", "dest_ip": "172.16.0.10", "proto": "ICMP", "alert": {"signature": "ET SCAN Potential scan detected (NMAP)", "severity": 80}}

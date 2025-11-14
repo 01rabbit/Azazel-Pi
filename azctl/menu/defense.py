@@ -214,12 +214,11 @@ class DefenseModule:
         
         # Add services status if available
         try:
-            import subprocess
             suricata_status = run_cmd(['systemctl', 'is-active', 'suricata'], capture_output=True, text=True).stdout.strip()
-            canary_status = run_cmd(['systemctl', 'is-active', 'opencanary'], capture_output=True, text=True).stdout.strip()
+            canary_running = self._is_container_running("azazel_opencanary")
             
-            services_info = f"Suricata: {'✅' if suricata_status == 'active' else '❌'} | Canary: {'✅' if canary_status == 'active' else '❌'}"
-        except:
+            services_info = f"Suricata: {'✅' if suricata_status == 'active' else '❌'} | Canary: {'✅' if canary_running else '❌'}"
+        except Exception:
             services_info = "Status unknown"
             
         info_table.add_row(
@@ -551,6 +550,20 @@ class DefenseModule:
             
         except Exception:
             return "N/A"
+
+    def _is_container_running(self, container_name: str) -> bool:
+        """Check whether a Docker container is running."""
+        try:
+            result = run_cmd(
+                ["docker", "inspect", "-f", "{{.State.Running}}", container_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return result.returncode == 0 and (result.stdout or "").strip().lower() == "true"
+        except Exception:
+            return False
 
     def _pause(self) -> None:
         """Pause for user input."""

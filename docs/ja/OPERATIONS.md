@@ -322,7 +322,7 @@ sudo nano /etc/default/azazel-epd
 # UPDATE_INTERVAL=30 に設定
 
 # OpenCanaryサービスの選択的有効化
-sudo nano /etc/azazel/opencanary/opencanary.conf
+sudo nano /opt/azazel/config/opencanary.conf
 # 不要なサービスを無効化
 ```
 

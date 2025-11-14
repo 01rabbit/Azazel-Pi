@@ -2,7 +2,7 @@
 
 English | [日本語](README_ja.md)
 
-![Azazel-Pi_image](images/azazel-pi-prototype.jpg)
+![Azazel-Pi_image](images/azazel-pi-prototype.jpg)  
 ![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
 ![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
 ![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
