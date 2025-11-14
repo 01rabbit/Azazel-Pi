@@ -312,10 +312,12 @@ chown -R root:root /var/lib/vector
 chmod 755 /var/lib/vector
 chmod 644 /etc/azazel/vector/vector.toml
 
-# Copy OpenCanary configuration
-mkdir -p /etc/opencanaryd
+# Copy OpenCanary configuration for Docker deployment
+OPEN_CANARY_CONFIG_DIR="/opt/azazel/config"
+mkdir -p "$OPEN_CANARY_CONFIG_DIR" /opt/azazel/logs
+chmod 755 /opt/azazel/logs || true
 if [[ -f "deploy/opencanary.conf" ]]; then
-  cp deploy/opencanary.conf /etc/opencanaryd/opencanary.conf
+  install -m 0644 deploy/opencanary.conf "$OPEN_CANARY_CONFIG_DIR/opencanary.conf"
 fi
 
 success "Configuration files deployed"
@@ -326,10 +328,18 @@ log "Step 4/9: Enhanced Docker configuration and services (PostgreSQL + Ollama)"
 # Configure Docker with optimized settings for Raspberry Pi
 DOCKER_CONFIG_FILE="/etc/docker/daemon.json"
 log "Configuring Docker daemon for optimal performance..."
-cat > "$DOCKER_CONFIG_FILE" <<'EOF'
+# If the system config is symlinked to the repository, avoid overwriting it
+# so that repo-managed config remains authoritative.
+if /bin/bash "${PWD}/scripts/prevent_installer_overwrite.sh" >/dev/null 2>&1; then
+  if /bin/bash -c "source ${PWD}/scripts/prevent_installer_overwrite.sh; prevent_overwrite '$DOCKER_CONFIG_FILE'"; then
+    warn "Leaving $DOCKER_CONFIG_FILE intact (managed by repo symlink)"
+  else
+    # NOTE: avoid registering a runtime named 'runc' here because Docker treats
+    # the name 'runc' as reserved; adding it manually causes dockerd to fail.
+    # Keep a minimal, safe configuration that can be extended if a custom OCI
+    # runtime is required.
+    cat > "$DOCKER_CONFIG_FILE" <<'EOF'
 {
-  "default-runtime": "runc",
-  "runtimes": {"runc": {"path": "runc"}},
   "storage-driver": "overlay2",
   "log-driver": "json-file",
   "log-opts": {"max-size": "10m", "max-file": "3"},
@@ -339,8 +349,25 @@ cat > "$DOCKER_CONFIG_FILE" <<'EOF'
   "experimental": false
 }
 EOF
-chown root:root "$DOCKER_CONFIG_FILE"
-chmod 644 "$DOCKER_CONFIG_FILE"
+    chown root:root "$DOCKER_CONFIG_FILE"
+    chmod 644 "$DOCKER_CONFIG_FILE"
+  fi
+else
+  # Fallback if helper missing: write safe config
+  cat > "$DOCKER_CONFIG_FILE" <<'EOF'
+{
+  "storage-driver": "overlay2",
+  "log-driver": "json-file",
+  "log-opts": {"max-size": "10m", "max-file": "3"},
+  "default-ulimits": {"memlock": {"Name": "memlock", "Hard": 524288000, "Soft": 524288000}},
+  "max-concurrent-downloads": 2,
+  "max-concurrent-uploads": 2,
+  "experimental": false
+}
+EOF
+  chown root:root "$DOCKER_CONFIG_FILE"
+  chmod 644 "$DOCKER_CONFIG_FILE"
+fi
 
 # Ensure Docker is running with new configuration
 systemctl enable --now docker || error "Failed to enable Docker"
@@ -355,7 +382,7 @@ cd ..
 # Wait for services to be ready with better health checking
 log "Waiting for Docker services to initialize..."
 for i in {1..30}; do
-  if docker ps | grep -q "azazel_postgres.*Up" && docker ps | grep -q "azazel_ollama.*Up"; then
+  if docker ps | grep -q "azazel_postgres.*Up" && docker ps | grep -q "azazel_ollama.*Up" && docker ps | grep -q "azazel_opencanary.*Up"; then
     success "Docker services are running"
     break
   fi
@@ -530,7 +557,6 @@ log "Step 5b/9: Configuring systemd services"
 systemctl enable azctl-unified.service || warn "Failed to enable azctl-unified.service"
 systemctl enable suricata.service || warn "Failed to enable suricata.service" 
 systemctl enable vector.service || warn "Failed to enable vector.service"
-systemctl enable opencanary.service || warn "Failed to enable opencanary.service"
 systemctl enable mattermost.service || warn "Failed to enable mattermost.service"
 systemctl enable nginx.service || warn "Failed to enable nginx.service"
 
@@ -627,7 +653,6 @@ if [[ $START_SERVICES -eq 1 ]]; then
   
   # Start services in order
   systemctl start vector.service || warn "Vector service may have issues"
-  systemctl start opencanary.service || warn "OpenCanary service may have issues"  
   systemctl start azctl-unified.service || warn "Azctl-unified service may have issues"
   systemctl start nginx.service || warn "Nginx service may have issues"
   
@@ -639,7 +664,7 @@ if [[ $START_SERVICES -eq 1 ]]; then
   systemctl start azazel-suricata-update.timer || warn "Failed to start Suricata auto-update timer"
   
   log "Service status check:"
-  services=("azctl-unified" "suricata" "vector" "opencanary" "nginx" "docker")
+  services=("azctl-unified" "suricata" "vector" "nginx" "docker")
   for service in "${services[@]}"; do
     if systemctl is-active --quiet "$service.service"; then
       success "✓ $service: running"
@@ -647,6 +672,12 @@ if [[ $START_SERVICES -eq 1 ]]; then
       warn "✗ $service: not running"
     fi
   done
+  
+  if docker ps --format '{{.Names}} {{.Status}}' | grep -q '^azazel_opencanary '; then
+    success "✓ azazel_opencanary: running"
+  else
+    warn "✗ azazel_opencanary: container not running"
+  fi
   
   # Check Suricata auto-update timer
   if systemctl is-active --quiet "azazel-suricata-update.timer"; then
@@ -672,7 +703,7 @@ cat <<SUMMARY
 ✅ Installed components:
   • Suricata IDS/IPS with auto-update system
   • Vector log shipper (enhanced configuration)
-  • OpenCanary honeypot
+  • OpenCanary honeypot (Docker)
   • PostgreSQL (Docker, optimized)
   • Ollama AI (Docker, optimized)
   • Nginx reverse proxy
@@ -682,7 +713,7 @@ $( [[ $ENABLE_EPD -eq 1 ]] && echo "   • E-Paper display integration ("$([ $EP
 ✅ Configuration files:
    • /etc/azazel/azazel.yaml (main config)
    • /etc/azazel/ai_config.json (AI settings)
-   • /etc/opencanaryd/opencanary.conf
+   • /opt/azazel/config/opencanary.conf
    • /etc/azazel/vector/vector.toml
 
 📋 Next steps:
