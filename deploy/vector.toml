@@ -5,7 +5,7 @@
 ##### SOURCE: OpenCanary ######################################################
 [sources.opencanary_raw]
 type        = "file"
-include     = ["/logs/opencanary.log"]
+include     = ["/logs/opencanary.log", "/opt/azazel/logs/opencanary.log"]
 read_from   = "end"
 fingerprinting.strategy = "device_and_inode"
 

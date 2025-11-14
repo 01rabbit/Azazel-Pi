@@ -26,7 +26,8 @@ sudo journalctl -u azctl-unified.service --since "10 minutes ago"
 sudo systemctl status azctl-unified.service mattermost nginx docker
 
 # セキュリティサービスを確認
-sudo systemctl status suricata opencanary vector
+sudo systemctl status suricata vector
+docker ps --filter name=azazel_opencanary
 
 # E-Paperサービスを確認（インストール済みの場合）
 sudo systemctl status azazel-epd.service
@@ -311,8 +312,8 @@ sudo systemctl list-dependencies azctl-unified.service
 
 # サービスを個別に開始
 sudo systemctl start suricata
-sudo systemctl start opencanary
 sudo systemctl start vector
+docker start azazel_opencanary
 sudo systemctl start azctl-unified.service
 
 # 設定エラーを確認
@@ -450,11 +451,11 @@ curl -s http://eicar.org/download/eicar.com.txt
 
 ```bash
 # OpenCanary状態を確認
-sudo systemctl status opencanary
-sudo journalctl -u opencanary --no-pager
+docker ps --filter name=azazel_opencanary
+docker logs --tail 100 azazel_opencanary
 
 # 設定を確認
-sudo cat /etc/azazel/opencanary/opencanary.conf
+sudo cat /opt/azazel/config/opencanary.conf
 
 # ハニーポットサービスをテスト
 nmap -sS -O localhost
@@ -463,7 +464,7 @@ nmap -sS -O localhost
 sudo netstat -tuln | grep -E ':(22|23|80|443|21)'
 
 # OpenCanaryを再起動
-sudo systemctl restart opencanary
+docker restart azazel_opencanary
 ```
 
 #### 問題: ファイアウォールが正当なトラフィックをブロックする

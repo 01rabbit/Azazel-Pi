@@ -493,9 +493,25 @@ class StatusCollector:
 
     def _is_service_active(self, service_name: str) -> bool:
         """Check if a systemd service is active."""
+        if service_name == "opencanary":
+            return self._is_container_running("azazel_opencanary")
         try:
             result = run_cmd(["systemctl", "is-active", f"{service_name}.service"], capture_output=True, text=True, timeout=2, check=False)
             return (result.stdout or "").strip() == "active"
+        except Exception:
+            return False
+
+    def _is_container_running(self, container_name: str) -> bool:
+        """Check if a Docker container is running."""
+        try:
+            result = run_cmd(
+                ["docker", "inspect", "-f", "{{.State.Running}}", container_name],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=False,
+            )
+            return result.returncode == 0 and (result.stdout or "").strip().lower() == "true"
         except Exception:
             return False
 

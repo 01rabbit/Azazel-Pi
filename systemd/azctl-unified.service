@@ -1,7 +1,7 @@
 [Unit]
 Description=Azazel Unified Control Daemon with AI Edge Computing
 Documentation=https://github.com/01rabbit/Azazel-Pi
-After=network-online.target suricata.service opencanary.service azazel-ai-services.service azazel-wan-manager.service
+After=network-online.target suricata.service azazel-ai-services.service azazel-wan-manager.service
 Wants=network-online.target azazel-ai-services.service azazel-wan-manager.service
 Requires=suricata.service
 
@@ -32,4 +32,4 @@ TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target
-Also=suricata.service opencanary.service vector.service
+Also=suricata.service vector.service

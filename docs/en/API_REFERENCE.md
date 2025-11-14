@@ -134,7 +134,7 @@ Manages Azazel system services.
 - `azctl-unified.service` - Unified control daemon
 - `azctl-unified.service` - HTTP server
 - `suricata.service` - IDS/IPS
-- `opencanary.service` - Honeypot
+- `azazel_opencanary (Docker)` - Honeypot
 - `vector.service` - Log collection
 - `azazel-epd.service` - E-Paper display
 

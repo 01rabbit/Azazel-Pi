@@ -323,7 +323,7 @@ OpenCanaryハニーポットイベントを処理します。
 
 **使用例:**
 ```python
-canary_tail = CanaryTail("/var/log/opencanary.log")
+canary_tail = CanaryTail("/opt/azazel/logs/opencanary.log")
 for event in canary_tail.tail_events():
     print(f"ハニーポットイベント: {event.name}, 重要度: {event.severity}")
 ```
@@ -500,7 +500,7 @@ Azazelシステムサービスの管理を行います。
 - `azctl-unified.service` - 統合制御デーモン
 - `azctl-unified.service` - HTTPサーバー
 - `suricata.service` - IDS/IPS
-- `opencanary.service` - ハニーポット
+- `azazel_opencanary (Docker)` - ハニーポット
 - `vector.service` - ログ収集
 - `azazel-epd.service` - E-Paperディスプレイ
 
@@ -877,7 +877,7 @@ sudo scripts/sanity_check.sh --json
 ```
 [OK] azctl-unified.service is active
 [OK] suricata.service is active  
-[WARNING] opencanary.service is inactive
+[WARNING] azazel_opencanary container is inactive
 [OK] vector.service is active
 [ERROR] mattermost.service failed to start
 ```

@@ -449,9 +449,9 @@ class AzazelTUIMenu:
                 mode_display = mode.upper() if mode else "UNKNOWN"
         
         # Count active services (simplified)
-        services = ["suricata", "opencanary", "vector", "azctl"]
+        systemd_services = ["suricata", "vector", "azctl"]
         services_active = 0
-        for service in services:
+        for service in systemd_services:
             try:
                 result = run_cmd(
                     ["systemctl", "is-active", service],
@@ -462,11 +462,15 @@ class AzazelTUIMenu:
             except Exception:
                 pass
         
+        services_total = len(systemd_services) + 1  # include OpenCanary container
+        if self._is_container_running("azazel_opencanary"):
+            services_active += 1
+            
         return {
             "mode": mode,
             "mode_display": mode_display if 'mode_display' in locals() else (mode.upper() if mode else "UNKNOWN"),
             "services_active": services_active,
-            "services_total": len(services),
+            "services_total": services_total,
         }
     
     def _get_enhanced_status(self) -> Dict[str, Any]:
@@ -488,3 +492,17 @@ class AzazelTUIMenu:
             "wlan0_info": wlan0_info,
             "wlan1_info": wlan1_info,
         }
+
+    def _is_container_running(self, container_name: str) -> bool:
+        """Check whether a Docker container is running."""
+        try:
+            result = run_cmd(
+                ["docker", "inspect", "-f", "{{.State.Running}}", container_name],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
+            return result.returncode == 0 and (result.stdout or "").strip().lower() == "true"
+        except Exception:
+            return False
