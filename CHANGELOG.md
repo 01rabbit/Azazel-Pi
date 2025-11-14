@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2025-11-14
+### Added
+- `scripts/link_opt_to_repo.sh`: backup and symlink `deploy/` files into `/opt/azazel/config` to keep runtime config synced with the repository.
+- `systemd/link-opt.service`: oneshot systemd unit to run the linking script at boot.
+- `scripts/prevent_installer_overwrite.sh`: helper used by installers to detect repo-managed symlinked config files and avoid overwriting them.
+
+### Fixed
+- Prevent dockerd startup failure caused by installers writing an explicit `runc` runtime entry into `/etc/docker/daemon.json`. Installers now avoid overwriting repo-managed `daemon.json`.
+
+### Changed
+- Removed obsolete top-level `version:` key from `deploy/docker-compose.yml`.
+
+### Notes
+- Backups of any replaced files are stored as `/opt/azazel/config/<name>.bak.<timestamp>` on the host.
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## [3.1.0] - 2025-11-09
 ### Added
 - Display: clear and force a full E-Paper refresh when the active WAN interface changes (e.g. eth0 -> wlan1) to avoid ghosting and show the updated interface/IP immediately. (commit 478b8ee)
