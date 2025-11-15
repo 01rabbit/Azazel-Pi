@@ -792,6 +792,15 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
     except Exception:
         pass
 
+    try:
+        trend_interval = float(os.getenv("AZAZEL_TREND_SAMPLE_INTERVAL", "10"))
+    except Exception:
+        trend_interval = 10.0
+    try:
+        daemon.start_trend_sampler(interval=trend_interval)
+    except Exception:
+        pass
+
     # Write an initial entry describing current (default) mode so status shows something
     try:
         daemon.process_event(Event(name="startup", severity=0))

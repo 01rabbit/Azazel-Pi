@@ -3,15 +3,22 @@ from pathlib import Path
 from azazel_pi.core.ingest import CanaryTail, SuricataTail
 
 
-def test_suricata_tail(tmp_path: Path):
+def test_suricata_tail_includes_metadata(tmp_path: Path):
     path = tmp_path / "eve.json"
-    path.write_text('{"event_type": "alert", "alert": {"severity": 2}}\n')
-    # Read existing contents immediately (don't skip existing lines) and
-    # consume only the first yielded event so the test doesn't block on the
-    # tailer's infinite loop.
+    path.write_text(
+        '{"event_type": "alert", "timestamp": "2024-01-01T00:00:00Z",'
+        ' "src_ip": "1.2.3.4", "dest_ip": "10.0.0.5", "proto": "TCP", "dest_port": 22,'
+        ' "alert": {"severity": 2, "signature": "ET DOS TEST"}}\n'
+    )
     tail = SuricataTail(path=path, skip_existing=False)
     event = next(tail.stream())
     assert event.severity == 2
+    assert event.src_ip == "1.2.3.4"
+    assert event.dest_ip == "10.0.0.5"
+    assert event.proto == "TCP"
+    assert event.dest_port == 22
+    assert event.signature == "ET DOS TEST"
+    assert event.timestamp == "2024-01-01T00:00:00Z"
 
 
 def test_canary_tail(tmp_path: Path):

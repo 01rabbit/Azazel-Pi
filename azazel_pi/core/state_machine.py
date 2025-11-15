@@ -36,6 +36,9 @@ class Event:
     dest_ip: str | None = None
     signature: str | None = None
     details: dict | None = None
+    timestamp: str | None = None
+    proto: str | None = None
+    dest_port: int | None = None
 
 
 @dataclass

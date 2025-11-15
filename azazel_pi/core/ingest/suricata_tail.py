@@ -100,6 +100,9 @@ class SuricataTail:
                                 dest_ip=event.dest_ip,
                                 signature=event.signature,
                                 details=event.details,
+                                timestamp=event.timestamp,
+                                proto=event.proto,
+                                dest_port=event.dest_port,
                             )
                     except json.JSONDecodeError:
                         continue
