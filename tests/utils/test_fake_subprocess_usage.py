@@ -22,8 +22,8 @@ def test_fake_subprocess_injection_applies_dnat_and_records_rule(tmp_path, monke
     # Keep persisted handles in a temp location so test doesn't need root
     monkeypatch.setattr(
         TrafficControlEngine,
-        "_nft_handles_path",
-        lambda self: tmp_path / "nft_handles.json",
+        "_diversion_state_path",
+        lambda self: tmp_path / "diversions.json",
     )
 
     # Inject fake runner at class level so __init__ uses it during setup

@@ -25,6 +25,10 @@ soc:
     - "ET MALWARE"
     - "ET TROJAN"
     - "Critical Infrastructure Attack"
+canary:
+  # OpenCanary honeypot IP address (Docker bridge azazel_net)
+  ip: "172.16.10.10"
+  port: 22  # Default SSH port for honeypot
 actions:
   normal:   { delay_ms: 0,   shape_kbps: null, block: false }
   portal:   { delay_ms: 0,   shape_kbps: null, block: false }
@@ -33,7 +37,7 @@ actions:
 thresholds:
   t0_normal: 20
   t1_shield: 30
-  t2_lockdown: 60
+  t2_lockdown: 70
   # Shortened unlock windows for verification testing. Revert after test.
   unlock_wait_secs: { shield: 30, portal: 90 }
   user_mode_timeout_mins: 3.0

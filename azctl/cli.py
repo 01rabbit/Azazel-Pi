@@ -819,6 +819,17 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
                 break
             q.put(ev)
 
+    def canary_reader(path: str):
+        try:
+            from azazel_pi.core.ingest.canary_tail import CanaryTail
+        except Exception:
+            return
+        tail = CanaryTail(Path(path))
+        for ev in tail.stream():
+            if stop.is_set():
+                break
+            q.put(ev)
+
     def consumer():
         while not stop.is_set():
             try:
@@ -837,9 +848,17 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
     signal.signal(signal.SIGTERM, sigint_handler)
 
     t_reader = threading.Thread(target=suricata_reader, args=(suricata_eve,), daemon=True)
+    # Start canary reader if configured
+    try:
+        canary_path = notice.OPENCANARY_LOG_PATH
+        t_canary = threading.Thread(target=canary_reader, args=(canary_path,), daemon=True)
+    except Exception:
+        t_canary = None
     t_consumer = threading.Thread(target=consumer, daemon=True)
 
     t_reader.start()
+    if t_canary:
+        t_canary.start()
     t_consumer.start()
 
     try:

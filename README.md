@@ -2,7 +2,7 @@
 
 English | [日本語](README_ja.md)
 
-![Azazel-Pi_image](images/azazel-pi-prototype.jpg)  
+![Azazel-Pi_image](images/Azazel-Pi_logo.png)  
 ![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
 ![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
 ![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
@@ -59,6 +59,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 - **Suricata IDS/IPS**: Intrusion detection and prevention system
 - **OpenCanary**: Honeypot services for attacker misdirection
 - **Dynamic Traffic Control**: `tc` and `iptables/nftables` for tactical delay
+  - DNAT enforcement now attempts nftables first and transparently falls back to legacy iptables rules so previously supported routing tricks remain available.
 
 #### Defensive Modes
 

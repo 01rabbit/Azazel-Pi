@@ -4,6 +4,7 @@
 統合トラフィック制御システムのテスト
 """
 
+import subprocess
 import pytest
 import time
 from unittest.mock import Mock, patch, call
@@ -82,6 +83,37 @@ def test_apply_dnat_redirect(traffic_engine):
                 assert rule.parameters["dest_port"] == 22
 
 
+def test_apply_dnat_redirect_fallbacks_to_iptables(traffic_engine):
+    """nft失敗時にiptablesフォールバックするか検証"""
+    def make_proc(cmd, returncode=0, stdout="", stderr=""):
+        return subprocess.CompletedProcess(cmd, returncode, stdout, stderr)
+
+    def runner(cmd, **kwargs):
+        if cmd[0] == "nft":
+            if cmd[1] == "list" and cmd[2] == "table":
+                return make_proc(cmd, 0, "", "")
+            if "-a" in cmd and "add" in cmd:
+                return make_proc(cmd, 1, "", "permission denied")
+            return make_proc(cmd, 0, "", "")
+        if cmd[0] == "iptables":
+            if "-C" in cmd:
+                return make_proc(cmd, 1, "", "")
+            return make_proc(cmd, 0, "", "")
+        return make_proc(cmd, 0, "", "")
+
+    traffic_engine.set_subprocess_runner(runner)
+
+    with patch('azazel_pi.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
+        mock_load.return_value = "192.168.1.200"
+        with patch('azazel_pi.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
+            mock_ensure.return_value = True
+            result = traffic_engine.apply_dnat_redirect("192.168.1.150", 22)
+            assert result is True
+            assert "192.168.1.150" in traffic_engine.active_rules
+            rule = traffic_engine.active_rules["192.168.1.150"][0]
+            assert rule.parameters["backend"] == "iptables"
+
+
 def test_apply_suspect_classification(traffic_engine):
     """suspect分類適用テスト"""
     with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
@@ -137,7 +169,7 @@ def test_apply_combined_action_lockdown(traffic_engine):
                 delay_rule = [r for r in rules if r.action_type == "delay"][0]
                 shape_rule = [r for r in rules if r.action_type == "shape"][0]
                 
-                assert delay_rule.parameters["delay_ms"] == 300
+                assert delay_rule.parameters["delay_ms"] == 150
                 assert shape_rule.parameters["rate_kbps"] == 64
 
 

@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Optional
 
 # OpenCanary IP address (デフォルト値、設定ファイルから上書き可能)
-OPENCANARY_IP = "192.168.1.100"
+# Docker bridge azazel_net の固定アドレス
+OPENCANARY_IP = "172.16.10.10"
 
 # ログ設定
 try:

@@ -37,6 +37,8 @@ class AzazelDaemon:
     def __post_init__(self) -> None:
         self._ip_control_modes: Dict[str, str] = {}
         self._diverted_ips: Dict[str, float] = {}
+        # Per-IP states: score, mode, last timestamps and timers for canary/suricata
+        self._ip_states: Dict[str, Dict[str, any]] = {}
         self._last_mode_snapshot: Dict[str, Any] = {
             "mode": self.machine.current_state.name,
             "average": 0.0,
@@ -49,6 +51,24 @@ class AzazelDaemon:
         except Exception:
             self._traffic_cleanup_interval = 60
         self._next_cleanup_at = time.time() + self._traffic_cleanup_interval
+        # Two-stage silence timers (seconds). Allow test override via env.
+        import os
+        # Default silence windows control how long Azazel waits for a canary/suricata
+        # observation before considering the diversion stale and removing rules.
+        # Increase defaults to 5 minutes to avoid short apply/remove races during
+        # active investigations or noisy environments. Operators may override via
+        # environment variables AZAZEL_CANARY_SILENCE_SECONDS or AZAZEL_SURICATA_SILENCE_SECONDS.
+        try:
+            self._canary_silence_seconds = int(os.getenv("AZAZEL_CANARY_SILENCE_SECONDS", "300"))
+        except Exception:
+            self._canary_silence_seconds = 300
+        try:
+            self._suricata_silence_seconds = int(os.getenv("AZAZEL_SURICATA_SILENCE_SECONDS", "300"))
+        except Exception:
+            self._suricata_silence_seconds = 300
+
+        # Start background monitor for per-IP 2-stage timers
+        self._start_ip_state_monitor()
 
     def process_events(self, events: Iterable[Event]) -> None:
         entries: List[dict] = []
@@ -65,6 +85,16 @@ class AzazelDaemon:
         is_decay = event.name == "decay_tick"
         if event.name == "trend_sample":
             self._log_trend_snapshot()
+            return
+
+        # Handle OpenCanary events specially: update per-IP canary timestamp and return
+        if event.name == "canary":
+            src = getattr(event, "src_ip", None)
+            if src:
+                st = self._ip_states.setdefault(src, {})
+                st["last_canary_ts"] = time.time()
+                # cancel any pending canary evaluation
+                st.pop("canary_eval_started_at", None)
             return
 
         alert_data = None
@@ -89,6 +119,17 @@ class AzazelDaemon:
             classification = "decay"
         else:
             score, classification = self._compute_score(alert_data or {}, event)
+            # update per-IP suricata timestamp
+            src = getattr(event, "src_ip", None)
+            if src:
+                st = self._ip_states.setdefault(src, {})
+                st["last_suricata_ts"] = time.time()
+                # accumulate a simple per-ip score (max of samples)
+                try:
+                    st_score = int(st.get("score", 0) or 0)
+                    st["score"] = max(st_score, int(score))
+                except Exception:
+                    st["score"] = int(score)
         evaluation = self.machine.apply_score(score)
         actions = self.machine.get_actions_preset()
         applied_mode = evaluation["applied_mode"]
@@ -117,6 +158,55 @@ class AzazelDaemon:
         self._append_decisions([entry])
 
         src_ip = getattr(event, "src_ip", None)
+        # AGGRESSIVE: Force shield (DNAT to OpenCanary) on ANY Suricata alert
+        # This ensures immediate honeypot redirection without waiting for score thresholds
+        if src_ip and not is_decay and event.name == "alert":
+            # For ANY Suricata alert, immediately apply shield (DNAT) to honeypot
+            try:
+                st = self._ip_states.setdefault(src_ip, {})
+                st["score"] = 100  # Mark as high threat for logging
+                if self.traffic_engine:
+                    self._ensure_diversion(src_ip, event)
+                    # Get the dest_port from alert if available, for targeted DNAT
+                    dest_port = getattr(event, "dest_port", None)
+                    self.traffic_engine.apply_dnat_redirect(src_ip, dest_port=dest_port)
+                    self.traffic_engine.apply_combined_action(src_ip, "shield")
+                    self._ip_control_modes[src_ip] = "shield"
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"[AGGRESSIVE_SHIELD] Suricata alert → Immediate DNAT redirect for {src_ip} (port {dest_port})")
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to apply aggressive shield for {src_ip}: {e}")
+        
+        # Also apply traditional score-based shield for high-scoring events
+        try:
+            thresholds = self.machine.get_thresholds()
+            t1 = int(thresholds.get("t1", thresholds.get("t1", 50)))
+        except Exception:
+            t1 = 50
+        if src_ip and not is_decay and event.name != "alert":  # Avoid double-processing alerts
+            try:
+                if classification and classification.lower() in ("exploit", "malware", "trojan") or (isinstance(score, int) and score >= t1):
+                    # ensure per-ip record and force shield-mode score
+                    st = self._ip_states.setdefault(src_ip, {})
+                    st["score"] = max(int(st.get("score", 0) or 0), t1)
+                    # apply immediate diversion and shield actions
+                    try:
+                        if self.traffic_engine:
+                            self._ensure_diversion(src_ip, event)
+                            self.traffic_engine.apply_combined_action(src_ip, "shield")
+                            self._ip_control_modes[src_ip] = "shield"
+                    except Exception:
+                        pass
+                    # Also signal a global shield transition to ensure UI/decisions reflect high threat
+                    try:
+                        self.machine.dispatch(Event(name="shield", severity=score))
+                    except Exception:
+                        pass
+            except Exception:
+                pass
         self._handle_mode_notification(previous_mode, applied_mode, average)
         self._handle_traffic_controls(src_ip, applied_mode, event)
         self._maybe_cleanup_rules()
@@ -211,6 +301,22 @@ class AzazelDaemon:
             applied = self.traffic_engine.apply_dnat_redirect(target_ip, dest_port=dest_port)
             if applied:
                 self._diverted_ips[target_ip] = now
+                # Clear any previous canary/suricata evaluation timers to avoid
+                # an immediate removal race if an evaluation was already in
+                # progress for this IP. This can happen when events arrive
+                # rapidly and the monitor thread had started an evaluation
+                # earlier.
+                try:
+                    st = self._ip_states.setdefault(target_ip, {})
+                    if st.pop('canary_eval_started_at', None) is not None or st.pop('suricata_eval_started_at', None) is not None:
+                        # Log a debug message so operators can trace why removals were suppressed
+                        try:
+                            logger = __import__('logging').getLogger(__name__)
+                            logger.debug(f"Cleared pending canary/suricata eval timers for {target_ip} after diversion applied")
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
                 if announce:
                     endpoints = self._event_endpoints(event, dest_port, proto)
                     self._notify_redirect_change(target_ip, applied=True, inline_endpoints=endpoints)
@@ -494,5 +600,88 @@ class AzazelDaemon:
                 self._cleanup_stop.set()
             if getattr(self, '_cleanup_thread', None):
                 self._cleanup_thread.join(timeout=2.0)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Per-IP state monitor (2-stage canary -> suricata silence handling)
+    # ------------------------------------------------------------------
+    def _start_ip_state_monitor(self) -> None:
+        if getattr(self, '_ip_state_thread', None) and getattr(self._ip_state_thread, 'is_alive', lambda: False)():
+            return
+        self._ip_state_stop = threading.Event()
+
+        def _worker():
+            while not (self._ip_state_stop and self._ip_state_stop.is_set()):
+                try:
+                    now = time.time()
+                    # iterate copy to avoid mutation during loop
+                    for ip, st in list(self._ip_states.items()):
+                        try:
+                            # If IP is currently diverted, check canary silence
+                            diverted = ip in self._diverted_ips
+                            last_canary = st.get('last_canary_ts')
+                            canary_eval = st.get('canary_eval_started_at')
+                            if diverted:
+                                # No canary seen for configured interval: start evaluation
+                                if last_canary is None or (now - last_canary) > float(self._canary_silence_seconds):
+                                    if not canary_eval:
+                                        st['canary_eval_started_at'] = now
+                                    else:
+                                        # evaluation in progress: if elapsed enough, remove diversion
+                                        if (now - canary_eval) >= float(self._canary_silence_seconds):
+                                            try:
+                                                if self.traffic_engine:
+                                                    self.traffic_engine.remove_rules_for_ip(ip)
+                                            except Exception:
+                                                pass
+                                            # mark diversion removed and start suricata silence window
+                                            self._diverted_ips.pop(ip, None)
+                                            st['canary_removed_at'] = now
+                                            st.pop('canary_eval_started_at', None)
+                                            st['suricata_eval_started_at'] = now
+
+                            # If suricata evaluation is running, check suricata silence
+                            sur_eval = st.get('suricata_eval_started_at')
+                            last_sur = st.get('last_suricata_ts')
+                            if sur_eval is not None:
+                                # If no suricata seen since eval started (or ever), and window passed -> reset IP state
+                                if last_sur is None or (now - last_sur) >= float(self._suricata_silence_seconds):
+                                    if (now - sur_eval) >= float(self._suricata_silence_seconds):
+                                        # Final reset: clear per-ip state and notify
+                                        try:
+                                            # Remove any lingering rules defensively
+                                            if self.traffic_engine:
+                                                self.traffic_engine.remove_rules_for_ip(ip)
+                                        except Exception:
+                                            pass
+                                        # notify via notifier
+                                        try:
+                                            if self.notifier:
+                                                self.notifier.notify_redirect_change(ip, [], False)
+                                        except Exception:
+                                            pass
+                                        # purge ip state
+                                        try:
+                                            del self._ip_states[ip]
+                                        except Exception:
+                                            pass
+                        except Exception:
+                            # continue looping other IPs
+                            continue
+                    time.sleep(1.0)
+                except Exception:
+                    time.sleep(1.0)
+
+        t = threading.Thread(target=_worker, daemon=True, name="azazel-ip-state-monitor")
+        self._ip_state_thread = t
+        t.start()
+
+    def _stop_ip_state_monitor(self) -> None:
+        try:
+            if getattr(self, '_ip_state_stop', None):
+                self._ip_state_stop.set()
+            if getattr(self, '_ip_state_thread', None):
+                self._ip_state_thread.join(timeout=2.0)
         except Exception:
             pass

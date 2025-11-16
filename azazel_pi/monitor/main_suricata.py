@@ -120,7 +120,7 @@ shield_state = State("shield", "警戒モード（遅延適用）")
 lockdown_state = State("lockdown", "封鎖モード（DNAT転送）")
 
 state_machine = StateMachine(
-    initial_state=normal_state,
+    initial_state=portal_state,
     transitions=[
         Transition(normal_state, portal_state, lambda e: e.name == "portal"),
         Transition(normal_state, shield_state, lambda e: e.name == "shield"),
@@ -421,6 +421,9 @@ def main():
     logging.basicConfig(level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s")
 
+    # Ensure fresh metrics and portal mode at service start
+    state_machine.reset()
+
     logging.info(f"🚀 Monitoring eve.json: {EVE_FILE}")
     logging.info(f"🛡️ 初期状態: {state_machine.current_state.name}")
     
@@ -460,13 +463,18 @@ def main():
 
         # まずAI強化スコアを算出し、状態機械へ反映
         threat_score, ai_detail = calculate_threat_score(alert, sig)
-        state_machine.apply_score(threat_score)
 
         # リスク起点でトリガ判定（t1以上でアクション）。後方互換としてnmap検知も許容
         thresholds = state_machine.get_thresholds()
-        risk_trigger = threat_score >= max(thresholds.get("t1", 50), 1)
         legacy_hint = ("nmap" in sig.lower())
+        risk_trigger = threat_score >= max(thresholds.get("t1", 30), 1)
         trigger = risk_trigger or legacy_hint
+
+        severity_for_state = threat_score + (30 if trigger else 0)
+        state_machine.apply_score(severity_for_state)
+
+        if trigger and state_machine.get_base_mode() != "shield":
+            state_machine.dispatch(Event(name="shield", severity=severity_for_state))
 
         # ── 攻撃検知時の処理 ──────────────────
         if trigger:
@@ -483,11 +491,11 @@ def main():
 
             try:
                 traffic_engine = get_traffic_control_engine()
-                current_mode = state_machine.current_state.name
+                mode_for_actions = "shield" if trigger else state_machine.current_state.name
 
                 active_ips = set(traffic_engine.get_active_rules().keys())
                 if src_ip not in active_ips:
-                    if traffic_engine.apply_combined_action(src_ip, current_mode):
+                    if traffic_engine.apply_combined_action(src_ip, mode_for_actions):
                         # 後方互換用の active_diversions にも反映
                         if 'active_diversions' not in globals():
                             global active_diversions
@@ -500,7 +508,7 @@ def main():
                         # モード別の詳細メッセージ
                         config = traffic_engine._load_config()
                         actions = config.get("actions", {})
-                        preset = actions.get(current_mode, {})
+                        preset = actions.get(mode_for_actions, {})
                         delay_info = f"遅延{preset.get('delay_ms', 0)}ms"
                         shape_info = f"帯域{preset.get('shape_kbps', 'unlimited')}kbps" if preset.get('shape_kbps') else ""
                         mode_details = f"{delay_info} {shape_info}".strip()
@@ -508,7 +516,7 @@ def main():
                         if should_notify(key + ":action"):
                             send_alert_to_mattermost("Suricata",{
                                 "timestamp": alert["timestamp"],
-                                "signature": f"🛡️ 遅滞行動発動（{current_mode.upper()}）",
+                                "signature": f"🛡️ 遅滞行動発動（{mode_for_actions.upper()}）",
                                 "severity": 2,
                                 "src_ip": src_ip,
                                 "dest_ip": f"OpenCanary:{dport}",
@@ -516,7 +524,7 @@ def main():
                                 "details": f"攻撃元に統合制御を適用: DNAT転送 + {mode_details}",
                                 "confidence": "High"
                             })
-                        logging.info(f"[統合制御] {src_ip}:{dport} -> {current_mode}モード適用")
+                        logging.info(f"[統合制御] {src_ip}:{dport} -> {mode_for_actions}モード適用")
                 else:
                     logging.debug(f"Control already active for {src_ip}, skip re-apply")
 

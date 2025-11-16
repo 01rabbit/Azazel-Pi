@@ -1,8 +1,9 @@
 import json
-import tempfile
-from pathlib import Path
 import subprocess
+import tempfile
 import types
+from pathlib import Path
+
 import pytest
 
 from azazel_pi.core.enforcer.traffic_control import TrafficControlEngine, TrafficControlRule
@@ -16,7 +17,7 @@ class DummyCompleted:
 
 
 def test_restore_persisted_nft_handles(tmp_path, monkeypatch):
-    tmp_file = tmp_path / "nft_handles.json"
+    tmp_file = tmp_path / "diversions.json"
     data = {
         "198.51.100.1": {
             "family": "inet",
@@ -34,12 +35,9 @@ def test_restore_persisted_nft_handles(tmp_path, monkeypatch):
     }
     tmp_file.write_text(json.dumps(data))
 
-    # Monkeypatch the path method to point to our temp file
-    monkeypatch.setattr(TrafficControlEngine, '_nft_handles_path', lambda self: tmp_file)
+    monkeypatch.setattr(TrafficControlEngine, '_diversion_state_path', lambda self: tmp_file)
 
-    # Monkeypatch subprocess.run to avoid calling real tc/nft
     def fake_run(cmd, capture_output=False, text=False, timeout=None, check=False):
-        # Simulate list outputs for tc qdisc show
         joined = ' '.join(cmd)
         if 'tc qdisc show' in joined:
             return DummyCompleted(0, stdout="")

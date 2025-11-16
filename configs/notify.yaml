@@ -12,7 +12,7 @@ tz: "+09:00"
 # 4. 個別通知が必要なユーザーをnotify_usersに列挙
 mattermost:
   enabled: true                # 通知有効フラグ
-  webhook_url: "http://172.16.0.254:8065/hooks/nk1ze8whj3838rrnoe8qnby6ww"
+  webhook_url: "http://172.16.0.254:8065/hooks/xpxaaof4gbdg3nsphwmoiciw6h"
   notify_users:                # 通知対象ユーザー（@mention）
     - "admin"                  # 管理者ユーザー
     - "security.team"          # セキュリティチーム

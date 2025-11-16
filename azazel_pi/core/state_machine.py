@@ -76,6 +76,7 @@ class StateMachine:
         self._last_ewma_ts: float = float(self.clock())
         self._unlock_until: Dict[str, float] = {}
         self._user_mode_until: float = 0.0  # Timer for user intervention modes
+        self._reset_metrics()
 
     # ------------------------------------------------------------------
     # Transition helpers
@@ -100,9 +101,18 @@ class StateMachine:
         return self.current_state
 
     def reset(self) -> None:
-        """Reset to the initial state."""
+        """Reset to the initial state and clear score metrics."""
 
         self.current_state = self.initial_state
+        self._reset_metrics()
+
+    def _reset_metrics(self) -> None:
+        """Clear score history, EWMA, and timers."""
+        if hasattr(self, "_score_window") and self._score_window is not None:
+            self._score_window.clear()
+        self._ewma = 0.0
+        self._last_ewma_ts = float(self.clock())
+        self._unlock_until = {}
         self._user_mode_until = 0.0
 
     def summary(self) -> Dict[str, str]:
