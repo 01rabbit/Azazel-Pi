@@ -4,14 +4,13 @@
 Suricata eve.json を監視し Mattermost へ通知、必要に応じ DNAT 遅滞行動を発動
 """
 
-import json, time, logging, sys
+import json, time, logging, sys, threading
 from datetime import datetime
 from collections import defaultdict, deque
 from pathlib import Path
 
 from ..core import notify_config as notice
 from ..core.state_machine import StateMachine, State, Event, Transition
-from ..core.scorer import ScoreEvaluator
 from ..core.enforcer.traffic_control import get_traffic_control_engine
 from ..core.offline_ai_evaluator import evaluate_with_offline_ai
 from ..core.hybrid_threat_evaluator import evaluate_with_hybrid_system
@@ -64,12 +63,10 @@ if ALLOWED_SIG_CATEGORIES is None:
 
 cooldown_seconds   = 60          # 同一シグネチャ抑止時間
 summary_interval   = 60          # サマリ送信間隔
-evaluation_interval = 30         # 脅威レベル評価間隔
 
 last_alert_times  = {}
 suppressed_alerts = defaultdict(int)
 last_summary_time = time.time()
-last_evaluation_time = time.time()
 last_cleanup_time = time.time()
 
 # 独立した頻度カウンタ: signature×src_ip の時系列（epoch秒）
@@ -137,7 +134,6 @@ state_machine = StateMachine(
     ]
 )
 
-scorer = ScoreEvaluator()
 active_diversions = {}  # {src_ip: port} の転送中IPリスト
 
 # ────────────────────────────────────────────────────────────
@@ -330,70 +326,46 @@ def send_summary():
     })
     suppressed_alerts.clear()
 
-# ────────────────────────────────────────────────────────────
-def evaluate_threat_level():
-    """現在の脅威レベルを評価し、必要に応じて状態遷移を実行"""
-    global last_evaluation_time
-    
-    # 最近のアラート活動から脅威レベルを計算
-    now = time.time()
-    recent_activity = 0
-    
-    # 過去5分間のアラート数をカウント
-    recent_threshold = now - 300  # 5分
-    for alert_time in last_alert_times.values():
-        if isinstance(alert_time, datetime):
-            alert_timestamp = alert_time.timestamp()
-            if alert_timestamp > recent_threshold:
-                recent_activity += 1
-    
-    # 脅威スコア計算（アクティブな転送数も考慮）
-    threat_score = recent_activity * 10 + len(active_diversions) * 5
-    
-    # 状態管理に脅威スコアを適用
-    evaluation = state_machine.apply_score(threat_score)
-    current_mode = state_machine.current_state.name
-    
-    logging.info(f"🔍 脅威評価: score={threat_score}, activity={recent_activity}, "
-                f"diversions={len(active_diversions)}, mode={current_mode}")
-    
-    # モード変更時の処理
-    if evaluation.get("target_mode") != evaluation.get("applied_mode"):
-        mode_transition_action(current_mode, evaluation)
-    
-    return evaluation
 
-def mode_transition_action(new_mode: str, evaluation: dict):
-    """モード遷移時のアクション実行"""
-    traffic_engine = get_traffic_control_engine()
-    
-    if new_mode == "portal":
-        # 通常モード復帰：すべての制御ルールを停止
-        restore_normal_mode()
-        send_alert_to_mattermost("Azazel", {
-            "timestamp": datetime.now().isoformat(),
-            "signature": "✅ 通常モード復帰",
-            "severity": 3,
-            "src_ip": "-",
-            "dest_ip": "-", 
-            "proto": "-",
-            "details": f"脅威レベル低下により通常運用に復帰しました。(スコア: {evaluation.get('average', 0):.1f})",
-            "confidence": "High"
+def _run_ai_analysis_and_notify(alert: dict) -> None:
+    """Mock LLM / Ollama分析を制御フローから切り離してMattermost通知する"""
+    try:
+        analysis = evaluate_with_hybrid_system(alert)
+        method = analysis.get("evaluation_method", "hybrid")
+    except Exception as e:
+        logging.warning(f"Hybrid AI評価に失敗。オフラインAIへフォールバック: {e}")
+        try:
+            analysis = evaluate_with_offline_ai(alert)
+            method = analysis.get("evaluation_method", "offline_ai")
+        except Exception as e2:
+            logging.error(f"AI分析すら実行できませんでした: {e2}")
+            return
+
+    details_parts = [
+        f"method={method}",
+        f"risk={analysis.get('risk', 'n/a')}",
+    ]
+    if analysis.get("score") is not None:
+        details_parts.append(f"score={analysis.get('score')}")
+    if analysis.get("category"):
+        details_parts.append(f"category={analysis.get('category')}")
+
+    details_text = " / ".join(details_parts)
+
+    try:
+        send_alert_to_mattermost("Suricata", {
+            **alert,
+            "signature": "🔎 AI分析結果 (参考)",
+            "severity": 2,
+            "details": details_text,
+            "confidence": analysis.get("confidence", "Info"),
         })
-        logging.info("🟢 [モード遷移] 通常モードに復帰")
-        
-    elif new_mode == "lockdown":
-        send_alert_to_mattermost("Azazel", {
-            "timestamp": datetime.now().isoformat(),
-            "signature": "🚨 封鎖モード発動",
-            "severity": 1,
-            "src_ip": "-",
-            "dest_ip": "-",
-            "proto": "-", 
-            "details": f"高脅威レベルにより封鎖モードを発動。(スコア: {evaluation.get('average', 0):.1f}) 最大遅延300ms適用",
-            "confidence": "High"
-        })
-        logging.info("🔴 [モード遷移] 封鎖モード発動")
+    except Exception as e:
+        logging.error(f"AI分析結果の通知に失敗: {e}")
+
+
+def notify_ai_analysis_async(alert: dict) -> None:
+    threading.Thread(target=_run_ai_analysis_and_notify, args=(alert,), daemon=True).start()
 
 def restore_normal_mode():
     """通常モード復帰：すべての制御ルールを停止"""
@@ -417,7 +389,7 @@ def restore_normal_mode():
         logging.info(f"✅ 通常モード復帰: {removed_count}件の制御ルールを解除")
 
 def main():
-    global last_summary_time, last_evaluation_time
+    global last_summary_time, last_cleanup_time
     logging.basicConfig(level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -426,7 +398,8 @@ def main():
 
     logging.info(f"🚀 Monitoring eve.json: {EVE_FILE}")
     logging.info(f"🛡️ 初期状態: {state_machine.current_state.name}")
-    
+    logging.info("⚠️ スコアリングは一時的に無効化。検知トラフィックは即座にOpenCanaryへ転送します。")
+
     for line in follow(EVE_FILE):
         alert = parse_alert(line)
         if not alert:
@@ -461,100 +434,66 @@ def main():
         except Exception:
             pass
 
-        # まずAI強化スコアを算出し、状態機械へ反映
-        threat_score, ai_detail = calculate_threat_score(alert, sig)
+        # AI分析は制御から切り離し、通知のみ実施
+        notify_ai_analysis_async(alert)
 
-        # リスク起点でトリガ判定（t1以上でアクション）。後方互換としてnmap検知も許容
-        thresholds = state_machine.get_thresholds()
-        legacy_hint = ("nmap" in sig.lower())
-        risk_trigger = threat_score >= max(thresholds.get("t1", 30), 1)
-        trigger = risk_trigger or legacy_hint
-
-        severity_for_state = threat_score + (30 if trigger else 0)
-        state_machine.apply_score(severity_for_state)
-
-        if trigger and state_machine.get_base_mode() != "shield":
-            state_machine.dispatch(Event(name="shield", severity=severity_for_state))
-
-        # ── 攻撃検知時の処理 ──────────────────
-        if trigger:
-            # 通知はクールダウン制御、制御発動はクールダウン非依存
-            if should_notify(key):
-                send_alert_to_mattermost("Suricata",{
-                    **alert,
-                    "signature":"⚠️ 偵察／攻撃を検知",
-                    "severity":1,
-                    "details":sig,
-                    "confidence":"High"
-                })
-                logging.info(f"Notify attack: {sig}")
-
-            try:
-                traffic_engine = get_traffic_control_engine()
-                mode_for_actions = "shield" if trigger else state_machine.current_state.name
-
-                active_ips = set(traffic_engine.get_active_rules().keys())
-                if src_ip not in active_ips:
-                    if traffic_engine.apply_combined_action(src_ip, mode_for_actions):
-                        # 後方互換用の active_diversions にも反映
-                        if 'active_diversions' not in globals():
-                            global active_diversions
-                            active_diversions = {}
-                        active_diversions[src_ip] = dport
-
-                        if 'NOTIFY_CALLBACK' in globals():
-                            NOTIFY_CALLBACK()
-
-                        # モード別の詳細メッセージ
-                        config = traffic_engine._load_config()
-                        actions = config.get("actions", {})
-                        preset = actions.get(mode_for_actions, {})
-                        delay_info = f"遅延{preset.get('delay_ms', 0)}ms"
-                        shape_info = f"帯域{preset.get('shape_kbps', 'unlimited')}kbps" if preset.get('shape_kbps') else ""
-                        mode_details = f"{delay_info} {shape_info}".strip()
-
-                        if should_notify(key + ":action"):
-                            send_alert_to_mattermost("Suricata",{
-                                "timestamp": alert["timestamp"],
-                                "signature": f"🛡️ 遅滞行動発動（{mode_for_actions.upper()}）",
-                                "severity": 2,
-                                "src_ip": src_ip,
-                                "dest_ip": f"OpenCanary:{dport}",
-                                "proto": alert["proto"],
-                                "details": f"攻撃元に統合制御を適用: DNAT転送 + {mode_details}",
-                                "confidence": "High"
-                            })
-                        logging.info(f"[統合制御] {src_ip}:{dport} -> {mode_for_actions}モード適用")
-                else:
-                    logging.debug(f"Control already active for {src_ip}, skip re-apply")
-
-            except Exception as e:
-                logging.error(f"統合制御エラー: {e}")
-            continue
-
-        # ── 通常通知 ──────────────────
+        # ── 通知（クールダウン制御あり） ──────────────────
         if should_notify(key):
-            # 通常のアラート: 既にスコア反映済みのため通知のみ
-            send_alert_to_mattermost("Suricata", alert)
+            send_alert_to_mattermost("Suricata", {
+                **alert,
+                "signature": "⚠️ 偵察／攻撃を検知",
+                "severity": 1,
+                "details": sig,
+                "confidence": "High"
+            })
+            logging.info(f"Notify attack: {sig}")
         else:
             suppressed_alerts[sig] += 1
 
-        # ── 定期評価・サマリ ────────────────────
+        # ── 無条件のOpenCanary転送 ──────────────────
+        try:
+            traffic_engine = get_traffic_control_engine()
+            active_ips = set(traffic_engine.get_active_rules().keys())
+            already_active = src_ip in active_ips
+
+            redirected = traffic_engine.apply_dnat_redirect(src_ip, dport)
+            if redirected:
+                active_diversions[src_ip] = dport
+                if state_machine.current_state.name != "shield":
+                    state_machine.dispatch(Event(name="shield", severity=0))
+
+                if should_notify(key + ":action") and not already_active:
+                    dest_info = f"OpenCanary:{dport}" if dport else "OpenCanary"
+                    send_alert_to_mattermost("Suricata", {
+                        "timestamp": alert["timestamp"],
+                        "signature": "🛡️ OpenCanary転送を開始",
+                        "severity": 2,
+                        "src_ip": src_ip,
+                        "dest_ip": dest_info,
+                        "proto": alert["proto"],
+                        "details": "検知した通信をOpenCanaryへ即時転送しました（追加の遅延/帯域制御なし）",
+                        "confidence": "High"
+                    })
+
+                logging.info(f"[OpenCanary転送] {src_ip} -> OpenCanary" + (f":{dport}" if dport else ""))
+            else:
+                logging.error(f"DNAT redirect failed for {src_ip}")
+        except Exception as e:
+            logging.error(f"OpenCanary転送エラー: {e}")
+
+        # ── サマリとクリーンアップ ────────────────────
         now = time.time()
-        if now - last_evaluation_time >= evaluation_interval:
-            evaluate_threat_level()
-            last_evaluation_time = now
-            
+
         if now - last_summary_time >= summary_interval:
             send_summary()
             last_summary_time = now
 
-        # 定期クリーンアップ（10分毎）
-        global last_cleanup_time
         if now - last_cleanup_time >= 600:
             try:
                 engine = get_traffic_control_engine()
                 engine.cleanup_expired_rules(max_age_seconds=3600)
+                if not engine.get_active_rules() and state_machine.current_state.name != "portal":
+                    state_machine.dispatch(Event(name="portal", severity=0))
             except Exception:
                 pass
             last_cleanup_time = now
