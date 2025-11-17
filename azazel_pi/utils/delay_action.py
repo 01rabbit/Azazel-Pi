@@ -134,44 +134,66 @@ def _legacy_divert_to_opencanary(src_ip: str, dest_port: Optional[int] = None) -
     """
     logger.warning("⚠️ _legacy_divert_to_opencanary は非推奨です。統合システムの修復を推奨します。")
     
-    # OpenCanary IPを読み込み
     canary_ip = load_opencanary_ip()
-    
-    # nftablesテーブル/チェーンを確保
-    if not ensure_nft_table_and_chain():
-        return False
-    
-    try:
-        
-        # DNATルールを構築
-        if dest_port:
-            # 特定ポートのみ転送
-            rule_match = f"ip saddr {src_ip} tcp dport {dest_port}"
-            rule_action = f"dnat to {canary_ip}:{dest_port}"
-        else:
-            # 全ポート転送
-            rule_match = f"ip saddr {src_ip}"
-            rule_action = f"dnat to {canary_ip}"
-        
-        # nftables DNAT ルール追加
-        cmd = [
-            "nft", "add", "rule", "inet", "azazel", "prerouting",
-            rule_match, rule_action
-        ]
 
-        result = run_cmd(cmd, capture_output=True, text=True, timeout=15)
-
-        if result.returncode == 0:
-            logger.info(f"[Legacy] DNAT rule added: {src_ip} -> {canary_ip}" + 
-                       (f":{dest_port}" if dest_port else ""))
-            return True
-        else:
-            logger.error(f"nft rule add failed: {result.stderr}")
+    def _ensure_masquerade():
+        try:
+            check = run_cmd(
+                ["iptables", "-t", "nat", "-C", "POSTROUTING", "-d", canary_ip, "-j", "MASQUERADE"],
+                capture_output=True, text=True, timeout=5
+            )
+            if check.returncode == 0:
+                return True
+        except Exception:
+            pass
+        try:
+            res = run_cmd(
+                ["iptables", "-t", "nat", "-A", "POSTROUTING", "-d", canary_ip, "-j", "MASQUERADE"],
+                capture_output=True, text=True, timeout=10
+            )
+            return res.returncode == 0
+        except Exception as exc:
+            logger.error(f"[Legacy] MASQUERADE setup failed: {exc}")
             return False
 
-    except Exception as e:
-        # run_cmd may raise various exceptions; treat as failure
-        logger.error(f"nft command failed or timed out: {e}")
+    def _rule_spec():
+        spec = ["-s", src_ip]
+        if dest_port:
+            spec += ["-p", "tcp", "--dport", str(dest_port)]
+            dst = f"{canary_ip}:{dest_port}"
+        else:
+            dst = canary_ip
+        spec += ["-j", "DNAT", "--to-destination", dst]
+        return spec
+
+    if not _ensure_masquerade():
+        return False
+
+    spec = _rule_spec()
+    try:
+        check = run_cmd(
+            ["iptables", "-t", "nat", "-C", "PREROUTING", *spec],
+            capture_output=True, text=True, timeout=5
+        )
+        if check.returncode == 0:
+            logger.info(f"[Legacy] DNAT rule already present for {src_ip}")
+            return True
+    except Exception:
+        pass
+
+    try:
+        add = run_cmd(
+            ["iptables", "-t", "nat", "-I", "PREROUTING", "1", *spec],
+            capture_output=True, text=True, timeout=10
+        )
+        if add.returncode == 0:
+            logger.info(f"[Legacy] DNAT rule added via iptables: {src_ip} -> {canary_ip}" +
+                        (f":{dest_port}" if dest_port else ""))
+            return True
+        logger.error(f"[Legacy] iptables DNAT failed: {add.stderr or add.stdout}")
+        return False
+    except Exception as exc:
+        logger.error(f"[Legacy] iptables DNAT command failed: {exc}")
         return False
     
 
@@ -209,37 +231,22 @@ def _legacy_remove_divert_rule(src_ip: str, dest_port: Optional[int] = None) -> 
     logger.warning("⚠️ _legacy_remove_divert_rule は非推奨です。統合システムの修復を推奨します。")
     
     try:
-        # 該当するルールのハンドルを検索して削除
+        canary_ip = load_opencanary_ip()
+        spec = ["-s", src_ip]
         if dest_port:
-            search_pattern = f"ip saddr {src_ip} tcp dport {dest_port}"
+            spec += ["-p", "tcp", "--dport", str(dest_port)]
+            dst = f"{canary_ip}:{dest_port}"
         else:
-            search_pattern = f"ip saddr {src_ip}"
-
-        # ルール一覧取得
-        result = run_cmd(["nft", "-a", "list", "table", "inet", "azazel"], capture_output=True, text=True, timeout=10)
-
-        if result.returncode != 0:
-            logger.warning("Failed to list nft rules")
-            return False
-
-        # 該当ルールのハンドルを探す
-        for line in (result.stdout or "").split('\n'):
-            if search_pattern in line and "handle" in line:
-                # ハンドル番号を抽出
-                handle = line.split("handle")[-1].strip()
-                if handle.isdigit():
-                    # ルール削除
-                    delete_cmd = [
-                        "nft", "delete", "rule", "inet", "azazel", "prerouting", 
-                        "handle", handle
-                    ]
-                    delete_result = run_cmd(delete_cmd, capture_output=True, timeout=10)
-
-                    if delete_result.returncode == 0:
-                        logger.info(f"[Legacy] DNAT rule removed: {src_ip}")
-                        return True
-
-        logger.warning(f"No matching DNAT rule found for {src_ip}")
+            dst = canary_ip
+        spec += ["-j", "DNAT", "--to-destination", dst]
+        result = run_cmd(
+            ["iptables", "-t", "nat", "-D", "PREROUTING", *spec],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode == 0:
+            logger.info(f"[Legacy] DNAT rule removed: {src_ip}")
+            return True
+        logger.warning(f"[Legacy] Failed to remove iptables rule for {src_ip}: {result.stderr or result.stdout}")
         return False
 
     except Exception as e:
@@ -278,14 +285,13 @@ def _legacy_list_active_diversions() -> list:
     logger.warning("⚠️ _legacy_list_active_diversions は非推奨です。統合システムの修復を推奨します。")
     
     try:
-        result = run_cmd(["nft", "list", "table", "inet", "azazel"], capture_output=True, text=True, timeout=10)
-        
+        result = run_cmd(["iptables", "-t", "nat", "-S", "PREROUTING"], capture_output=True, text=True, timeout=10)
         if result.returncode != 0:
             return []
         
         diversions = []
-        for line in result.stdout.split('\n'):
-            if "dnat to" in line and "ip saddr" in line:
+        for line in (result.stdout or "").split('\n'):
+            if "--to-destination" in line and "-s" in line:
                 diversions.append(line.strip())
         
         return diversions

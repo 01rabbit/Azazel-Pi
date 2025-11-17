@@ -6,6 +6,7 @@ import math
 import threading
 import time
 from datetime import datetime, timezone
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
@@ -17,6 +18,7 @@ from azazel_pi.core.enforcer.traffic_control import get_traffic_control_engine
 from azazel_pi.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
 from azazel_pi.core.scorer import ScoreEvaluator
 from azazel_pi.core.state_machine import Event, StateMachine
+from azazel_pi.utils.delay_action import divert_to_opencanary
 
 try:
     from azazel_pi.core.notify import MattermostNotifier
@@ -83,10 +85,6 @@ class AzazelDaemon:
         Fall back to ScoreEvaluator if AI evaluation is not available or fails.
         """
         is_decay = event.name == "decay_tick"
-        if event.name == "trend_sample":
-            self._log_trend_snapshot()
-            return
-
         # Handle OpenCanary events specially: update per-IP canary timestamp and return
         if event.name == "canary":
             src = getattr(event, "src_ip", None)
@@ -158,27 +156,33 @@ class AzazelDaemon:
         self._append_decisions([entry])
 
         src_ip = getattr(event, "src_ip", None)
-        # AGGRESSIVE: Force shield (DNAT to OpenCanary) on ANY Suricata alert
-        # This ensures immediate honeypot redirection without waiting for score thresholds
+        # AGGRESSIVE: Force DNAT to OpenCanary on ANY Suricata alert, independent of TrafficControlEngine.
         if src_ip and not is_decay and event.name == "alert":
-            # For ANY Suricata alert, immediately apply shield (DNAT) to honeypot
+            # For brute-force SSH and similar probes we always divert to the
+            # honeypot's SSH port (22), regardless of the Suricata payload's
+            # recorded destination port (which may be ephemeral depending on
+            # capture direction or ruleset quirks).
+            dest_port = 22
             try:
                 st = self._ip_states.setdefault(src_ip, {})
-                st["score"] = 100  # Mark as high threat for logging
-                if self.traffic_engine:
-                    self._ensure_diversion(src_ip, event)
-                    # Get the dest_port from alert if available, for targeted DNAT
-                    dest_port = getattr(event, "dest_port", None)
-                    self.traffic_engine.apply_dnat_redirect(src_ip, dest_port=dest_port)
-                    self.traffic_engine.apply_combined_action(src_ip, "shield")
-                    self._ip_control_modes[src_ip] = "shield"
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.info(f"[AGGRESSIVE_SHIELD] Suricata alert → Immediate DNAT redirect for {src_ip} (port {dest_port})")
+                st["score"] = 100
+                ok = divert_to_opencanary(src_ip, dest_port)
+                if ok:
+                    logging.getLogger(__name__).info(
+                        "[AGGRESSIVE_SHIELD] Suricata alert → divert_to_opencanary applied for %s (port %s)",
+                        src_ip,
+                        dest_port,
+                    )
+                else:
+                    logging.getLogger(__name__).warning(
+                        "[AGGRESSIVE_SHIELD] divert_to_opencanary returned False for %s (port %s)",
+                        src_ip,
+                        dest_port,
+                    )
             except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.warning(f"Failed to apply aggressive shield for {src_ip}: {e}")
+                logging.getLogger(__name__).warning(
+                    "Failed to apply aggressive divert_to_opencanary for %s: %s", src_ip, e
+                )
         
         # Also apply traditional score-based shield for high-scoring events
         try:
@@ -377,36 +381,6 @@ class AzazelDaemon:
             pass
         self._next_cleanup_at = now + self._traffic_cleanup_interval
 
-    def _log_trend_snapshot(self) -> None:
-        """Persist a snapshot of the current mode/score for Trend displays."""
-        metrics = self.machine.get_current_score()
-        try:
-            average = float(metrics.get("ewma", 0.0))
-        except Exception:
-            average = 0.0
-        current_mode = self.machine.current_state.name
-        actions = self.machine.get_actions_preset()
-        snapshot = {
-            "mode": current_mode,
-            "average": average,
-            "timestamp": time.time(),
-        }
-        self._last_mode_snapshot = dict(snapshot)
-        entry = {
-            "event": "trend_sample",
-            "score": average,
-            "classification": "trend",
-            "average": average,
-            "desired_mode": current_mode,
-            "target_mode": current_mode,
-            "mode": current_mode,
-            "actions": actions,
-            "src_ip": None,
-            "mode_snapshot": dict(snapshot),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-        self._append_decisions([entry])
-
     def _detect_opencanary_endpoints(self) -> List[Dict[str, Any]]:
         """Infer OpenCanary exposed ports/protocols from compose/config."""
         endpoints: List[Dict[str, Any]] = []
@@ -536,36 +510,6 @@ class AzazelDaemon:
                 self._decay_stop.set()
             if getattr(self, '_decay_thread', None):
                 self._decay_thread.join(timeout=2.0)
-        except Exception:
-            pass
-
-    def start_trend_sampler(self, interval: float = 10.0) -> None:
-        """Start a background thread emitting periodic trend samples."""
-        if interval <= 0:
-            return
-        if getattr(self, "_trend_thread", None):
-            if getattr(self._trend_thread, "is_alive", lambda: False)():
-                return
-        self._trend_stop = threading.Event()
-
-        def _worker():
-            while not (self._trend_stop and self._trend_stop.is_set()):
-                try:
-                    time.sleep(interval)
-                    self.process_event(Event(name="trend_sample", severity=0))
-                except Exception:
-                    time.sleep(interval)
-
-        t = threading.Thread(target=_worker, daemon=True, name="azazel-trend-sampler")
-        self._trend_thread = t
-        t.start()
-
-    def stop_trend_sampler(self) -> None:
-        try:
-            if getattr(self, "_trend_stop", None):
-                self._trend_stop.set()
-            if getattr(self, "_trend_thread", None):
-                self._trend_thread.join(timeout=2.0)
         except Exception:
             pass
 

@@ -4,6 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
+User=root
+Group=root
 # Try the common install locations: prefer /usr/local/bin (tarball) then /usr/bin (apt)
 ExecStart=/bin/sh -c '/usr/local/bin/vector --config /etc/azazel/vector/vector.toml || /usr/bin/vector --config /etc/azazel/vector/vector.toml'
 Restart=on-failure

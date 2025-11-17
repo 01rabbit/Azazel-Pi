@@ -3,4 +3,6 @@ Description=Detect MacBook and (re)start Vector sink
 
 [Service]
 Type=oneshot
+User=root
+Group=root
 ExecStart=/opt/azazel/scripts/pc_monitor.sh

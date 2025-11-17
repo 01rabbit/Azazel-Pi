@@ -20,6 +20,7 @@ from pathlib import Path
 # lazy resolver for AI evaluator to avoid importing heavy deps at module import time
 get_ai_evaluator = None
 from . import notify_config
+from azazel_pi.utils.mattermost import send_alert_to_mattermost
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,41 @@ def _worker() -> None:
                         time.sleep(wait)
                 else:
                     logger.error("Giving up persisting deep AI result after retries")
+
+            # Optionally notify Mattermost about the deep AI (Ollama) result
+            try:
+                from datetime import datetime
+
+                ts = alert.get("timestamp") or datetime.now().isoformat()
+                risk = int(result.get("risk", 2) or 2)
+                # Map 1-5 risk to existing 1-4 severity scale (critical..low)
+                if risk >= 5:
+                    severity = 1
+                elif risk >= 4:
+                    severity = 2
+                elif risk >= 3:
+                    severity = 3
+                else:
+                    severity = 4
+
+                details = result.get("reason") or ""
+                category = result.get("category") or "unknown"
+                model = result.get("model") or "ollama"
+                confidence = result.get("confidence", "AI")
+
+                mm_payload = {
+                    "timestamp": ts,
+                    "signature": f"🤖 Deep AI評価結果 ({category})",
+                    "severity": severity,
+                    "src_ip": alert.get("src_ip", "-"),
+                    "dest_ip": alert.get("dest_ip", "-"),
+                    "proto": alert.get("proto", "-"),
+                    "details": f"model={model}, risk={risk}, reason={details}",
+                    "confidence": confidence,
+                }
+                send_alert_to_mattermost("AI", mm_payload)
+            except Exception:
+                logger.exception("Failed sending deep AI result to Mattermost")
 
         except Exception:
             logger.exception("Async AI worker encountered an error during evaluation")

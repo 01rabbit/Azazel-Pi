@@ -8,7 +8,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Iterable, Optional
 from datetime import datetime
@@ -33,6 +35,57 @@ from azazel_pi.core.ingest.canary_tail import CanaryTail
 from azazel_pi.core import notify_config as notice
 from azazel_pi.core.display.status_collector import StatusCollector
 from azazel_pi.utils.wan_state import get_active_wan_interface
+
+
+_PRIV_ESC_ENV = "AZAZEL_PRIV_ESCALATED"
+
+
+def _has_required_net_caps() -> bool:
+    """Return True if the current process already has NET_ADMIN/NET_RAW privileges."""
+    try:
+        if os.geteuid() == 0:
+            return True
+    except AttributeError:
+        return False
+
+    try:
+        proc = subprocess.run(
+            ["capsh", "--print"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        summary = f"{proc.stdout or ''}{proc.stderr or ''}"
+        return "cap_net_admin" in summary and "cap_net_raw" in summary
+    except FileNotFoundError:
+        # capsh not installed → cannot verify, assume insufficient
+        return False
+    except Exception:
+        return False
+
+
+def _ensure_network_privileges(argv: Iterable[str]) -> None:
+    """Re-exec the CLI with sudo when DNAT/tc capabilities are missing."""
+    if _has_required_net_caps():
+        return
+
+    if os.environ.get(_PRIV_ESC_ENV) == "1":
+        raise SystemExit(
+            "Azazel requires CAP_NET_ADMIN/CAP_NET_RAW to control iptables/tc. "
+            "Re-run with sudo or grant those capabilities."
+        )
+
+    sudo_path = shutil.which("sudo")
+    if sudo_path:
+        env = os.environ.copy()
+        env[_PRIV_ESC_ENV] = "1"
+        cmd = [sudo_path, "-E", sys.executable, "-m", "azctl.cli", *argv]
+        os.execve(sudo_path, cmd, env)
+
+    raise SystemExit(
+        "Unable to acquire required network capabilities automatically. "
+        "Please run this command with sudo or grant cap_net_admin/cap_net_raw."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -501,9 +554,6 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
                 out.append(blocks[idx])
             return "".join(out)
 
-        spark = make_sparkline(status.security.score_history[-12:]) if getattr(status.security, "score_history", None) else ""
-        if spark:
-            t_left.add_row("Trend", spark)
         t_left.add_row("Alerts(recent)", f"{status.security.total_alerts} ({status.security.recent_alerts})")
         # Last decision summary
         if getattr(status.security, "last_decision", None):
@@ -607,7 +657,8 @@ def main(argv: Iterable[str] | None = None) -> int:
     # If no subcommand was provided, fall back to legacy behavior and expect --config
     parser.add_argument("--config", help="[LEGACY] Path to configuration YAML (no subcommand)")
 
-    args = parser.parse_args(list(argv) if argv is not None else None)
+    argv_list = list(argv) if argv is not None else sys.argv[1:]
+    args = parser.parse_args(list(argv_list))
 
     def safe_path(path_str: Optional[str], fallback: Optional[str] = None) -> Optional[Path]:
         """Return a Path for path_str if provided, otherwise a Path for fallback or None.
@@ -647,6 +698,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             wan_if=wan_if,
         )
     if args.command == "serve":
+        _ensure_network_privileges(argv_list)
         wan_if = getattr(args, "wan_if", None) or get_active_wan_interface()
         return cmd_serve(
             config=getattr(args, "config", None),
@@ -789,15 +841,6 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
     try:
         # start_decay_writer is best-effort (may not exist on older daemons)
         daemon.start_decay_writer(decay_tau=decay_tau, check_interval=check_interval)
-    except Exception:
-        pass
-
-    try:
-        trend_interval = float(os.getenv("AZAZEL_TREND_SAMPLE_INTERVAL", "10"))
-    except Exception:
-        trend_interval = 10.0
-    try:
-        daemon.start_trend_sampler(interval=trend_interval)
     except Exception:
         pass
 

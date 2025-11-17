@@ -478,6 +478,42 @@ def main():
 
         # ── 攻撃検知時の処理 ──────────────────
         if trigger:
+            # AI評価結果（Mock-LLM/ハイブリッド）の通知
+            try:
+                risk = int(ai_detail.get("risk", 2) or 2) if isinstance(ai_detail, dict) else 2
+                if risk >= 3 and should_notify(key + ":ai"):
+                    category = (ai_detail.get("category") or "unknown") if isinstance(ai_detail, dict) else "unknown"
+                    method = (
+                        ai_detail.get("evaluation_method")
+                        or ai_detail.get("model")
+                        or "mock_llm"
+                    ) if isinstance(ai_detail, dict) else "mock_llm"
+                    reason = (ai_detail.get("reason") or "") if isinstance(ai_detail, dict) else ""
+                    confidence = ai_detail.get("confidence", "AI") if isinstance(ai_detail, dict) else "AI"
+
+                    # risk 1-5 を Suricataのseverity 1-4 にマッピング
+                    if risk >= 5:
+                        ai_severity = 1
+                    elif risk >= 4:
+                        ai_severity = 2
+                    elif risk >= 3:
+                        ai_severity = 3
+                    else:
+                        ai_severity = 4
+
+                    send_alert_to_mattermost("AI", {
+                        "timestamp": alert["timestamp"],
+                        "signature": f"🤖 AI評価結果 ({category})",
+                        "severity": ai_severity,
+                        "src_ip": alert["src_ip"],
+                        "dest_ip": alert["dest_ip"],
+                        "proto": alert["proto"],
+                        "details": f"method={method}, risk={risk}, reason={reason}",
+                        "confidence": confidence,
+                    })
+            except Exception:
+                logging.exception("AI評価結果のMattermost通知に失敗しました")
+
             # 通知はクールダウン制御、制御発動はクールダウン非依存
             if should_notify(key):
                 send_alert_to_mattermost("Suricata",{

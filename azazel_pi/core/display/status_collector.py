@@ -291,9 +291,7 @@ class StatusCollector:
                         continue
                     # Parse last up to 24 JSON lines and extract the most
                     # representative numeric field (prefer 'average', then
-                    # 'score', then 'severity'). This builds a sparkline
-                    # even when the StateMachine hasn't produced a local
-                    # _score_window yet.
+                    # 'score', then 'severity').
                     recent = []
                     for ln in lines[-24:]:
                         try:

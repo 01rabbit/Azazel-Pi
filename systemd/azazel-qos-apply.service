@@ -4,6 +4,10 @@ After=azazel-traffic-init.service
 
 [Service]
 Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/azazel
+Environment=CFG=/opt/azazel/configs/network/azazel.yaml
 Environment=MODE=verify
 ExecStart=/usr/bin/env bash /opt/azazel/bin/azazel-qos-apply.sh /opt/azazel/configs/network/privileged.csv
 RemainAfterExit=yes

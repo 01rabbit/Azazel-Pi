@@ -5,8 +5,8 @@ Wants=docker.service
 
 [Service]
 Type=simple
-User=mattermost
-Group=mattermost
+User=root
+Group=root
 WorkingDirectory=/opt/mattermost
 ExecStart=/opt/mattermost/bin/mattermost
 Restart=always

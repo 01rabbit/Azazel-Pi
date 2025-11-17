@@ -234,55 +234,6 @@ class EPaperRenderer:
         draw.text((score_x, y + 2), score_text, font=header_font, fill=0)
         y += 22
 
-        # Draw a tiny sparkline for recent scores (if available).
-        # Use font-independent rectangle bars so the E-Paper hardware
-        # doesn't depend on availability of block glyphs. This method
-        # renders reliably on real devices.
-        try:
-            sh = getattr(status.security, "score_history", []) or []
-            if sh:
-                vals = list(sh[-12:])
-                n = len(vals)
-                # Sparkline drawing area (left margin 4, right margin 4)
-                area_x = 4
-                area_w = max(8, self.width - 8)
-                area_y = y
-                area_h = 10
-
-                # Determine mapping: if constant values, map absolute 0-100
-                # so a constant high score appears high; otherwise normalize
-                mn = min(vals)
-                mx = max(vals)
-
-                bars_total_w = area_w
-                bar_w = max(1, bars_total_w // n)
-                gap = max(1, bar_w // 6)
-
-                for i, v in enumerate(vals):
-                    try:
-                        fv = float(v)
-                    except Exception:
-                        fv = 0.0
-
-                    if mx - mn < 1e-6:
-                        # absolute mapping 0..100
-                        frac = max(0.0, min(1.0, fv / 100.0))
-                    else:
-                        frac = (fv - mn) / (mx - mn)
-
-                    bar_h = int(frac * area_h)
-                    x0 = area_x + i * bar_w + gap // 2
-                    x1 = x0 + bar_w - gap
-                    y0 = area_y + (area_h - bar_h)
-                    y1 = area_y + area_h
-                    # Draw filled rectangle for the bar (black)
-                    draw.rectangle([(x0, y0), (x1, y1)], fill=0)
-
-                # Move cursor down after drawing sparkline area
-                y += area_h + 4
-        except Exception:
-            pass
-
         # Separator line
         draw.line([(0, y), (self.width, y)], fill=0, width=1)
         y += 4

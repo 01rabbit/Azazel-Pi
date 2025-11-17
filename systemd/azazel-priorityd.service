@@ -3,6 +3,8 @@ Description=Azazel Priority Daemon
 After=azazel-traffic-init.service
 
 [Service]
+User=root
+Group=root
 ExecStart=/usr/bin/python3 /opt/azazel/services/azazel_priorityd.py
 Restart=always
 RestartSec=2

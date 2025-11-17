@@ -581,6 +581,47 @@ class TrafficControlEngine:
         except Exception as e:
             logger.error(f"Failed removing iptables DROP rule for {target_ip}: {e}")
             return False
+
+    def _ensure_canary_masquerade(self, canary_ip: str) -> bool:
+        """
+        Ensure a MASQUERADE rule exists for traffic destined to the OpenCanary IP.
+
+        This mirrors the legacy `_legacy_divert_to_opencanary` behaviour so that
+        responses from the honeypot are correctly SNATed back through the Azazel
+        host when traffic is DNAT-ed from external clients.
+        """
+        rule_spec: List[str] = ["-d", canary_ip, "-j", "MASQUERADE"]
+        try:
+            check = self._run_cmd(
+                ["iptables", "-t", "nat", "-C", "POSTROUTING", *rule_spec],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if check.returncode == 0:
+                return True
+        except Exception:
+            # If the check fails for any reason, fall through and attempt to add.
+            pass
+
+        try:
+            res = self._run_cmd(
+                ["iptables", "-t", "nat", "-A", "POSTROUTING", *rule_spec],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if res.returncode != 0:
+                logger.error(
+                    f"iptables MASQUERADE add failed for {canary_ip}: "
+                    f"{self._safe_stderr(res)} {self._safe_stdout(res)}"
+                )
+                return False
+            logger.info(f"MASQUERADE rule ensured for OpenCanary {canary_ip}")
+            return True
+        except Exception as exc:
+            logger.error(f"MASQUERADE setup failed for {canary_ip}: {exc}")
+            return False
     
     def _is_ipv6(self, ip: str) -> bool:
         """Simple IPv6 detection (presence of ':' without IPv4 dot notation)."""
@@ -594,6 +635,15 @@ class TrafficControlEngine:
                 logger.info(f"DNAT already applied to {target_ip}, skip")
                 return True
             canary_ip = load_opencanary_ip()
+
+            # Ensure return path SNAT so that OpenCanary responses are routable
+            # back to the original source via this host.
+            try:
+                self._ensure_canary_masquerade(canary_ip)
+            except Exception:
+                # Failure to ensure MASQUERADE should not completely block DNAT;
+                # log is emitted inside helper, so we continue best-effort.
+                pass
 
             if self._is_ipv6(target_ip):
                 logger.info(f"Skipping DNAT redirect for IPv6 address {target_ip}")

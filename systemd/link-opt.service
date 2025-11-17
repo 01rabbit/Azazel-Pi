@@ -4,6 +4,8 @@ After=network.target
 
 [Service]
 Type=oneshot
+User=root
+Group=root
 ExecStart=/home/azazel/Azazel-Pi/scripts/link_opt_to_repo.sh
 RemainAfterExit=yes
 

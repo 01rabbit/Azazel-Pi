@@ -5,6 +5,8 @@ Wants=azazel-wan-manager.service
 
 [Service]
 Type=simple
+User=root
+Group=root
 WorkingDirectory=/home/azazel/Azazel-Pi
 Environment=PYTHONPATH=/home/azazel/Azazel-Pi
 ExecStart=/usr/bin/env python3 -m azazel_pi.core.network.suricata_wrapper

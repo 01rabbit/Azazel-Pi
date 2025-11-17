@@ -7,6 +7,8 @@ Requires=suricata.service
 
 [Service]
 Type=simple
+User=root
+Group=root
 WorkingDirectory=/home/azazel/Azazel-Pi
 Environment=PYTHONPATH=/home/azazel/Azazel-Pi
 
@@ -22,6 +24,9 @@ ExecStart=/usr/bin/env python3 -u -m azctl.cli serve --config /etc/azazel/azazel
 # the security implications: consider using a restricted capability drop or
 # an additional wrapper if you want to limit privileges later.
 # (User/Group intentionally omitted to run as root)
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE CAP_SYS_ADMIN
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+NoNewPrivileges=no
 Restart=on-failure
 RestartSec=5
 KillMode=mixed
