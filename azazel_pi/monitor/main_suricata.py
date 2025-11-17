@@ -49,17 +49,12 @@ _deny = _soc.get("denied_categories")
 DENYLIST_IPS = set(_soc.get("denylist_ips", []))
 CRITICAL_SIGNATURES = _soc.get("critical_signatures", [])
 
-# allow/deny は正規化（lower/underscore→space）。allowがNoneなら全許可（denyのみ適用）
+# allow/deny は正規化（lower/underscore→space）。v1.0.0同様、検知したものは全て転送し、denyのみに従う
 def _norm_cat(x: str) -> str:
     return x.replace("_", " ").lower()
 
 ALLOWED_SIG_CATEGORIES = None if not _allow else { _norm_cat(c) for c in _allow }
-DENIED_SIG_CATEGORIES = set()
-if _deny:
-    DENIED_SIG_CATEGORIES = { _norm_cat(c) for c in _deny }
-if ALLOWED_SIG_CATEGORIES is None:
-    # 既定は既存リストを許可（後方互換）
-    ALLOWED_SIG_CATEGORIES = { _norm_cat(c) for c in FILTER_SIG_CATEGORY }
+DENIED_SIG_CATEGORIES = { _norm_cat(c) for c in _deny } if _deny else set()
 
 cooldown_seconds   = 60          # 同一シグネチャ抑止時間
 summary_interval   = 60          # サマリ送信間隔
@@ -176,10 +171,8 @@ def parse_alert(line: str):
         raw_cat    = signature.split(" ", 2)[1] if signature.startswith("ET ") else None
         category_norm = raw_cat.replace("_", " ").lower() if raw_cat else None
 
-        # deny優先→allow（allow不在時は後方互換の既定を使用）
+        # v1.0.0相当の挙動: denyのみ尊重し、それ以外は全て通す
         if category_norm and category_norm in DENIED_SIG_CATEGORIES:
-            return None
-        if category_norm and (ALLOWED_SIG_CATEGORIES and category_norm not in ALLOWED_SIG_CATEGORIES):
             return None
         # 上記を通過したら通す
         return {
@@ -339,6 +332,16 @@ def _run_ai_analysis_and_notify(alert: dict) -> None:
             method = analysis.get("evaluation_method", "offline_ai")
         except Exception as e2:
             logging.error(f"AI分析すら実行できませんでした: {e2}")
+            try:
+                send_alert_to_mattermost("Suricata", {
+                    **alert,
+                    "signature": "🔎 AI分析に失敗",
+                    "severity": 3,
+                    "details": f"AI analysis failed: {e2}",
+                    "confidence": "Info",
+                })
+            except Exception:
+                logging.exception("AI分析失敗の通知にも失敗しました")
             return
 
     details_parts = [

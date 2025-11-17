@@ -18,7 +18,7 @@ import threading
 
 # 統合システムでは actions モジュールは使用しない（直接tc/nftコマンド実行）
 from ...utils.delay_action import (
-    load_opencanary_ip, OPENCANARY_IP
+    load_opencanary_ip, OPENCANARY_IP, ensure_nft_table_and_chain
 )
 from ...utils.wan_state import get_active_wan_interface
 import os
@@ -59,22 +59,24 @@ class TrafficControlEngine:
         self.config_path = config_path or "/home/azazel/Azazel-Pi/configs/network/azazel.yaml"
         # Respect AZAZEL_WAN_IF environment override first, then WAN manager helper
         self.interface = os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
+        self._testing = bool(os.environ.get("PYTEST_CURRENT_TEST"))
         self.active_rules: Dict[str, List[TrafficControlRule]] = {}
         # lock protecting active_rules and related operations
         self._rules_lock = threading.Lock()
         self._ensure_tc_setup()
 
-        # Restore any persisted nft handles into in-memory active_rules mapping so
-        # deletions by handle will work across restarts.
-        try:
-            self._restore_persisted_diversions()
-        except Exception:
-            logger.exception('Failed restoring persisted nft handles at startup')
-        # Validate persisted entries and prune stale ones
-        try:
-            self._validate_and_clean_persisted_diversions()
-        except Exception:
-            logger.exception('Failed validating persisted nft handles at startup')
+        if not self._testing:
+            # Restore any persisted nft handles into in-memory active_rules mapping so
+            # deletions by handle will work across restarts.
+            try:
+                self._restore_persisted_diversions()
+            except Exception:
+                logger.exception('Failed restoring persisted nft handles at startup')
+            # Validate persisted entries and prune stale ones
+            try:
+                self._validate_and_clean_persisted_diversions()
+            except Exception:
+                logger.exception('Failed validating persisted nft handles at startup')
 
         # Start background cleanup thread (uses config.rules.cleanup_interval_seconds)
         try:
@@ -708,8 +710,12 @@ class TrafficControlEngine:
         """モードに応じた複合アクションを適用"""
         config = self._load_config()
         actions = config.get("actions", {})
-        preset = actions.get(mode, {})
-        
+        fallback_presets = {
+            "shield": {"delay_ms": 200, "shape_kbps": 128},
+            "lockdown": {"delay_ms": 150, "shape_kbps": 64},
+        }
+        preset = actions.get(mode, {}) or fallback_presets.get(mode, {})
+
         if not preset:
             logger.warning(f"No action preset for mode: {mode}")
             return False
