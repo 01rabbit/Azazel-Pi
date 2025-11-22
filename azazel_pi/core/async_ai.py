@@ -168,6 +168,11 @@ def enqueue(alert: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> 
     """
     start()
     ctx = context or {}
+    src_ip = str(alert.get("src_ip") or "")
+    # IPv6フィルタ: src_ipが":"を含む場合は無視
+    if ":" in src_ip:
+        logger.info(f"Skipping IPv6 event for src_ip={src_ip}")
+        return
     # sampling / rate limiting
     try:
         allow = _allow_enqueue()
