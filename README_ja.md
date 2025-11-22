@@ -2,7 +2,7 @@
 
 [English](README.md) | 日本語
 
-![Azazel-Pi_image](images/azazel-pi-prototype.jpg)  
+![Azazel-Pi_image](images/Azazel-Pi_logo.png)  
 ![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
 ![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
 ![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
@@ -56,7 +56,7 @@
 #### リアルタイム脅威検知・対応
 - **Suricata IDS/IPS**: 侵入検知・防止システム
 - **OpenCanary**: 攻撃者誤誘導のためのハニーポットサービス
-- **動的トラフィック制御**: 戦術的遅延のための `tc` と `iptables/nftables`
+- **動的トラフィック制御**: 戦術的遅延のための `tc` と `iptables`
 
 #### 防御モード
 - **Portalモード**（緑）: 最小限の制限での通常運用
@@ -73,7 +73,7 @@
 | コンポーネント | 目的 |
 |---------------|------|
 | `azazel_pi/core/state_machine.py` | 防御姿勢間の遷移を管理 |
-| `azazel_pi/core/actions/` | tc/nftables操作を冪等プランとしてモデル化 |
+| `azazel_pi/core/actions/` | tc/iptables操作をべき等プランとしてモデル化 |
 | `azazel_pi/core/ingest/` | Suricata EVEログとOpenCanaryイベントを解析 |
 | `azazel_pi/core/display/` | E-Paperステータス可視化とレンダリング |
 | `azctl/` | コマンドラインインターフェースとデーモン管理 |
@@ -116,7 +116,7 @@ Raspberry Piに最適化された軽量設定により、災害復旧、フィ�
 - **IDS/IPS**: カスタムルールセット付きSuricata
 - **ハニーポット**: サービス欺瞞のためのOpenCanary
 - **ログ処理**: 集約ログ収集のためのVector
-- **トラフィック制御**: `tc`（Traffic Control）+ `iptables/nftables`
+- **トラフィック制御**: `tc`（Traffic Control）+ `iptables`
 - **アラート**: Mattermost統合
 - **ディスプレイ**: Pythonレンダリング付きWaveshare E-Paper
 - **言語**: asyncioとrichライブラリ付きPython 3.8+

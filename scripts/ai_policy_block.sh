@@ -25,24 +25,26 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-log "Blocking traffic from $SRC_IP for ${DURATION}s using nftables"
+log "Blocking traffic from $SRC_IP for ${DURATION}s using iptables"
 
-# Create table and chain if not exists
-nft add table inet "$TABLE_NAME" 2>/dev/null || true
-nft add chain inet "$TABLE_NAME" input '{ type filter hook input priority 0; }' 2>/dev/null || true
+# Create custom chain if not exists
+iptables -N "$TABLE_NAME" 2>/dev/null || true
+
+# Link custom chain to INPUT if not already linked
+iptables -C INPUT -j "$TABLE_NAME" 2>/dev/null || iptables -I INPUT -j "$TABLE_NAME"
 
 # Remove existing rule for this IP (if any)
-nft delete rule inet "$TABLE_NAME" input ip saddr "$SRC_IP" drop 2>/dev/null || true
+iptables -D "$TABLE_NAME" -s "$SRC_IP" -j DROP 2>/dev/null || true
 
 # Add blocking rule
-if nft add rule inet "$TABLE_NAME" input ip saddr "$SRC_IP" drop; then
-    log "SUCCESS: Blocked $SRC_IP via nftables"
+if iptables -A "$TABLE_NAME" -s "$SRC_IP" -j DROP; then
+    log "SUCCESS: Blocked $SRC_IP via iptables"
     
     # Optional: Set cleanup timer
     if [[ "$DURATION" -gt 0 ]]; then
         (
             sleep "$DURATION"
-            nft delete rule inet "$TABLE_NAME" input ip saddr "$SRC_IP" drop 2>/dev/null || true
+            iptables -D "$TABLE_NAME" -s "$SRC_IP" -j DROP 2>/dev/null || true
             log "Cleanup: Removed block rule for $SRC_IP"
         ) &
     fi

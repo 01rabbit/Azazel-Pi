@@ -25,15 +25,19 @@ soc:
     - "ET MALWARE"
     - "ET TROJAN"
     - "Critical Infrastructure Attack"
+canary:
+  # OpenCanary honeypot IP address (direct container IP)
+  ip: "172.16.10.3"
+  port: 2222  # OpenCanary SSH port
 actions:
   normal:   { delay_ms: 0,   shape_kbps: null, block: false }
-  portal:   { delay_ms: 100, shape_kbps: null, block: false }
-  shield:   { delay_ms: 200, shape_kbps: 128,  block: false }
-  lockdown: { delay_ms: 300, shape_kbps: 64,   block: true  }
+  portal:   { delay_ms: 0,   shape_kbps: null, block: false }
+  shield:   { delay_ms: 100, shape_kbps: 128,  block: false }
+  lockdown: { delay_ms: 150, shape_kbps: 64,   block: true  }
 thresholds:
   t0_normal: 20
-  t1_shield: 50
-  t2_lockdown: 80
+  t1_shield: 30
+  t2_lockdown: 70
   # Shortened unlock windows for verification testing. Revert after test.
   unlock_wait_secs: { shield: 30, portal: 90 }
   user_mode_timeout_mins: 3.0
@@ -56,7 +60,7 @@ classes:
   standard:    { rate_kbps: 20000, ceil_kbps: 40000 }
   best_effort: { rate_kbps:  5000, ceil_kbps: 10000 }
   restricted:  { rate_kbps:  1000, ceil_kbps:  2000 }
-thresholds:
+priority_thresholds:
   ge_90: premium
   ge_60: standard
   ge_30: best_effort

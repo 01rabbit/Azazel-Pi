@@ -20,10 +20,6 @@ from pathlib import Path
 # lazy resolver for AI evaluator to avoid importing heavy deps at module import time
 get_ai_evaluator = None
 from . import notify_config
-try:
-    from .notify import MattermostNotifier
-except Exception:
-    MattermostNotifier = None
 
 logger = logging.getLogger(__name__)
 
@@ -147,41 +143,6 @@ def _worker() -> None:
                 else:
                     logger.error("Giving up persisting deep AI result after retries")
 
-            # Send a follow-up Mattermost notification if possible (with retries)
-            if MattermostNotifier is not None:
-                notifier = None
-                try:
-                    notifier = MattermostNotifier()
-                except Exception:
-                    logger.exception("Failed to construct MattermostNotifier")
-                if notifier is not None:
-                    text = (
-                        f"🔎 Deep AI analysis result for {alert.get('src_ip')} - "
-                        f"risk={result.get('risk')} category={result.get('category')}\n{result.get('reason')}"
-                    )
-                    payload = {
-                        "timestamp": alert.get("timestamp"),
-                        "signature": "🔎 Deep AI Analysis",
-                        "severity": 3,
-                        "src_ip": alert.get("src_ip"),
-                        "details": text,
-                    }
-                    sig_short = (str(alert.get('signature') or '') )[:50]
-                    key = f"deep:{str(alert.get('src_ip') or '')}:{sig_short}"
-                    max_notify_retries = int(notify_config.get("notify", {}).get("notify_retries", 2) or 2)
-                    ntry = 0
-                    while ntry <= max_notify_retries:
-                        try:
-                            notifier.notify(payload, key=key)
-                            break
-                        except Exception:
-                            ntry += 1
-                            wait = 0.5 * (2 ** (ntry - 1))
-                            logger.exception(f"Deep notify attempt {ntry} failed, retrying in {wait}s")
-                            time.sleep(wait)
-                    else:
-                        logger.error("Giving up deep notify after retries")
-
         except Exception:
             logger.exception("Async AI worker encountered an error during evaluation")
         finally:
@@ -207,6 +168,11 @@ def enqueue(alert: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> 
     """
     start()
     ctx = context or {}
+    src_ip = str(alert.get("src_ip") or "")
+    # IPv6フィルタ: src_ipが":"を含む場合は無視
+    if ":" in src_ip:
+        logger.info(f"Skipping IPv6 event for src_ip={src_ip}")
+        return
     # sampling / rate limiting
     try:
         allow = _allow_enqueue()

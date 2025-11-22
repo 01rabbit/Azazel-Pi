@@ -34,8 +34,8 @@ _DEFAULTS: Dict[str, Any] = {
         "summary_interval_mins": 5,
     },
     "opencanary": {
-        "ip": "172.16.10.10",
-        "ports": [22, 80, 5432],
+        "ip": "172.16.10.3",
+        "ports": [2222, 8081, 5432],
     },
     "network": {
         "interface": "wlan1",
@@ -49,8 +49,22 @@ _DEFAULTS: Dict[str, Any] = {
 
 
 def _cfg_path() -> Path:
-    # configs/notify.yaml at repository root (relative to this file)
-    return Path(__file__).resolve().parents[1] / "configs" / "notify.yaml"
+    """Locate notify.yaml (repo root, CWD, or /etc/azazel)."""
+    here = Path(__file__).resolve()
+    candidates = [
+        here.parents[2] / "configs" / "notify.yaml",  # repo root when running from source
+        here.parents[1] / "configs" / "notify.yaml",  # installed package layout
+        Path.cwd() / "configs" / "notify.yaml",
+        Path("/etc/azazel/notify.yaml"),
+    ]
+    for candidate in candidates:
+        try:
+            if candidate.exists():
+                return candidate
+        except Exception:
+            continue
+    # Fall back to original repo-relative path even if it doesn't exist
+    return candidates[0]
 
 
 def _load() -> Dict[str, Any]:

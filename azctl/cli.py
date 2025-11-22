@@ -792,6 +792,15 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
     except Exception:
         pass
 
+    try:
+        trend_interval = float(os.getenv("AZAZEL_TREND_SAMPLE_INTERVAL", "10"))
+    except Exception:
+        trend_interval = 10.0
+    try:
+        daemon.start_trend_sampler(interval=trend_interval)
+    except Exception:
+        pass
+
     # Write an initial entry describing current (default) mode so status shows something
     try:
         daemon.process_event(Event(name="startup", severity=0))
@@ -805,6 +814,17 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
 
     def suricata_reader(path: str):
         tail = SuricataTail(Path(path))
+        for ev in tail.stream():
+            if stop.is_set():
+                break
+            q.put(ev)
+
+    def canary_reader(path: str):
+        try:
+            from azazel_pi.core.ingest.canary_tail import CanaryTail
+        except Exception:
+            return
+        tail = CanaryTail(Path(path))
         for ev in tail.stream():
             if stop.is_set():
                 break
@@ -828,9 +848,17 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
     signal.signal(signal.SIGTERM, sigint_handler)
 
     t_reader = threading.Thread(target=suricata_reader, args=(suricata_eve,), daemon=True)
+    # Start canary reader if configured
+    try:
+        canary_path = notice.OPENCANARY_LOG_PATH
+        t_canary = threading.Thread(target=canary_reader, args=(canary_path,), daemon=True)
+    except Exception:
+        t_canary = None
     t_consumer = threading.Thread(target=consumer, daemon=True)
 
     t_reader.start()
+    if t_canary:
+        t_canary.start()
     t_consumer.start()
 
     try:

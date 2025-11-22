@@ -34,7 +34,7 @@ def pri2cls(p: int, thr: Dict) -> str:
 
 def compute_assignments(scores: Dict[str, float], cfg: Dict) -> Dict[str, str]:
     bias = cfg.get("dynamic_bias", {})
-    thr = cfg.get("thresholds", {})
+    thr = cfg.get("priority_thresholds") or cfg.get("thresholds", {})
     factor = bias.get("factor", 0.5)
     max_delta = bias.get("max_delta", 80)
     min_priority = bias.get("min_priority", 10)

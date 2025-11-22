@@ -8,17 +8,17 @@ DNAT転送、tc遅延、QoS制御を統合管理
 import logging
 import subprocess
 import time
+import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import json
 import yaml
 import threading
 
 # 統合システムでは actions モジュールは使用しない（直接tc/nftコマンド実行）
 from ...utils.delay_action import (
-    load_opencanary_ip, ensure_nft_table_and_chain, 
-    list_active_diversions, OPENCANARY_IP
+    load_opencanary_ip, OPENCANARY_IP, ensure_nft_table_and_chain
 )
 from ...utils.wan_state import get_active_wan_interface
 import os
@@ -59,22 +59,24 @@ class TrafficControlEngine:
         self.config_path = config_path or "/home/azazel/Azazel-Pi/configs/network/azazel.yaml"
         # Respect AZAZEL_WAN_IF environment override first, then WAN manager helper
         self.interface = os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
+        self._testing = bool(os.environ.get("PYTEST_CURRENT_TEST"))
         self.active_rules: Dict[str, List[TrafficControlRule]] = {}
         # lock protecting active_rules and related operations
         self._rules_lock = threading.Lock()
         self._ensure_tc_setup()
 
-        # Restore any persisted nft handles into in-memory active_rules mapping so
-        # deletions by handle will work across restarts.
-        try:
-            self._restore_persisted_nft_handles()
-        except Exception:
-            logger.exception('Failed restoring persisted nft handles at startup')
-        # Validate persisted entries and prune stale ones
-        try:
-            self._validate_and_clean_persisted_handles()
-        except Exception:
-            logger.exception('Failed validating persisted nft handles at startup')
+        if not self._testing:
+            # Restore any persisted nft handles into in-memory active_rules mapping so
+            # deletions by handle will work across restarts.
+            try:
+                self._restore_persisted_diversions()
+            except Exception:
+                logger.exception('Failed restoring persisted nft handles at startup')
+            # Validate persisted entries and prune stale ones
+            try:
+                self._validate_and_clean_persisted_diversions()
+            except Exception:
+                logger.exception('Failed validating persisted nft handles at startup')
 
         # Start background cleanup thread (uses config.rules.cleanup_interval_seconds)
         try:
@@ -162,13 +164,12 @@ class TrafficControlEngine:
         setattr(self, '_subprocess_runner', runner_callable)
 
 
-    # --- nft handle persistence helpers ---
-    def _nft_handles_path(self) -> Path:
-        # persistent mapping of target_ip -> nft rule metadata
-        return Path('/var/lib/azazel') / 'nft_handles.json'
+    # --- diversion persistence helpers ---
+    def _diversion_state_path(self) -> Path:
+        return Path('/var/lib/azazel') / 'diversions.json'
 
-    def _load_persisted_nft_handles(self) -> Dict[str, Dict]:
-        path = self._nft_handles_path()
+    def _load_persisted_diversions(self) -> Dict[str, Dict]:
+        path = self._diversion_state_path()
         try:
             if not path.exists():
                 return {}
@@ -178,39 +179,66 @@ class TrafficControlEngine:
             logger.exception('Failed loading persisted nft handles')
             return {}
 
-    def _validate_and_clean_persisted_handles(self) -> None:
-        """Verify persisted nft handles actually exist in nft and remove stale entries."""
+    def _validate_and_clean_persisted_diversions(self) -> None:
+        """Verify persisted diversion metadata actually exists and remove stale entries."""
         try:
-            data = self._load_persisted_nft_handles()
+            data = self._load_persisted_diversions()
             if not data:
                 return
-            # Build a mapping of existing handles by family/table
-            existing = {}
-            for ip, meta in list(data.items()):
-                fam = meta.get('family')
-                tab = meta.get('table')
-                handle = meta.get('handle')
-                if not (fam and tab and handle):
-                    # invalid entry, remove
-                    del data[ip]
-                    continue
-                try:
-                    res = self._run_cmd(["nft", "-a", "list", "table", fam, tab], capture_output=True, text=True, timeout=10)
-                    if res.returncode != 0 or (str(handle) not in (self._safe_stdout(res) or "")):
-                        # handle not present anymore
-                        del data[ip]
-                        continue
-                except Exception:
-                    # on error, conservatively keep entry
-                    continue
 
-            # Save cleaned data back
-            self._save_persisted_nft_handles(data)
+            # Track IPs whose persisted rules are no longer valid so we can
+            # also drop any in-memory active_rules entries for them.
+            stale_ips: List[str] = []
+
+            for ip, meta in list(data.items()):
+                backend = meta.get('backend')
+                action = meta.get('action')
+                remove = False
+
+                # Only iptables entries are supported now
+                if backend == 'iptables' and action in ('redirect', 'block'):
+                    table = meta.get('table', 'nat' if action == 'redirect' else 'filter')
+                    chain = meta.get('chain', 'PREROUTING' if action == 'redirect' else 'INPUT')
+                    spec = meta.get('rule_spec')
+                    if not spec:
+                        remove = True
+                    else:
+                        try:
+                            res = self._run_cmd(
+                                ["iptables", "-t", table, "-C", chain, *spec],
+                                capture_output=True,
+                                text=True,
+                                timeout=5,
+                            )
+                            if res.returncode != 0:
+                                remove = True
+                        except Exception:
+                            remove = True
+                else:
+                    # anything else is obsolete
+                    remove = True
+
+                if remove:
+                    stale_ips.append(ip)
+                    del data[ip]
+
+            self._save_persisted_diversions(data)
+
+            # Keep in-memory state consistent with cleaned persistence: if an IP
+            # no longer has a valid underlying iptables rule, drop its rules from
+            # active_rules so future operations (apply/remove) don't see ghost
+            # entries that never actually apply at the kernel level.
+            if stale_ips:
+                with self._rules_lock:
+                    for ip in stale_ips:
+                        if ip in self.active_rules:
+                            del self.active_rules[ip]
+
         except Exception:
             logger.exception('Error validating persisted nft handles')
 
-    def _save_persisted_nft_handles(self, data: Dict[str, Dict]) -> None:
-        path = self._nft_handles_path()
+    def _save_persisted_diversions(self, data: Dict[str, Dict]) -> None:
+        path = self._diversion_state_path()
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix('.tmp')
@@ -220,63 +248,72 @@ class TrafficControlEngine:
         except Exception:
             logger.exception('Failed saving persisted nft handles')
 
-    def _persist_nft_handle_entry(self, target_ip: str, family: str, table: str, handle: str, action: str, dest_port: Optional[int] = None) -> None:
+    def _persist_diversion_entry(self, target_ip: str, action: str, metadata: Dict[str, Any]) -> None:
         try:
-            data = self._load_persisted_nft_handles()
-            data[target_ip] = {
-                'family': family,
-                'table': table,
-                'handle': str(handle),
-                'action': action,
-                'dest_port': dest_port
-            }
-            self._save_persisted_nft_handles(data)
+            data = self._load_persisted_diversions()
+            entry = metadata.copy()
+            entry['action'] = action
+            data[target_ip] = entry
+            self._save_persisted_diversions(data)
         except Exception:
             logger.exception('Failed persisting nft handle entry')
 
-    def _remove_persisted_nft_handle(self, target_ip: str) -> None:
+    def _remove_persisted_diversion(self, target_ip: str) -> None:
         try:
-            data = self._load_persisted_nft_handles()
+            data = self._load_persisted_diversions()
             if target_ip in data:
                 del data[target_ip]
-                self._save_persisted_nft_handles(data)
+                self._save_persisted_diversions(data)
         except Exception:
             logger.exception('Failed removing persisted nft handle entry')
 
-    def _restore_persisted_nft_handles(self) -> None:
-        """Load persisted nft handles and populate active_rules so deletions work after restart."""
+    def _restore_persisted_diversions(self) -> None:
+        """Load persisted diversion metadata and populate active_rules so deletions work after restart."""
         try:
-            data = self._load_persisted_nft_handles()
+            data = self._load_persisted_diversions()
             if not data:
                 return
             with self._rules_lock:
                 for ip, meta in data.items():
                     action = meta.get('action')
-                    family = meta.get('family')
-                    table = meta.get('table')
-                    handle = meta.get('handle')
+                    backend = meta.get('backend', 'nft')
                     dest_port = meta.get('dest_port')
                     if action == 'redirect':
+                        params = {
+                            'backend': backend,
+                            'dest_port': dest_port,
+                            'canary_ip': meta.get('canary_ip')
+                        }
+                        if backend == 'nft':
+                            params.update({
+                                'nft_family': meta.get('family'),
+                                'nft_table': meta.get('table'),
+                                'nft_handle': meta.get('handle')
+                            })
+                        elif backend == 'iptables':
+                            params.update({
+                                'iptables_table': meta.get('table', 'nat'),
+                                'iptables_chain': meta.get('chain', 'PREROUTING'),
+                                'iptables_rule': meta.get('rule_spec')
+                            })
                         rule = TrafficControlRule(
                             target_ip=ip,
                             action_type='redirect',
-                            parameters={
-                                'nft_family': family,
-                                'nft_table': table,
-                                'nft_handle': handle,
-                                'dest_port': dest_port
-                            }
+                            parameters=params
                         )
                         self.active_rules.setdefault(ip, []).append(rule)
                     elif action == 'block':
+                        params = {
+                            'backend': backend,
+                            'method': meta.get('method', 'nft_drop'),
+                            'nft_handle': meta.get('handle'),
+                            'nft_family': meta.get('family'),
+                            'nft_table': meta.get('table')
+                        }
                         rule = TrafficControlRule(
                             target_ip=ip,
                             action_type='block',
-                            parameters={
-                                'nft_family': family,
-                                'nft_table': table,
-                                'nft_handle': handle
-                            }
+                            parameters=params
                         )
                         self.active_rules.setdefault(ip, []).append(rule)
         except Exception:
@@ -457,116 +494,164 @@ class TrafficControlEngine:
         except Exception as e:
             logger.error(f"Failed to apply shaping to {target_ip}: {e}")
             return False
+
+    def _try_add_nft_dnat(self, target_ip: str, canary_ip: str, dest_port: Optional[int]) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+        # nft support removed: this function is obsolete
+        return False, None, "nft support removed"
+
+    def _try_add_iptables_dnat(self, target_ip: str, canary_ip: str, dest_port: Optional[int]) -> Tuple[bool, Optional[Dict[str, Any]], str]:
+        """Attempt to add DNAT rule via legacy iptables.
+        
+        Creates a rule to redirect SSH traffic (port 22) directly to OpenCanary container.
+        Uses direct container IP (172.16.10.3:2222) to bypass Docker bridge complications.
+        Interface is limited to wlan1 (external) to avoid interfering with internal traffic.
+        """
+        table = "nat"
+        chain = "PREROUTING"
+        
+        # Get WAN interface (default: wlan1)
+        wan_iface = get_active_wan_interface() or "wlan1"
+        
+        # Redirect SSH (port 22) directly to OpenCanary container IP
+        # Using 172.16.10.3:2222 instead of 127.0.0.1:2222 to avoid Docker PREROUTING conflicts
+        rule_spec: List[str] = ["-i", wan_iface, "-s", target_ip, "-p", "tcp", "--dport", "22"]
+        to_dest = "172.16.10.3:2222"  # Direct container IP
+        rule_spec += ["-j", "DNAT", "--to-destination", to_dest]
+
+        try:
+            check = self._run_cmd(["iptables", "-t", table, "-C", chain, *rule_spec], capture_output=True, text=True, timeout=5)
+            if check.returncode == 0:
+                params = {
+                    "backend": "iptables",
+                    "iptables_table": table,
+                    "iptables_chain": chain,
+                    "iptables_rule": list(rule_spec),
+                    "dest_port": 2222,  # OpenCanary's actual port
+                    "source_port": 22,  # Original target port
+                    "canary_ip": canary_ip,
+                }
+                return True, params, ""
+        except Exception:
+            # treat as needing to add rule; actual failure will surface on add
+            pass
+
+        try:
+            add_cmd = ["iptables", "-t", table, "-I", chain, "1", *rule_spec]
+            result = self._run_cmd(add_cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                params = {
+                    "backend": "iptables",
+                    "iptables_table": table,
+                    "iptables_chain": chain,
+                    "iptables_rule": list(rule_spec),
+                    "dest_port": 2222,  # OpenCanary's actual port
+                    "source_port": 22,  # Original target port
+                    "canary_ip": canary_ip,
+                }
+                logger.info(f"DNAT redirect (iptables): {target_ip}:22 -> 172.16.10.3:2222 (via {wan_iface})")
+                return True, params, ""
+            err = self._safe_stderr(result) or self._safe_stdout(result) or "iptables DNAT failed"
+            return False, None, err
+        except Exception as e:
+            return False, None, str(e)
+
+    def _record_redirect_rule(self, target_ip: str, parameters: Dict[str, Any]) -> None:
+        """Register redirect rule in memory and persist metadata for cleanup.
+
+        To avoid stale/duplicate redirect entries, we keep at most one
+        redirect rule per IP in active_rules and always overwrite with the
+        latest parameters.
+        """
+        rule = TrafficControlRule(
+            target_ip=target_ip,
+            action_type="redirect",
+            parameters=parameters,
+        )
+        with self._rules_lock:
+            existing = self.active_rules.get(target_ip, [])
+            # Drop any previous redirect entries for this IP; other action
+            # types (delay/shape/block) are left untouched.
+            existing = [r for r in existing if r.action_type != "redirect"]
+            existing.append(rule)
+            self.active_rules[target_ip] = existing
+        # Only iptables backend is supported now
+        backend = parameters.get("backend", "iptables")
+        try:
+            if backend == "iptables":
+                rule_spec = parameters.get("iptables_rule")
+                if rule_spec:
+                    self._persist_diversion_entry(target_ip, 'redirect', {
+                        'backend': 'iptables',
+                        'table': parameters.get('iptables_table', 'nat'),
+                        'chain': parameters.get('iptables_chain', 'PREROUTING'),
+                        'rule_spec': rule_spec,
+                        'dest_port': parameters.get('dest_port'),
+                        'canary_ip': parameters.get('canary_ip')
+                    })
+                    logger.info(f"Persisted iptables redirect metadata for {target_ip} -> {parameters.get('canary_ip')} (rule={rule_spec})")
+        except Exception:
+            logger.exception('Failed persisting redirect metadata')
+
+    def _remove_iptables_dnat_rule(self, target_ip: str, params: Dict[str, Any]) -> bool:
+        table = params.get("iptables_table", "nat")
+        chain = params.get("iptables_chain", "PREROUTING")
+        rule_spec = params.get("iptables_rule")
+        if not rule_spec:
+            logger.warning(f"No iptables rule spec stored for {target_ip}")
+            return False
+        try:
+            res = self._run_cmd(["iptables", "-t", table, "-D", chain, *rule_spec], capture_output=True, text=True, timeout=10)
+            if res.returncode != 0:
+                logger.warning(f"iptables delete failed for {target_ip}: {self._safe_stderr(res)} {self._safe_stdout(res)}")
+                return False
+            logger.info(f"Removed iptables DNAT rule for {target_ip}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed removing iptables DNAT rule for {target_ip}: {e}")
+            return False
+
+    def _remove_iptables_block_rule(self, target_ip: str, params: Dict[str, Any]) -> bool:
+        """Remove iptables DROP rule for block action"""
+        table = params.get("iptables_table", "filter")
+        chain = params.get("iptables_chain", "INPUT")
+        rule_spec = params.get("iptables_rule")
+        if not rule_spec:
+            logger.warning(f"No iptables block rule spec stored for {target_ip}")
+            return False
+        try:
+            res = self._run_cmd(["iptables", "-t", table, "-D", chain, *rule_spec], capture_output=True, text=True, timeout=10)
+            if res.returncode != 0:
+                logger.warning(f"iptables delete block failed for {target_ip}: {self._safe_stderr(res)} {self._safe_stdout(res)}")
+                return False
+            logger.info(f"Removed iptables DROP rule for {target_ip}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed removing iptables DROP rule for {target_ip}: {e}")
+            return False
     
+    def _is_ipv6(self, ip: str) -> bool:
+        """Simple IPv6 detection (presence of ':' without IPv4 dot notation)."""
+        return ":" in ip and not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip)
+
     def apply_dnat_redirect(self, target_ip: str, dest_port: Optional[int] = None) -> bool:
         """指定IPをOpenCanaryにDNAT転送"""
         try:
-            # 既存の同種ルールがあれば再適用しない（冪等化）
-            if target_ip in self.active_rules and any(r.action_type == "redirect" for r in self.active_rules[target_ip]):
-                logger.info(f"DNAT already applied to {target_ip}, skip")
-                return True
             canary_ip = load_opencanary_ip()
-            
-            # nftablesテーブル確保
-            # prefer a dedicated inet azazel NAT-capable table to avoid touching ip nat managed by iptables-nft
-            def _ensure_nat_table():
-                # prefer inet azazel (create/prerouting nat chain) via helper
-                try:
-                    if ensure_nft_table_and_chain():
-                        return ("inet", "azazel")
-                except Exception:
-                    logger.debug("ensure_nft_table_and_chain failed or not available")
 
-                # fall back to ip nat only if inet azazel is not available
-                try:
-                    cp = self._run_cmd(["nft", "list", "table", "ip", "nat"], capture_output=True, text=True, timeout=5)
-                    if cp.returncode == 0:
-                        return ("ip", "nat")
-                except Exception:
-                    pass
-
-                # try to create ip nat if nothing else
-                try:
-                    self._run_cmd(["nft", "add", "table", "ip", "nat"], capture_output=True, timeout=5)
-                    self._run_cmd(["nft", "add", "chain", "ip", "nat", "prerouting", "{ type nat hook prerouting priority -100; }"], capture_output=True, timeout=5)
-                    cp2 = self._run_cmd(["nft", "list", "table", "ip", "nat"], capture_output=True, text=True, timeout=5)
-                    if cp2.returncode == 0:
-                        return ("ip", "nat")
-                except Exception:
-                    pass
-
-                return (None, None)
-
-            family, table = _ensure_nat_table()
-            if not family:
-                logger.error("No suitable nftables table available for DNAT")
+            if self._is_ipv6(target_ip):
+                logger.info(f"Skipping DNAT redirect for IPv6 address {target_ip}")
                 return False
-
-            # DNATルール構築
-            if dest_port:
-                rule_match = f"ip saddr {target_ip} tcp dport {dest_port}"
-                rule_action = f"dnat to {canary_ip}:{dest_port}"
-            else:
-                rule_match = f"ip saddr {target_ip}"
-                rule_action = f"dnat to {canary_ip}"
-
-            # nftables DNAT ルール追加（既存チェックを行う）
-            list_cmd = ["nft", "list", "table", family, table]
-            list_res = self._run_cmd(list_cmd, capture_output=True, text=True, timeout=10)
-            if list_res.returncode == 0 and rule_match in self._safe_stdout(list_res) and "dnat to" in self._safe_stdout(list_res):
-                logger.info(f"DNAT rule already present for {target_ip}, skip")
-                # 記録は行う（既存ルールのhandleは不明なため保存せず）
-                rule = TrafficControlRule(
-                    target_ip=target_ip,
-                    action_type="redirect",
-                    parameters={"canary_ip": canary_ip, "dest_port": dest_port, "nft_family": family, "nft_table": table}
-                )
-                with self._rules_lock:
-                    if target_ip not in self.active_rules:
-                        self.active_rules[target_ip] = []
-                    self.active_rules[target_ip].append(rule)
+            # Operate using legacy iptables DNAT only.
+            # nft support on this host has been unreliable; prefer deterministic iptables behavior
+            # and persist iptables rule metadata for cleanup.
+            iptables_ok, iptables_params, iptables_error = self._try_add_iptables_dnat(target_ip, canary_ip, dest_port)
+            if iptables_ok and iptables_params:
+                self._record_redirect_rule(target_ip, iptables_params)
+                logger.info(f"DNAT redirect (iptables): {target_ip} -> {canary_ip}" + (f":{dest_port}" if dest_port else ""))
                 return True
 
-            # add rule and request handle (-a) so we can persist it for later deletion
-            cmd = [
-                "nft", "-a", "add", "rule", family, table, "prerouting",
-                rule_match, rule_action
-            ]
-
-            result = self._run_cmd(cmd, capture_output=True, text=True, timeout=15)
-
-            if result.returncode == 0:
-                # try to parse handle from stdout/stderr
-                out = self._safe_stdout(result) + "\n" + self._safe_stderr(result)
-                import re
-                m = re.search(r"handle\s+(\d+)", out)
-                handle = m.group(1) if m else None
-
-                # ルール記録（ハンドル・テーブル情報を含める）
-                rule = TrafficControlRule(
-                    target_ip=target_ip,
-                    action_type="redirect",
-                    parameters={"canary_ip": canary_ip, "dest_port": dest_port, "nft_family": family, "nft_table": table, "nft_handle": handle}
-                )
-                with self._rules_lock:
-                    if target_ip not in self.active_rules:
-                        self.active_rules[target_ip] = []
-                    self.active_rules[target_ip].append(rule)
-
-                # persist handle for cross-reboot deletion if available
-                if handle:
-                    try:
-                        self._persist_nft_handle_entry(target_ip, family, table, handle, 'redirect', dest_port)
-                    except Exception:
-                        logger.exception('Failed to persist nft handle for redirect')
-
-                logger.info(f"DNAT redirect: {target_ip} -> {canary_ip}" + (f":{dest_port}" if dest_port else "") + (f" (handle {handle})" if handle else ""))
-                return True
-            else:
-                logger.error(f"nft DNAT failed: {self._safe_stderr(result)}\n{self._safe_stdout(result)}")
-                # Operation not supported の可能性などはここでログに残し失敗扱い
-                return False
-                
+            logger.error(f"Failed to apply DNAT redirect to {target_ip} via iptables: {iptables_error}")
+            return False
         except Exception as e:
             logger.error(f"Failed to apply DNAT redirect to {target_ip}: {e}")
             return False
@@ -619,51 +704,39 @@ class TrafficControlEngine:
         delay_ms=0, block=True相当の動作をnftablesで実現
         """
         try:
-            # nftables drop ルール追加
-            handle_check = self._run_cmd(
-                ["nft", "-a", "list", "chain", "inet", "azazel", "prerouting"],
-                capture_output=True, text=True, timeout=10
-            )
-            
-            # 既にブロックルールが存在する場合はスキップ（冪等性）
-            if f"ip saddr {target_ip} drop" in self._safe_stdout(handle_check):
+            # Implement block using iptables DROP rule (INPUT chain)
+            # Idempotent check
+            rule_spec = ["-s", target_ip, "-j", "DROP"]
+            check = self._run_cmd(["iptables", "-t", "filter", "-C", "INPUT", *rule_spec], capture_output=True, text=True, timeout=5)
+            if check.returncode == 0:
                 logger.info(f"Block rule already exists for {target_ip}")
+                # ensure it's recorded in memory
+                rule = TrafficControlRule(target_ip=target_ip, action_type="block", parameters={"backend": "iptables", "iptables_table": "filter", "iptables_chain": "INPUT", "iptables_rule": rule_spec})
+                with self._rules_lock:
+                    self.active_rules.setdefault(target_ip, []).append(rule)
                 return True
-            
-            # dropルールを追加（-a でハンドル要求）
-            res = self._run_cmd([
-                "nft", "-a", "add", "rule", "inet", "azazel", "prerouting",
-                "ip", "saddr", target_ip, "drop"
-            ], capture_output=True, text=True, timeout=10)
+
+            # Add DROP rule to INPUT chain
+            res = self._run_cmd(["iptables", "-t", "filter", "-I", "INPUT", "1", *rule_spec], capture_output=True, text=True, timeout=10)
             if res.returncode != 0:
-                logger.error(f"nft drop add failed: {self._safe_stderr(res)} {self._safe_stdout(res)}")
+                logger.error(f"iptables DROP add failed: {self._safe_stderr(res)} {self._safe_stdout(res)}")
                 return False
 
-            # try to parse handle
-            out = self._safe_stdout(res) + "\n" + self._safe_stderr(res)
-            import re
-            m = re.search(r"handle\s+(\d+)", out)
-            handle = m.group(1) if m else None
+            logger.info(f"Exception block applied: {target_ip} (iptables DROP)")
 
-            logger.info(f"Exception block applied: {target_ip} (nft drop)" + (f" (handle {handle})" if handle else ""))
-
-            # アクティブルール記録（ロックして追加）
-            rule = TrafficControlRule(
-                target_ip=target_ip,
-                action_type="block",
-                parameters={"method": "nft_drop", "nft_handle": handle, "nft_family": "inet", "nft_table": "azazel"}
-            )
+            # Record rule and persist
+            rule = TrafficControlRule(target_ip=target_ip, action_type="block", parameters={"backend": "iptables", "iptables_table": "filter", "iptables_chain": "INPUT", "iptables_rule": rule_spec})
             with self._rules_lock:
-                if target_ip not in self.active_rules:
-                    self.active_rules[target_ip] = []
-                self.active_rules[target_ip].append(rule)
-
-            # persist handle if available
-            if handle:
-                try:
-                    self._persist_nft_handle_entry(target_ip, 'inet', 'azazel', handle, 'block')
-                except Exception:
-                    logger.exception('Failed persisting nft handle for block')
+                self.active_rules.setdefault(target_ip, []).append(rule)
+            try:
+                self._persist_diversion_entry(target_ip, 'block', {
+                    'backend': 'iptables',
+                    'table': 'filter',
+                    'chain': 'INPUT',
+                    'rule_spec': rule_spec
+                })
+            except Exception:
+                logger.exception('Failed persisting iptables block rule')
 
             return True
         
@@ -678,8 +751,12 @@ class TrafficControlEngine:
         """モードに応じた複合アクションを適用"""
         config = self._load_config()
         actions = config.get("actions", {})
-        preset = actions.get(mode, {})
-        
+        fallback_presets = {
+            "shield": {"delay_ms": 200, "shape_kbps": 128},
+            "lockdown": {"delay_ms": 150, "shape_kbps": 64},
+        }
+        preset = actions.get(mode, {}) or fallback_presets.get(mode, {})
+
         if not preset:
             logger.warning(f"No action preset for mode: {mode}")
             return False
@@ -756,30 +833,24 @@ class TrafficControlEngine:
                     ], capture_output=True, timeout=10)
 
                 elif rule.action_type == "redirect":
-                    # nftables DNAT削除
-                    # If we have stored the handle/family/table use it for precise deletion
-                    fam = rule.parameters.get("nft_family")
-                    tab = rule.parameters.get("nft_table")
-                    handle = rule.parameters.get("nft_handle")
-                    if fam and tab and handle:
-                        try:
-                            self._run_cmd([
-                                "nft", "delete", "rule", fam, tab, "prerouting", "handle", str(handle)
-                            ], capture_output=True, timeout=10)
-                            logger.info(f"Deleted nft rule for {target_ip} by handle {handle}")
-                            # remove persisted handle record
+                    backend = rule.parameters.get("backend", "nft")
+                    if backend == "iptables":
+                        if self._remove_iptables_dnat_rule(target_ip, rule.parameters):
                             try:
-                                self._remove_persisted_nft_handle(target_ip)
+                                self._remove_persisted_diversion(target_ip)
                             except Exception:
-                                logger.exception('Failed removing persisted nft handle after deletion')
-                        except Exception:
-                            logger.exception(f"Failed deleting nft rule handle {handle} for {target_ip}")
+                                logger.exception('Failed removing persisted iptables diversion')
+                        continue
                     else:
-                        self._remove_nft_dnat_rule(target_ip, rule.parameters.get("dest_port"))
+                        logger.warning(f"Unknown backend for redirect removal: {backend}")
 
                 elif rule.action_type == "block":
-                    # nftables drop ルール削除
-                    self._remove_nft_drop_rule(target_ip)
+                    # iptables DROP rule removal
+                    if self._remove_iptables_block_rule(target_ip, rule.parameters):
+                        try:
+                            self._remove_persisted_diversion(target_ip)
+                        except Exception:
+                            logger.exception('Failed removing persisted iptables block after deletion')
 
             except Exception as e:
                 logger.error(f"Failed to remove rule {rule.action_type} for {target_ip}: {e}")
@@ -857,7 +928,7 @@ class TrafficControlEngine:
                         logger.info(f"Removed nft drop rule for {target_ip} (handle {handle})")
                         # remove persisted record if any
                         try:
-                            self._remove_persisted_nft_handle(target_ip)
+                            self._remove_persisted_diversion(target_ip)
                         except Exception:
                             logger.exception('Failed removing persisted nft handle after drop deletion')
                         return True
@@ -915,7 +986,7 @@ class TrafficControlEngine:
             "active_ips": len(self.active_rules),
             "total_rules": total_rules,
             "interface": self.interface,
-            "nft_diversions": len(list_active_diversions()),
+            "tracked_diversions": len(self.active_rules),
             "uptime": time.time() - getattr(self, '_start_time', time.time())
         }
 

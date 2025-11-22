@@ -112,7 +112,7 @@ sudo scripts/setup_wireless.sh --ssid "MyNetwork" --passphrase "MyPassword" --sk
 
 **Features:**
 - **Dual Interface Setup**: ${AZAZEL_LAN_IF:-wlan0} as internal AP (172.16.0.0/24), ${AZAZEL_WAN_IF:-wlan1} for upstream/monitoring
-- **Access Point Configuration**: hostapd, dnsmasq, NAT with nftables
+- **Access Point Configuration**: hostapd, dnsmasq, NAT with iptables
 - **Suricata Integration**: HOME_NET configuration and interface monitoring setup
 - **Flexible Options**: Can configure AP-only, monitoring-only, or both
 - **Status Verification**: Built-in health checks and connectivity testing

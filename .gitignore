@@ -19,3 +19,4 @@ deploy/.env
 # OS/editor noise
 .DS_Store
 *.swp
+old/

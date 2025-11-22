@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Optional
 
 # OpenCanary IP address (デフォルト値、設定ファイルから上書き可能)
-OPENCANARY_IP = "192.168.1.100"
+# Direct container IP to bypass Docker bridge complications
+OPENCANARY_IP = "172.16.10.3"
 
 # ログ設定
 try:
@@ -46,8 +47,8 @@ def load_opencanary_ip() -> str:
                 # OpenCanaryのIPアドレス設定を探す
                 canary_ip = config.get('canary', {}).get('ip')
                 if not canary_ip:
-                    # デフォルトでローカルIPレンジの.100を使用
-                    canary_ip = "192.168.1.100"
+                    # デフォルトは直接コンテナ IP を使用
+                    canary_ip = "172.16.10.3"
                     
                 OPENCANARY_IP = canary_ip
                 logger.info(f"OpenCanary IP loaded from config: {OPENCANARY_IP}")
