@@ -500,15 +500,22 @@ class TrafficControlEngine:
         return False, None, "nft support removed"
 
     def _try_add_iptables_dnat(self, target_ip: str, canary_ip: str, dest_port: Optional[int]) -> Tuple[bool, Optional[Dict[str, Any]], str]:
-        """Attempt to add DNAT rule via legacy iptables."""
+        """Attempt to add DNAT rule via legacy iptables.
+        
+        Creates a rule to redirect SSH traffic (port 22) directly to OpenCanary container.
+        Uses direct container IP (172.16.10.3:2222) to bypass Docker bridge complications.
+        Interface is limited to wlan1 (external) to avoid interfering with internal traffic.
+        """
         table = "nat"
         chain = "PREROUTING"
-        rule_spec: List[str] = ["-s", target_ip]
-        if dest_port:
-            rule_spec += ["-p", "tcp", "--dport", str(dest_port)]
-            to_dest = f"{canary_ip}:{dest_port}"
-        else:
-            to_dest = canary_ip
+        
+        # Get WAN interface (default: wlan1)
+        wan_iface = get_active_wan_interface() or "wlan1"
+        
+        # Redirect SSH (port 22) directly to OpenCanary container IP
+        # Using 172.16.10.3:2222 instead of 127.0.0.1:2222 to avoid Docker PREROUTING conflicts
+        rule_spec: List[str] = ["-i", wan_iface, "-s", target_ip, "-p", "tcp", "--dport", "22"]
+        to_dest = "172.16.10.3:2222"  # Direct container IP
         rule_spec += ["-j", "DNAT", "--to-destination", to_dest]
 
         try:
@@ -519,7 +526,8 @@ class TrafficControlEngine:
                     "iptables_table": table,
                     "iptables_chain": chain,
                     "iptables_rule": list(rule_spec),
-                    "dest_port": dest_port,
+                    "dest_port": 2222,  # OpenCanary's actual port
+                    "source_port": 22,  # Original target port
                     "canary_ip": canary_ip,
                 }
                 return True, params, ""
@@ -536,9 +544,11 @@ class TrafficControlEngine:
                     "iptables_table": table,
                     "iptables_chain": chain,
                     "iptables_rule": list(rule_spec),
-                    "dest_port": dest_port,
+                    "dest_port": 2222,  # OpenCanary's actual port
+                    "source_port": 22,  # Original target port
                     "canary_ip": canary_ip,
                 }
+                logger.info(f"DNAT redirect (iptables): {target_ip}:22 -> 172.16.10.3:2222 (via {wan_iface})")
                 return True, params, ""
             err = self._safe_stderr(result) or self._safe_stdout(result) or "iptables DNAT failed"
             return False, None, err

@@ -34,7 +34,7 @@ _DEFAULTS: Dict[str, Any] = {
         "summary_interval_mins": 5,
     },
     "opencanary": {
-        "ip": "127.0.0.1",
+        "ip": "172.16.10.3",
         "ports": [2222, 8081, 5432],
     },
     "network": {

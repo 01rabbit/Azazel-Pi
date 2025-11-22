@@ -437,9 +437,6 @@ def main():
         except Exception:
             pass
 
-        # AI分析は制御から切り離し、通知のみ実施
-        notify_ai_analysis_async(alert)
-
         # ── 通知（クールダウン制御あり） ──────────────────
         if should_notify(key):
             send_alert_to_mattermost("Suricata", {
@@ -450,6 +447,9 @@ def main():
                 "confidence": "High"
             })
             logging.info(f"Notify attack: {sig}")
+            
+            # AI分析は通知時のみ実施（クールダウン制御により重複を防ぐ）
+            notify_ai_analysis_async(alert)
         else:
             suppressed_alerts[sig] += 1
 
@@ -459,26 +459,33 @@ def main():
             active_ips = set(traffic_engine.get_active_rules().keys())
             already_active = src_ip in active_ips
 
-            redirected = traffic_engine.apply_dnat_redirect(src_ip, dport)
+            # 既にリダイレクト済みの場合はスキップ（冪等性）
+            if already_active:
+                # 既存のリダイレクトが有効なのでログのみ
+                if src_ip not in active_diversions:
+                    active_diversions[src_ip] = 2222
+                continue
+            
+            # OpenCanaryは2222番ポートで動作（dest_portパラメータは使用しない）
+            redirected = traffic_engine.apply_dnat_redirect(src_ip, dest_port=None)
             if redirected:
-                active_diversions[src_ip] = dport
+                active_diversions[src_ip] = 2222  # OpenCanaryの実際のポート
                 if state_machine.current_state.name != "shield":
                     state_machine.dispatch(Event(name="shield", severity=0))
 
-                if should_notify(key + ":action") and not already_active:
-                    dest_info = f"OpenCanary:{dport}" if dport else "OpenCanary"
+                if should_notify(key + ":action"):
                     send_alert_to_mattermost("Suricata", {
                         "timestamp": alert["timestamp"],
                         "signature": "🛡️ OpenCanary転送を開始",
                         "severity": 2,
                         "src_ip": src_ip,
-                        "dest_ip": dest_info,
+                        "dest_ip": "OpenCanary:2222",
                         "proto": alert["proto"],
-                        "details": "検知した通信をOpenCanaryへ即時転送しました（追加の遅延/帯域制御なし）",
+                        "details": f"検知した通信をOpenCanary(2222/TCP)へ即時転送しました（元の宛先: {dport}）",
                         "confidence": "High"
                     })
 
-                logging.info(f"[OpenCanary転送] {src_ip} -> OpenCanary" + (f":{dport}" if dport else ""))
+                logging.info(f"[OpenCanary転送] {src_ip} -> OpenCanary:2222 (original dest: {dport})")
             else:
                 logging.error(f"DNAT redirect failed for {src_ip}")
         except Exception as e:

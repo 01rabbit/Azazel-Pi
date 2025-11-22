@@ -36,10 +36,10 @@ suppress:
 
 # OpenCanary設定
 opencanary:
-  ip: "127.0.0.1"
+  ip: "172.16.10.3"
   ports:
-    - 2222    # SSH (host-run OpenCanary changed to 2222)
-    - 8081    # HTTP (loopback)
+    - 2222    # SSH (OpenCanary container)
+    - 8081    # HTTP (OpenCanary container)
     - 5432  # PostgreSQL
 
 # ネットワーク制御設定
