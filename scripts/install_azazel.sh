@@ -260,11 +260,11 @@ APT_PACKAGES=(
   docker-compose
   gnupg
   git
+  iptables-persistent
   jq
   moreutils
   netfilter-persistent
   nginx
-  nftables
   python3
   python3-pip
   python3-toml

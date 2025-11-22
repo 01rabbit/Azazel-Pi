@@ -58,8 +58,8 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 
 - **Suricata IDS/IPS**: Intrusion detection and prevention system
 - **OpenCanary**: Honeypot services for attacker misdirection
-- **Dynamic Traffic Control**: `tc` and `iptables/nftables` for tactical delay
-  - DNAT enforcement now attempts nftables first and transparently falls back to legacy iptables rules so previously supported routing tricks remain available.
+- **Dynamic Traffic Control**: `tc` and `iptables` for tactical delay
+  - DNAT enforcement uses iptables NAT rules for transparent traffic redirection to honeypot services.
 
 #### Defensive Modes
 
@@ -79,7 +79,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 | Component | Purpose |
 |-----------|---------|
 | `azazel_pi/core/state_machine.py` | Governs transitions between defensive postures |
-| `azazel_pi/core/actions/` | Models tc/nftables operations as idempotent plans |
+| `azazel_pi/core/actions/` | Models tc/iptables operations as idempotent plans |
 | `azazel_pi/core/ingest/` | Parses Suricata EVE logs and OpenCanary events |
 | `azazel_pi/core/display/` | E-Paper status visualization and rendering |
 | `azctl/` | Command-line interface, daemon management, and interactive TUI menu |
@@ -126,7 +126,7 @@ Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment 
 - **IDS/IPS**: Suricata with custom rule sets
 - **Honeypot**: OpenCanary for service deception
 - **Log Processing**: Vector for centralized log collection
-- **Traffic Control**: `tc` (Traffic Control) + `iptables/nftables`
+- **Traffic Control**: `tc` (Traffic Control) + `iptables`
 - **Alerting**: Mattermost integration
 - **Display**: Waveshare E-Paper with Python rendering
 - **Languages**: Python 3.8+ with asyncio, rich, and interactive TUI libraries

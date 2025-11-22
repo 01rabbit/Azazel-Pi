@@ -206,42 +206,26 @@ EOF
   sysctl -w net.ipv4.ip_forward=1 >/dev/null
   echo "net.ipv4.ip_forward=1" > /etc/sysctl.d/99-azazel.conf
   
-  # Configure nftables for NAT
-  log "Configuring NAT rules..."
+  # Configure NAT with iptables
+  log "Configuring NAT rules with iptables..."
+  
+  # Add MASQUERADE rule for NAT
+  iptables -t nat -C POSTROUTING -s 172.16.0.0/24 -o "$WLAN_UP" -j MASQUERADE 2>/dev/null || \
+    iptables -t nat -A POSTROUTING -s 172.16.0.0/24 -o "$WLAN_UP" -j MASQUERADE
+  
+  # Save iptables rules
+  if command -v netfilter-persistent >/dev/null 2>&1; then
+    netfilter-persistent save || warn "Failed to save iptables rules"
+  elif command -v iptables-save >/dev/null 2>&1; then
+    iptables-save > /etc/iptables/rules.v4 || warn "Failed to save iptables rules"
+  fi
+  
+  # Keep /etc/nftables.conf minimal (not used)
   cat > /etc/nftables.conf <<EOF
 #!/usr/sbin/nft -f
-# Azazel-Pi NAT Configuration
+# Azazel-Pi: nftables is not used. Keep this file minimal.
 
-flush ruleset
-
-table ip nat {
-    chain prerouting {
-        type nat hook prerouting priority 0; policy accept;
-    }
-    chain postrouting {
-        type nat hook postrouting priority 100; policy accept;
-        oifname "$WLAN_UP" masquerade
-    }
-}
-
-table inet filter {
-    chain input {
-        type filter hook input priority 0; policy accept;
-    }
-    chain forward {
-        type filter hook forward priority 0; policy drop;
-        ct state established,related accept
-        iifname "$WLAN_AP" oifname "$WLAN_UP" accept
-        iifname "$WLAN_UP" oifname "$WLAN_AP" ct state established,related accept
-    }
-    chain output {
-        type filter hook output priority 0; policy accept;
-    }
-}
 EOF
-  
-  # Apply nftables rules
-  nft -f /etc/nftables.conf || warn "nftables rules may have issues"
   
   # Exclude ${AZAZEL_LAN_IF:-wlan0} from NetworkManager management
   log "Configuring NetworkManager to ignore $WLAN_AP..."
@@ -269,10 +253,9 @@ EOF
   # Enable and start services
   log "Starting AP services..."
   systemctl unmask hostapd || true
-  systemctl enable hostapd dnsmasq nftables
+  systemctl enable hostapd dnsmasq
   systemctl restart hostapd || warn "hostapd restart failed"
   systemctl restart dnsmasq || warn "dnsmasq restart failed"
-  systemctl restart nftables || warn "nftables restart failed"
   
   success "Access Point configuration completed"
 }

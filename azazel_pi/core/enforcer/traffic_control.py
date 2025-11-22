@@ -185,30 +185,55 @@ class TrafficControlEngine:
             data = self._load_persisted_diversions()
             if not data:
                 return
+
+            # Track IPs whose persisted rules are no longer valid so we can
+            # also drop any in-memory active_rules entries for them.
+            stale_ips: List[str] = []
+
             for ip, meta in list(data.items()):
                 backend = meta.get('backend')
                 action = meta.get('action')
+                remove = False
+
                 # Only iptables entries are supported now
                 if backend == 'iptables' and action in ('redirect', 'block'):
                     table = meta.get('table', 'nat' if action == 'redirect' else 'filter')
                     chain = meta.get('chain', 'PREROUTING' if action == 'redirect' else 'INPUT')
                     spec = meta.get('rule_spec')
                     if not spec:
-                        del data[ip]
-                        continue
-                    try:
-                        res = self._run_cmd(["iptables", "-t", table, "-C", chain, *spec], capture_output=True, text=True, timeout=5)
-                        if res.returncode != 0:
-                            del data[ip]
-                            continue
-                    except Exception:
-                        del data[ip]
-                        continue
+                        remove = True
+                    else:
+                        try:
+                            res = self._run_cmd(
+                                ["iptables", "-t", table, "-C", chain, *spec],
+                                capture_output=True,
+                                text=True,
+                                timeout=5,
+                            )
+                            if res.returncode != 0:
+                                remove = True
+                        except Exception:
+                            remove = True
                 else:
                     # anything else is obsolete
+                    remove = True
+
+                if remove:
+                    stale_ips.append(ip)
                     del data[ip]
-                    continue
+
             self._save_persisted_diversions(data)
+
+            # Keep in-memory state consistent with cleaned persistence: if an IP
+            # no longer has a valid underlying iptables rule, drop its rules from
+            # active_rules so future operations (apply/remove) don't see ghost
+            # entries that never actually apply at the kernel level.
+            if stale_ips:
+                with self._rules_lock:
+                    for ip in stale_ips:
+                        if ip in self.active_rules:
+                            del self.active_rules[ip]
+
         except Exception:
             logger.exception('Error validating persisted nft handles')
 
@@ -521,14 +546,24 @@ class TrafficControlEngine:
             return False, None, str(e)
 
     def _record_redirect_rule(self, target_ip: str, parameters: Dict[str, Any]) -> None:
-        """Register redirect rule in memory and persist metadata for cleanup."""
+        """Register redirect rule in memory and persist metadata for cleanup.
+
+        To avoid stale/duplicate redirect entries, we keep at most one
+        redirect rule per IP in active_rules and always overwrite with the
+        latest parameters.
+        """
         rule = TrafficControlRule(
             target_ip=target_ip,
             action_type="redirect",
-            parameters=parameters
+            parameters=parameters,
         )
         with self._rules_lock:
-            self.active_rules.setdefault(target_ip, []).append(rule)
+            existing = self.active_rules.get(target_ip, [])
+            # Drop any previous redirect entries for this IP; other action
+            # types (delay/shape/block) are left untouched.
+            existing = [r for r in existing if r.action_type != "redirect"]
+            existing.append(rule)
+            self.active_rules[target_ip] = existing
         # Only iptables backend is supported now
         backend = parameters.get("backend", "iptables")
         try:
@@ -591,10 +626,6 @@ class TrafficControlEngine:
     def apply_dnat_redirect(self, target_ip: str, dest_port: Optional[int] = None) -> bool:
         """指定IPをOpenCanaryにDNAT転送"""
         try:
-            # 既存の同種ルールがあれば再適用しない（冪等化）
-            if target_ip in self.active_rules and any(r.action_type == "redirect" for r in self.active_rules[target_ip]):
-                logger.info(f"DNAT already applied to {target_ip}, skip")
-                return True
             canary_ip = load_opencanary_ip()
 
             if self._is_ipv6(target_ip):

@@ -26,8 +26,8 @@ soc:
     - "ET TROJAN"
     - "Critical Infrastructure Attack"
 canary:
-  # OpenCanary honeypot IP address (Docker bridge azazel_net)
-  ip: "172.16.10.10"
+  # OpenCanary honeypot IP address (loopback binding via Docker)
+  ip: "127.0.0.1"
   port: 22  # Default SSH port for honeypot
 actions:
   normal:   { delay_ms: 0,   shape_kbps: null, block: false }

@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Optional
 
 # OpenCanary IP address (デフォルト値、設定ファイルから上書き可能)
-# Docker bridge azazel_net の固定アドレス
-OPENCANARY_IP = "172.16.10.10"
+# Loopback-only deployment to keep honeypot local to the host
+OPENCANARY_IP = "127.0.0.1"
 
 # ログ設定
 try:
@@ -47,8 +47,8 @@ def load_opencanary_ip() -> str:
                 # OpenCanaryのIPアドレス設定を探す
                 canary_ip = config.get('canary', {}).get('ip')
                 if not canary_ip:
-                    # デフォルトでローカルIPレンジの.100を使用
-                    canary_ip = "192.168.1.100"
+                    # デフォルトはループバックで動作させる
+                    canary_ip = "127.0.0.1"
                     
                 OPENCANARY_IP = canary_ip
                 logger.info(f"OpenCanary IP loaded from config: {OPENCANARY_IP}")
