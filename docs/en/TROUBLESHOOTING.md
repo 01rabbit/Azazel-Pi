@@ -11,14 +11,14 @@ This comprehensive troubleshooting guide covers common issues encountered during
 **Symptoms:**
 ```bash
 $ python3 -m azctl.cli menu
-ModuleNotFoundError: No module named 'azctl.menu'
+ModuleNotFoundError: No module named 'textual'
 ```
 
 **Solutions:**
 
 ```bash
-# Check module existence
-ls -la azctl/menu/
+# Install textual dependency
+pip3 install textual
 
 # Verify Python path
 python3 -c "import sys; print('\n'.join(sys.path))"
@@ -28,21 +28,21 @@ cd /opt/azazel
 python3 -m azctl.cli menu
 ```
 
-#### Problem: Circular import errors
+#### Problem: Unified TUI module import errors
 
 **Symptoms:**
 ```
-ImportError: cannot import name 'MenuCategory' from partially initialized module
+ImportError: cannot import name 'run_menu' from azctl.tui_zero
 ```
 
 **Solutions:**
 
 ```bash
-# Verify correct module structure
-find azctl/menu -name "*.py" -exec grep -l "from.*core import" {} \;
+# Verify new TUI files exist
+ls -la azctl/tui_zero.py azctl/tui_zero_textual.py
 
-# Ensure imports are from types.py
-grep -r "from.*types import" azctl/menu/
+# Validate syntax
+python3 -m py_compile azctl/tui_zero.py azctl/tui_zero_textual.py azctl/cli.py
 ```
 
 ### Menu Display Issues
@@ -240,9 +240,8 @@ python3 -m azctl.cli menu
 python3 -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from azctl.menu import AzazelTUIMenu
-menu = AzazelTUIMenu()
-menu.run()
+from azctl.tui_zero import run_menu
+run_menu(lan_if='wlan0', wan_if='wlan1', start_menu=True)
 "
 ```
 

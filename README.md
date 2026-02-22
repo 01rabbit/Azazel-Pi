@@ -260,42 +260,48 @@ This will:
 Afterwards, Mattermost should be reachable at `http://<device-ip>/` (port 80) and proxied to `127.0.0.1:8065`.
 For HTTPS, add your TLS server block or use Certbot.
 
-### Modular TUI Menu System
+### Optional: Flask Web UI Dashboard
 
-The interactive Terminal User Interface (TUI) menu provides comprehensive system management through a modular architecture designed for maintainability and extensibility:
+Azazel-Pi now includes a Flask-based Web UI backend and dashboard assets in `azazel_web/`.
 
 ```bash
-# Launch the TUI menu
+# local run (dev)
+python3 azazel_web/app.py
+
+# systemd run (installed host)
+sudo systemctl enable --now azazel-web.service
+```
+
+Default bind is `127.0.0.1:8084`. Change with:
+
+```bash
+export AZAZEL_WEB_HOST=0.0.0.0
+export AZAZEL_WEB_PORT=8084
+python3 azazel_web/app.py
+```
+
+### Unified Textual TUI (Azazel-Zero Port)
+
+The old `azctl/menu` modular TUI has been removed and replaced with the Azazel-Zero style unified Textual TUI.
+
+```bash
+# Launch unified TUI menu
 python3 -m azctl.cli menu
 
-# With specific interface configuration
+# With specific interface configuration (optional)
 python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN_IF:-wlan1}
 ```
 
-**Modular Architecture:**
-
-Azazel-Pi's menu system employs a modular design with functional separation for improved maintainability:
-
-``` text
-azctl/menu/
-├── core.py          # Main framework
-├── types.py         # Data type definitions
-├── defense.py       # Defense control module
-├── services.py      # Service management module
-├── network.py       # Network information module
-├── wifi.py          # WiFi management module
-├── monitoring.py    # Log monitoring module
-├── system.py        # System information module
-└── emergency.py     # Emergency operations module
-```
-
-**Key Features:**
-
-- **Modular Design**: Function-specific modules for enhanced maintainability
-- **Rich UI**: Color-coded panels, tables, and progress bars
-- **Safety-First**: Multi-stage confirmation for dangerous operations
-- **Extensible**: Easy addition of new functionality through module system
-- **Real-time Monitoring**: Live status displays with automatic updates
+- Runtime implementation: `azctl/tui_zero.py` + `azctl/tui_zero_textual.py`
+- Dependency: `textual`
+- Key controls:
+  - `u`: Refresh
+  - `a`: Stage-Open (`portal`)
+  - `r`: Re-Probe (`shield`)
+  - `c`: Contain (`lockdown`)
+  - `m`: Toggle menu
+  - `l`: Toggle details
+  - `q`: Quit
 
 ## Usage
 
@@ -330,10 +336,8 @@ echo '{"mode": "lockdown"}' | azctl events --config -
 
 #### Interactive TUI Menu
 
-The modular TUI menu provides comprehensive system management:
-
 ```bash
-# Launch modular TUI menu. If --wan-if is omitted, azctl will consult the
+# Launch unified Textual TUI. If --wan-if is omitted, azctl will consult the
 # WAN manager to select the active WAN interface. To override selection use
 # the CLI flags or environment variables described below.
 python3 -m azctl.cli menu
@@ -344,89 +348,6 @@ python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN
 # Or let the system choose WAN automatically:
 python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
 ```
-
-**Menu Features:**
-
-1. **Defense Control** (`defense.py`)
-   - Current defense mode display (Portal/Shield/Lockdown)
-   - Manual mode switching (emergency overrides)
-   - Decision history and score trends
-   - Real-time threat score monitoring
-
-2. **Service Management** (`services.py`)
-   - Azazel core service control (azctl-unified, suricata, opencanary, vector)
-   - Service status overview
-   - Real-time log file viewing
-   - Service restart and health checks
-
-3. **Network Information** (`network.py`)
-   - WiFi management integration
-   - Interface status and IP configuration
-   - Active profiles and QoS settings
-   - Network traffic statistics
-
-4. **WiFi Management** (`wifi.py`)
-   - Nearby WiFi network scanning
-   - WPA/WPA2 network connection
-   - Saved network management
-   - Connection status and signal strength
-
-5. **Log Monitoring** (`monitoring.py`)
-   - Suricata alert real-time monitoring
-   - OpenCanary honeypot events
-   - System logs and daemon logs
-   - Security event summaries
-
-6. **System Information** (`system.py`)
-   - CPU, memory, disk usage
-   - Network interface statistics
-   - System temperature monitoring
-   - Process list and resource usage
-
-7. **Emergency Operations** (`emergency.py`)
-   - Emergency lockdown (immediate network isolation)
-   - Complete network configuration reset
-   - System status report generation
-   - Factory reset (requires confirmation)
-
-**Technical Features:**
-
-- **Modular Design**: Each function implemented as independent module
-- **Rich UI**: Color-coded panels, tables, progress bars
-- **Error Handling**: Robust error processing and recovery
-- **Security-Focused**: Multi-stage confirmation for dangerous operations
-- **Extensible**: Easy addition of new functionality
-
-**Safety Features:**
-
-- Confirmation dialogs for dangerous operations
-- Automatic root permission verification
-- Automatic operation logging
-- Error handling and automatic recovery procedures
-- Emergency operations require multiple confirmations
-
-**Keyboard Navigation:**
-
-- `Number keys`: Select menu items
-- `r`: Refresh screen
-- `b`: Return to previous menu
-- `q`: Exit
-- `Ctrl+C`: Safe interruption anytime
-
-**Safety Features:**
-
-- Confirmation dialogs for dangerous operations
-- Root permission validation for privileged actions
-- Automatic operation logging
-- Error handling and recovery procedures
-
-**Navigation:**
-
-- `Number keys`: Select menu items
-- `r`: Refresh screen
-- `b`: Back to previous menu
-- `q`: Quit
-- `Ctrl+C`: Interrupt at any time
 
 ### Configuration Workflow
 

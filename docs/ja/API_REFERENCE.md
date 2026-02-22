@@ -370,266 +370,36 @@ server.start()
 
 systemdサービスを支援し、イベントを`AzazelDaemon`に送信してスコアベースの決定を適用し、選択されたモードとアクションプリセットを含む`decisions.log`エントリを書き込みます。
 
-## `azctl.menu` - モジュラーTUIメニューシステム
+## `azctl.tui_zero` - Unified Textual TUI
 
-Azazel-Piは、保守性と拡張性を重視したモジュラーアーキテクチャによるターミナルユーザーインターフェースを提供します。
+Azazel-Pi のメニューTUIは、Azazel-Zero由来の unified Textual UI に統一されました。  
+旧 `azctl/menu` モジュラー実装は削除済みです。
 
-### アーキテクチャ
+### 実装ファイル
 
 ```
-azctl/menu/
-├── __init__.py      # モジュールエントリーポイント
-├── types.py         # 共通データクラス定義
-├── core.py          # メインフレームワーク
-├── defense.py       # 防御制御モジュール
-├── services.py      # サービス管理モジュール
-├── network.py       # ネットワーク情報モジュール
-├── wifi.py          # WiFi管理モジュール
-├── monitoring.py    # ログ監視モジュール
-├── system.py        # システム情報モジュール
-└── emergency.py     # 緊急操作モジュール
+azctl/tui_zero.py
+azctl/tui_zero_textual.py
 ```
 
-### 基本データ型 (`types.py`)
+### 起動経路
 
-#### `MenuAction`
-メニューアクション項目を表現するデータクラスです。
+- CLI: `python3 -m azctl.cli menu`
+- 内部実装: `azctl.cli.cmd_menu()` -> `azctl.tui_zero.run_menu()`
 
-**プロパティ:**
-- `title: str` - 表示タイトル
-- `description: str` - 詳細説明
-- `action: Callable` - 実行される関数
-- `requires_root: bool` - root権限の要否（デフォルト: False）
-- `dangerous: bool` - 危険な操作かどうか（デフォルト: False）
+### 主要挙動
 
-**使用例:**
-```python
-from azctl.menu.types import MenuAction
+- 状態取得は `runtime/ui_snapshot.json` を優先
+- フォールバックとして `python3 -m azctl.cli status --json` を使用
+- メニューアクションは以下へ変換:
+  - `stage_open` -> `portal`
+  - `reprobe` -> `shield`
+  - `contain` -> `lockdown`
 
-action = MenuAction(
-    title="モード切り替え",
-    description="防御モードを手動で変更します",
-    action=lambda: switch_mode("shield"),
-    requires_root=True,
-    dangerous=True
-)
-```
+### 依存関係
 
-#### `MenuCategory`
-メニューカテゴリ（複数のアクションを含む）を表現するデータクラスです。
-
-**プロパティ:**
-- `title: str` - カテゴリタイトル
-- `description: str` - カテゴリ説明
-- `actions: list[MenuAction]` - 含まれるアクション一覧
-
-**使用例:**
-```python
-from azctl.menu.types import MenuCategory, MenuAction
-
-category = MenuCategory(
-    title="防御制御",
-    description="防御システムの監視と制御",
-    actions=[
-        MenuAction("現在の状態表示", "システム状態を確認", show_status),
-        MenuAction("モード切り替え", "防御モードを変更", switch_mode)
-    ]
-)
-```
-
-### コアフレームワーク (`core.py`)
-
-#### `AzazelTUIMenu`
-メインのTUIメニューシステムクラスです。
-
-**初期化:**
-```python
-AzazelTUIMenu(
-    decisions_log: Optional[str] = None,
-    lan_if: str = "wlan0", 
-    wan_if: str = "wlan1"
-)
-```
-
-**パラメータ:**
-- `decisions_log` - 決定ログファイルのパス
-- `lan_if` - LANインターフェース名
-- `wan_if` - WANインターフェース名
-
-**メソッド:**
-
-##### `run()`
-メインのTUIループを開始します。
-
-**使用例:**
-```python
-from azctl.menu import AzazelTUIMenu
-
-menu = AzazelTUIMenu(lan_if="wlan0", wan_if="wlan1")
-menu.run()
-```
-
-### 機能モジュール
-
-#### 防御制御モジュール (`defense.py`)
-
-##### `DefenseModule`
-防御システムの監視と制御を行います。
-
-**提供機能:**
-- 現在の防御モード表示
-- 手動モード切り替え
-- 決定履歴の表示
-- リアルタイム脅威スコア監視
-
-**使用例:**
-```python
-from azctl.menu.defense import DefenseModule
-from rich.console import Console
-
-module = DefenseModule(Console())
-category = module.get_category()
-```
-
-#### サービス管理モジュール (`services.py`)
-
-##### `ServicesModule`
-Azazelシステムサービスの管理を行います。
-
-**管理対象サービス:**
-- `azctl-unified.service` - 統合制御デーモン
-- `azctl-unified.service` - HTTPサーバー
-- `suricata.service` - IDS/IPS
-- `azazel_opencanary (Docker)` - ハニーポット
-- `vector.service` - ログ収集
-- `azazel-epd.service` - E-Paperディスプレイ
-
-**提供機能:**
-- サービス状態の一覧表示
-- サービスの開始/停止/再起動
-- ログファイルのリアルタイム表示
-- システム全体のヘルスチェック
-
-#### ネットワーク情報モジュール (`network.py`)
-
-##### `NetworkModule`
-ネットワーク状態とWiFi管理の統合表示を行います。
-
-**提供機能:**
-- インターフェース状態表示
-- アクティブプロファイル確認
-- WiFi管理機能の統合
-- ネットワークトラフィック統計
-
-#### WiFi管理モジュール (`wifi.py`)
-
-##### `WiFiManager`
-WiFiネットワークの包括的な管理を行います。
-
-**提供機能:**
-- 近隣WiFiネットワークのスキャン
-- WPA/WPA2ネットワークへの接続
-- 保存済みネットワークの管理
-- 接続状態とシグナル強度の表示
-- SSID選択とパスワード入力のインタラクティブUI
-
-**技術仕様:**
-- `iw scan` による周辺ネットワーク検索
-- `wpa_cli` による接続管理
-- Rich UIによる見やすい表形式表示
-- セキュリティ種別の自動判別
-
-#### ログ監視モジュール (`monitoring.py`)
-
-##### `MonitoringModule`
-セキュリティログとシステムログの監視を行います。
-
-**監視対象:**
-- Suricataアラートログ (`/var/log/suricata/eve.json`)
-- OpenCanaryイベントログ
-- Azazel決定ログ (`/var/log/azazel/decisions.log`)
-- システムジャーナル
-
-**提供機能:**
-- リアルタイムログ監視
-- アラート要約とカウント
-- ログファイルの履歴表示
-- セキュリティイベントの分析
-
-#### システム情報モジュール (`system.py`)
-
-##### `SystemModule`
-システムリソースとハードウェア状態の監視を行います。
-
-**監視項目:**
-- CPU使用率とプロセッサ情報
-- メモリ使用量（物理/スワップ）
-- ディスク使用量
-- ネットワークインターフェース統計
-- システム温度（Raspberry Pi）
-- 実行中プロセス一覧
-
-#### 緊急操作モジュール (`emergency.py`)
-
-##### `EmergencyModule`
-緊急時の対応操作を提供します。
-
-**提供機能:**
-- **緊急ロックダウン**: 即座にネットワークアクセスを遮断
-- **ネットワーク設定リセット**: WiFi設定を初期状態に戻す
-- **システムレポート生成**: 包括的な状態レポートを作成
-- **ファクトリーリセット**: システム全体を初期状態に戻す
-
-**安全機能:**
-- 複数段階の確認ダイアログ
-- 危険度に応じた警告表示
-- 操作ログの自動記録
-- 中断可能な操作フロー
-
-### カスタムモジュールの作成
-
-新しい機能モジュールを追加する場合の例：
-
-```python
-# azctl/menu/custom.py
-from rich.console import Console
-from .types import MenuCategory, MenuAction
-
-class CustomModule:
-    def __init__(self, console: Console):
-        self.console = console
-    
-    def get_category(self) -> MenuCategory:
-        return MenuCategory(
-            title="カスタム機能",
-            description="カスタム機能の説明",
-            actions=[
-                MenuAction(
-                    title="カスタム操作",
-                    description="カスタム操作の説明",
-                    action=self._custom_action
-                )
-            ]
-        )
-    
-    def _custom_action(self):
-        self.console.print("カスタム操作を実行中...")
-```
-
-### 統合とテスト
-
-```python
-# 新しいモジュールをコアシステムに統合
-# azctl/menu/core.py の _setup_menu_categories() に追加
-
-from .custom import CustomModule
-
-# __init__ メソッド内
-self.custom_module = CustomModule(self.console)
-
-# _setup_menu_categories メソッド内
-self.categories.append(self.custom_module.get_category())
-```
+- `textual`（メニューTUI必須）
+- `rich`（他CLI/TUIの描画で利用）
 
 ### 主要関数
 

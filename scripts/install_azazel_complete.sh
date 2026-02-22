@@ -555,6 +555,7 @@ log "Step 5b/9: Configuring systemd services"
 
 # Enable core services
 systemctl enable azctl-unified.service || warn "Failed to enable azctl-unified.service"
+systemctl enable azazel-web.service || warn "Failed to enable azazel-web.service"
 systemctl enable suricata.service || warn "Failed to enable suricata.service" 
 systemctl enable vector.service || warn "Failed to enable vector.service"
 systemctl enable mattermost.service || warn "Failed to enable mattermost.service"
@@ -654,6 +655,7 @@ if [[ $START_SERVICES -eq 1 ]]; then
   # Start services in order
   systemctl start vector.service || warn "Vector service may have issues"
   systemctl start azctl-unified.service || warn "Azctl-unified service may have issues"
+  systemctl start azazel-web.service || warn "Azazel-web service may have issues"
   systemctl start nginx.service || warn "Nginx service may have issues"
   
   # Wait a moment for services to stabilize
@@ -664,7 +666,7 @@ if [[ $START_SERVICES -eq 1 ]]; then
   systemctl start azazel-suricata-update.timer || warn "Failed to start Suricata auto-update timer"
   
   log "Service status check:"
-  services=("azctl-unified" "suricata" "vector" "nginx" "docker")
+  services=("azctl-unified" "azazel-web" "suricata" "vector" "nginx" "docker")
   for service in "${services[@]}"; do
     if systemctl is-active --quiet "$service.service"; then
       success "✓ $service: running"
