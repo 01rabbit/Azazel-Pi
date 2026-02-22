@@ -706,19 +706,15 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 
 def cmd_menu(decisions: Optional[str], lan_if: str, wan_if: str) -> int:
-    """Launch the interactive TUI menu system."""
+    """Launch Azazel-Zero style unified Textual TUI menu."""
     try:
-        from azctl.menu import AzazelTUIMenu
-        menu = AzazelTUIMenu(
-            decisions_log=decisions,
-            lan_if=lan_if, 
-            wan_if=wan_if
-        )
-        menu.run()
+        from azctl.tui_zero import run_menu
+        _ = decisions  # legacy arg retained for CLI compatibility
+        run_menu(lan_if=lan_if, wan_if=wan_if, start_menu=True)
         return 0
     except ImportError as e:
-        print(f"Error: TUI menu requires additional dependencies: {e}")
-        print("Install with: pip install rich")
+        print(f"Error: unified Textual TUI requires additional dependencies: {e}")
+        print("Install with: pip install textual")
         return 1
     except Exception as e:
         print(f"Error launching menu: {e}")

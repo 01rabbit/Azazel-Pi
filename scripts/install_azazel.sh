@@ -298,6 +298,12 @@ apt-get update -qq
 log "Installing base packages: ${APT_PACKAGES[*]}"
 apt-get install -yqq "${APT_PACKAGES[@]}"
 
+# Textual TUI dependency (Azazel-Zero port). Prefer pip for broader distro compatibility.
+if ! python3 -c "import textual" >/dev/null 2>&1; then
+  log "Installing Python dependency: textual"
+  pip3 install -q 'textual>=0.58.0' || log "Failed to install textual; menu TUI may be unavailable"
+fi
+
 if ! command -v vector >/dev/null 2>&1; then
   log "Vector not found. Installing via official repo (signed-by), with tarball fallback."
 
