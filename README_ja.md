@@ -193,9 +193,9 @@ sudo systemctl enable --now azazel-epd.service
 
 完全なE-Paper設定手順については、[`docs/ja/EPD_SETUP.md`](docs/ja/EPD_SETUP.md) を参照してください。
 
-### モジュラーTUIメニューシステム
+### Unified Textual TUI（Azazel-Zero移植）
 
-インタラクティブなターミナルユーザーインターフェース（TUI）メニューは、保守性と拡張性を考慮したモジュラーアーキテクチャを通じて包括的なシステム管理を提供します：
+旧 `azctl/menu` ベースのモジュラーTUIは廃止し、Azazel-Zero由来の unified Textual TUI へ統一しました。
 
 ```bash
 # TUIメニューを起動
@@ -209,29 +209,21 @@ python3 -m azctl.cli menu
 python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
 ```
 
-**モジュラーアーキテクチャ：**
+実装ファイル:
 
-Azazel-Piのメニューシステムは、保守性向上のために機能分離を採用したモジュラー設計を採用しています：
-
-```
-azctl/menu/
-├── core.py          # メインフレームワーク
-├── types.py         # データ型定義
-├── defense.py       # 防御制御モジュール
-├── services.py      # サービス管理モジュール
-├── network.py       # ネットワーク情報モジュール
-├── wifi.py          # WiFi管理モジュール
-├── monitoring.py    # ログ監視モジュール
-├── system.py        # システム情報モジュール
-└── emergency.py     # 緊急操作モジュール
+```text
+azctl/tui_zero.py
+azctl/tui_zero_textual.py
 ```
 
-**主要機能：**
-- **モジュラー設計**: 保守性向上のための機能別モジュール
-- **Rich UI**: 色分けされたパネル、表、プログレスバー
-- **安全性優先**: 危険な操作には多段階確認
-- **拡張可能**: モジュールシステムを通じた新機能の簡単な追加
-- **リアルタイム監視**: 自動更新付きライブステータス表示
+主要キー:
+- `u`: Refresh
+- `a`: Stage-Open（portal）
+- `r`: Re-Probe（shield）
+- `c`: Contain（lockdown）
+- `m`: メニュー開閉
+- `l`: 詳細表示
+- `q`: 終了
 
 ### オプション: Nginx を介して Mattermost を公開
 
@@ -300,17 +292,13 @@ echo '{"mode": "lockdown"}' | azctl events --config -
 
 #### インタラクティブTUIメニュー
 
-モジュラーTUIメニューは包括的なシステム管理を提供します：
-
 ```bash
-# モジュラーTUIメニューを起動
+# Unified Textual TUIを起動
 python3 -m azctl.cli menu
 
 # カスタムインターフェースを指定
 python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN_IF:-wlan1}
 ```
-
-**メニュー機能：**
 
 1. **コア設定の編集**: `/etc/azazel/azazel.yaml` を修正して遅延値、帯域制御、ロックダウン許可リストを調整（テンプレートは `configs/network/azazel.yaml`）。
     - 既定では `wlan0` を内部LAN（AP）、`wlan1` と `eth0` を外部（WAN/アップリンク）として扱います。`configs/network/azazel.yaml` の `interfaces.external` に `["eth0", "wlan1"]` を定義済みです（必要に応じて変更可能）。
@@ -332,97 +320,18 @@ python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN
 
 モード遷移は、タイムスタンプ、スコア、トリガーイベントとともに `/var/log/azazel/decisions.log` に記録されます。
 
-### インタラクティブTUIメニュー
+### インタラクティブTUIメニュー（統合版）
 
-Azazel-Piは完全にモジュール化された包括的なターミナルベースのメニューインターフェースを提供します：
-
-```bash
-# TUIメニューを起動
-python3 -m azctl.cli menu
-
-# または特定のインターフェースを指定
-python3 -m azctl.cli menu --lan-if wlan0 --wan-if wlan1
-```
-
-**モジュラーメニューシステム：**
-
-Azazel-Piのメニューシステムは、保守性と拡張性を向上させるために機能別に分離されたモジュラーアーキテクチャを採用しています：
-
-```
-azctl/menu/
-├── core.py          # メインフレームワーク
-├── types.py         # データ型定義
-├── defense.py       # 防御制御モジュール
-├── services.py      # サービス管理モジュール
-├── network.py       # ネットワーク情報モジュール
-├── wifi.py          # WiFi管理モジュール
-├── monitoring.py    # ログ監視モジュール
-├── system.py        # システム情報モジュール
-└── emergency.py     # 緊急操作モジュール
-```
-
-**メニュー機能：**
-
-1. **防御制御** (`defense.py`)
-   - 現在の防御モード表示（Portal/Shield/Lockdown）
-   - 手動モード切り替え（緊急時オーバーライド）
-   - 決定履歴とスコア変動の確認
-   - リアルタイム脅威スコア監視
-
-2. **サービス管理** (`services.py`)
-   - Azazelコアサービスの制御（azctl, suricata, opencanary, vector）
-   - サービス状態の一覧表示
-   - ログファイルのリアルタイム表示
-   - サービス再起動とヘルスチェック
-
-3. **ネットワーク情報** (`network.py`)
-   - WiFi管理機能の統合
-   - インターフェース状態とIP設定
-   - アクティブプロファイルとQoS設定
-   - ネットワークトラフィック統計
-
-4. **WiFi管理** (`wifi.py`)
-   - 近隣WiFiネットワークのスキャン
-   - WPA/WPA2ネットワークへの接続
-   - 保存済みネットワークの管理
-   - 接続状態とシグナル強度表示
-
-5. **ログ監視** (`monitoring.py`)
-   - Suricataアラートのリアルタイム監視
-   - OpenCanaryハニーポットイベント
-   - システムログとデーモンログ
-   - セキュリティイベントの要約
-
-6. **システム情報** (`system.py`)
-   - CPU、メモリ、ディスク使用率
-   - ネットワークインターフェース統計
-   - システム温度監視
-   - プロセス一覧とリソース使用状況
-
-7. **緊急操作** (`emergency.py`)
-   - 緊急ロックダウン（即座にネットワーク封鎖）
-   - ネットワーク設定の完全リセット
-   - システム状態レポート生成
-   - ファクトリーリセット（要確認）
-
-**技術的特徴：**
-- **モジュラー設計**: 各機能が独立したモジュールで実装
-- **Rich UI**: 色分けされたパネル、表、プログレスバー
-- **エラーハンドリング**: 堅牢なエラー処理と回復機能
-- **セキュリティ重視**: 危険な操作には多段階確認
-- **拡張可能**: 新機能を簡単に追加可能な構造
-
-**安全機能：**
-- 危険な操作には確認ダイアログを表示
-- root権限が必要な操作の自動検証
-- 操作ログの自動記録
-- エラーハンドリングと自動回復手順
-- 緊急操作には複数回確認が必要
+`python3 -m azctl.cli menu` は、`azctl/tui_zero.py` と `azctl/tui_zero_textual.py` を用いた統合TUIを起動します。  
+旧 `azctl/menu` 実装は削除済みです。
 
 **キーボードナビゲーション：**
-- `数字キー`: メニュー項目を選択
-- `r`: 画面を更新
-- `b`: 前のメニューに戻る
+- `u`: 画面を更新
+- `a`: Stage-Open（portal）
+- `r`: Re-Probe（shield）
+- `c`: Contain（lockdown）
+- `m`: メニュー開閉
+- `l`: 詳細表示
 - `q`: 終了
 - `Ctrl+C`: いつでも安全に中断可能
 

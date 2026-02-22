@@ -4,266 +4,36 @@ This reference documents the Python modules that make up the Azazel control
 plane. The intent is to provide enough context for operators to extend or mock
 the behaviour during testing.
 
-## `azctl.menu` - Modular TUI Menu System
+## `azctl.tui_zero` - Unified Textual TUI
 
-Azazel-Pi provides a modular Terminal User Interface designed for maintainability and extensibility.
+Azazel-Pi now uses the Azazel-Zero style unified Textual TUI.  
+The legacy `azctl/menu` modular implementation was removed.
 
-### Architecture
+### Runtime modules
 
 ```
-azctl/menu/
-├── __init__.py      # Module entry point
-├── types.py         # Common data class definitions
-├── core.py          # Main framework
-├── defense.py       # Defense control module
-├── services.py      # Service management module
-├── network.py       # Network information module
-├── wifi.py          # WiFi management module
-├── monitoring.py    # Log monitoring module
-├── system.py        # System information module
-└── emergency.py     # Emergency operations module
+azctl/tui_zero.py
+azctl/tui_zero_textual.py
 ```
 
-### Basic Data Types (`types.py`)
+### Entry point
 
-#### `MenuAction`
-Data class representing a menu action item.
+- CLI: `python3 -m azctl.cli menu`
+- Internally, `azctl.cli.cmd_menu()` calls `azctl.tui_zero.run_menu()`
 
-**Properties:**
-- `title: str` - Display title
-- `description: str` - Detailed description
-- `action: Callable` - Function to execute
-- `requires_root: bool` - Whether root privileges required (default: False)
-- `dangerous: bool` - Whether operation is dangerous (default: False)
+### Primary behaviors
 
-**Usage Example:**
-```python
-from azctl.menu.types import MenuAction
+- Loads state from `runtime/ui_snapshot.json` when available.
+- Falls back to `python3 -m azctl.cli status --json`.
+- Menu actions map to mode events:
+  - `stage_open` -> `portal`
+  - `reprobe` -> `shield`
+  - `contain` -> `lockdown`
 
-action = MenuAction(
-    title="Mode Switch",
-    description="Manually change defense mode",
-    action=lambda: switch_mode("shield"),
-    requires_root=True,
-    dangerous=True
-)
-```
+### Dependencies
 
-#### `MenuCategory`
-Data class representing a menu category containing multiple actions.
-
-**Properties:**
-- `title: str` - Category title
-- `description: str` - Category description
-- `actions: list[MenuAction]` - List of contained actions
-
-**Usage Example:**
-```python
-from azctl.menu.types import MenuCategory, MenuAction
-
-category = MenuCategory(
-    title="Defense Control",
-    description="Defense system monitoring and control",
-    actions=[
-        MenuAction("Show Status", "Display system status", show_status),
-        MenuAction("Switch Mode", "Change defense mode", switch_mode)
-    ]
-)
-```
-
-### Core Framework (`core.py`)
-
-#### `AzazelTUIMenu`
-Main TUI menu system class.
-
-**Initialization:**
-```python
-AzazelTUIMenu(
-    decisions_log: Optional[str] = None,
-    lan_if: str = "wlan0", 
-    wan_if: str = "wlan1"
-)
-```
-
-**Parameters:**
-- `decisions_log` - Path to decision log file
-- `lan_if` - LAN interface name
-- `wan_if` - WAN interface name
-
-**Methods:**
-
-##### `run()`
-Start the main TUI loop.
-
-**Usage Example:**
-```python
-from azctl.menu import AzazelTUIMenu
-
-menu = AzazelTUIMenu(lan_if="wlan0", wan_if="wlan1")
-menu.run()
-```
-
-### Functional Modules
-
-#### Defense Control Module (`defense.py`)
-
-##### `DefenseModule`
-Provides defense system monitoring and control.
-
-**Features:**
-- Current defense mode display
-- Manual mode switching
-- Decision history display
-- Real-time threat score monitoring
-
-**Usage Example:**
-```python
-from azctl.menu.defense import DefenseModule
-from rich.console import Console
-
-module = DefenseModule(Console())
-category = module.get_category()
-```
-
-#### Service Management Module (`services.py`)
-
-##### `ServicesModule`
-Manages Azazel system services.
-
-**Managed Services:**
-- `azctl-unified.service` - Unified control daemon
-- `azctl-unified.service` - HTTP server
-- `suricata.service` - IDS/IPS
-- `azazel_opencanary (Docker)` - Honeypot
-- `vector.service` - Log collection
-- `azazel-epd.service` - E-Paper display
-
-**Features:**
-- Service status listing
-- Service start/stop/restart
-- Real-time log viewing
-- System-wide health checks
-
-#### Network Information Module (`network.py`)
-
-##### `NetworkModule`
-Provides network status and WiFi management integration.
-
-**Features:**
-- Interface status display
-- Active profile confirmation
-- WiFi management integration
-- Network traffic statistics
-
-#### WiFi Management Module (`wifi.py`)
-
-##### `WiFiManager`
-Comprehensive WiFi network management.
-
-**Features:**
-- Nearby WiFi network scanning
-- WPA/WPA2 network connection
-- Saved network management
-- Connection status and signal strength display
-- Interactive SSID selection and password input
-
-**Technical Specifications:**
-- Uses `iw scan` for network discovery
-- Uses `wpa_cli` for connection management
-- Rich UI with tabular display
-- Automatic security type detection
-
-#### Log Monitoring Module (`monitoring.py`)
-
-##### `MonitoringModule`
-Security and system log monitoring.
-
-**Monitored Sources:**
-- Suricata alert logs (`/var/log/suricata/eve.json`)
-- OpenCanary event logs
-- Azazel decision logs (`/var/log/azazel/decisions.log`)
-- System journal
-
-**Features:**
-- Real-time log monitoring
-- Alert summary and counting
-- Log file history display
-- Security event analysis
-
-#### System Information Module (`system.py`)
-
-##### `SystemModule`
-System resource and hardware status monitoring.
-
-**Monitored Items:**
-- CPU usage and processor information
-- Memory usage (physical/swap)
-- Disk usage
-- Network interface statistics
-- System temperature (Raspberry Pi)
-- Running process list
-
-#### Emergency Operations Module (`emergency.py`)
-
-##### `EmergencyModule`
-Emergency response operations.
-
-**Features:**
-- **Emergency Lockdown**: Immediately block network access
-- **Network Configuration Reset**: Reset WiFi settings to defaults
-- **System Report Generation**: Create comprehensive status report
-- **Factory Reset**: Reset entire system to initial state
-
-**Safety Features:**
-- Multi-stage confirmation dialogs
-- Danger level-based warnings
-- Automatic operation logging
-- Interruptible operation flows
-
-### Custom Module Creation
-
-Example of adding a new functional module:
-
-```python
-# azctl/menu/custom.py
-from rich.console import Console
-from .types import MenuCategory, MenuAction
-
-class CustomModule:
-    def __init__(self, console: Console):
-        self.console = console
-    
-    def get_category(self) -> MenuCategory:
-        return MenuCategory(
-            title="Custom Features",
-            description="Custom feature management",
-            actions=[
-                MenuAction(
-                    title="Custom Operation",
-                    description="Execute custom operation",
-                    action=self._custom_action
-                )
-            ]
-        )
-    
-    def _custom_action(self):
-        self.console.print("[green]Executing custom operation...[/green]")
-```
-
-### Integration and Testing
-
-```python
-# Integrate new module into core system
-# Add to azctl/menu/core.py _setup_menu_categories()
-
-from .custom import CustomModule
-
-# In __init__ method
-self.custom_module = CustomModule(self.console)
-
-# In _setup_menu_categories method
-self.categories.append(self.custom_module.get_category())
-```
+- `textual` (required for menu TUI)
+- `rich` (status/TUI rendering helpers used elsewhere)
 
 ## `azazel_core.state_machine`
 

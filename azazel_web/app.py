@@ -108,6 +108,7 @@ ALLOWED_ACTIONS = {
     "refresh", "reprobe", "contain", "release", "details", "stage_open", "disconnect",
     "wifi_scan", "wifi_connect", "portal_viewer_open", "shutdown", "reboot"  # Wi-Fi + portal viewer actions
 }
+PI_NOT_IMPLEMENTED_ACTIONS = {"wifi_scan", "wifi_connect", "portal_viewer_open"}
 
 
 def _load_first_minute_config() -> Dict[str, Any]:
@@ -1066,6 +1067,16 @@ def _send_control_command_socket(
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S")
         }
 
+
+def _pi_not_implemented_result(action: str) -> Dict[str, Any]:
+    """Return a stable error payload for features not wired on Azazel-Pi."""
+    return {
+        "ok": False,
+        "action": action,
+        "error": f"{action} is not implemented in Azazel-Pi unified port",
+        "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+
 def send_control_command(action: str) -> Dict[str, Any]:
     """Send command to Control Daemon via Unix socket"""
     if action not in ALLOWED_ACTIONS:
@@ -1100,6 +1111,8 @@ def send_control_command_with_params(action: str, params: Dict[str, Any]) -> Dic
             "error": "Unknown action",
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S")
         }
+    if action in PI_NOT_IMPLEMENTED_ACTIONS and not CONTROL_SOCKET.exists():
+        return _pi_not_implemented_result(action)
     return _send_control_command_socket(action=action, params=params, timeout_sec=30.0)
 
 
@@ -1187,12 +1200,13 @@ def api_portal_viewer_open():
     )
 
     if not daemon_result.get("ok"):
+        status_code = 501 if "not implemented in Azazel-Pi unified port" in str(daemon_result.get("error", "")) else 500
         return jsonify({
             "ok": False,
             "error": daemon_result.get("error", "Failed to start portal viewer"),
             "portal_viewer": get_portal_viewer_state(),
             "daemon": daemon_result,
-        }), 500
+        }), status_code
 
     portal_state = get_portal_viewer_state()
     if not portal_state.get("ready"):
@@ -1382,7 +1396,8 @@ def api_wifi_scan():
     if result.get("ok"):
         return jsonify(result), 200
     else:
-        return jsonify(result), 500
+        status_code = 501 if "not implemented in Azazel-Pi unified port" in str(result.get("error", "")) else 500
+        return jsonify(result), status_code
 
 
 @app.route("/api/wifi/connect", methods=["POST"])
@@ -1432,7 +1447,8 @@ def api_wifi_connect():
     if result.get("ok"):
         return jsonify(result), 200
     else:
-        return jsonify(result), 500
+        status_code = 501 if "not implemented in Azazel-Pi unified port" in str(result.get("error", "")) else 500
+        return jsonify(result), status_code
 
 
 @app.route("/static/<path:filename>")

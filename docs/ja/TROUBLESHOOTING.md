@@ -837,6 +837,8 @@ sudo nano /etc/logrotate.d/azazel
 
 ## TUIメニューシステム問題
 
+Azazel-PiのメニューTUIは `azctl/menu` ではなく、`azctl/tui_zero.py` / `azctl/tui_zero_textual.py` を使用します。
+
 ### メニュー起動失敗
 
 #### 問題: TUIメニューが起動しない
@@ -844,82 +846,42 @@ sudo nano /etc/logrotate.d/azazel
 **症状:**
 ```bash
 $ python3 -m azctl.cli menu
-ModuleNotFoundError: No module named 'azctl.menu'
+ModuleNotFoundError: No module named 'textual'
 ```
 
 **解決策:**
 
 ```bash
-# モジュールの存在確認
-ls -la azctl/menu/
+# Textual依存を導入
+pip3 install textual
 
-# Pythonパスの確認
-python3 -c "import sys; print('\n'.join(sys.path))"
+# 新TUIモジュールの存在確認
+ls -la azctl/tui_zero.py azctl/tui_zero_textual.py
 
-# 現在のディレクトリから実行
-cd /opt/azazel
-python3 -m azctl.cli menu
+# 構文確認
+python3 -m py_compile azctl/tui_zero.py azctl/tui_zero_textual.py azctl/cli.py
 ```
 
-#### 問題: 循環インポートエラー
+### 表示・入力問題
 
 **症状:**
-```
-ImportError: cannot import name 'MenuCategory' from partially initialized module
-```
+- キー入力が反応しない
+- 画面が乱れる
 
 **解決策:**
 
 ```bash
-# 正しいモジュール構造を確認
-find azctl/menu -name "*.py" -exec grep -l "from.*core import" {} \;
-
-# types.pyからのインポートに修正されているか確認
-grep -r "from.*types import" azctl/menu/
-```
-
-### メニュー表示問題
-
-#### 問題: Rich UIが正しく表示されない
-
-**症状:**
-- 色が表示されない
-- 表が崩れる
-- 文字化けが発生
-
-**解決策:**
-
-```bash
-# ターミナル環境変数を確認
+# ターミナル環境を確認
 echo $TERM
-echo $COLORTERM
-
-# Richコンソール機能をテスト
-python3 -c "from rich.console import Console; c = Console(); c.print('[red]Test[/red]')"
-
-# 適切なターミナルを使用
-export TERM=xterm-256color
-python3 -m azctl.cli menu
-```
-
-#### 問題: キーボード入力が正しく処理されない
-
-**症状:**
-- 数字キーでメニューが選択されない
-- Ctrl+Cで終了できない
-- 画面更新されない
-
-**解決策:**
-
-```bash
-# ターミナル入力モードを確認
 stty -a
-
-# 標準入力の確認
 python3 -c "import sys; print(sys.stdin.isatty())"
 
 # SSH経由の場合
 ssh -t user@host python3 -m azctl.cli menu
+
+# 256色端末を明示
+export TERM=xterm-256color
+python3 -m azctl.cli menu
 ```
 
 ### WiFi管理機能問題
@@ -1070,9 +1032,8 @@ python3 -m azctl.cli menu
 python3 -c "
 import logging
 logging.basicConfig(level=logging.DEBUG)
-from azctl.menu import AzazelTUIMenu
-menu = AzazelTUIMenu()
-menu.run()
+from azctl.tui_zero import run_menu
+run_menu(lan_if='wlan0', wan_if='wlan1', start_menu=True)
 "
 ```
 
