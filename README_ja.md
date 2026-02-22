@@ -249,6 +249,26 @@ sudo scripts/setup_nginx_mattermost.sh
 適用後は `http://<デバイスIP>/`（80番）で Mattermost に到達できます（裏側は `127.0.0.1:8065` へプロキシ）。
 HTTPS を利用する場合は、TLS 用の server ブロックを追加するか Certbot を利用してください。
 
+### オプション: Flask WebUI ダッシュボード
+
+`azazel_web/` に Flask ベースの WebUI バックエンドとダッシュボード資産が含まれます。
+
+```bash
+# ローカル起動（開発用）
+python3 azazel_web/app.py
+
+# systemd 起動（インストール環境）
+sudo systemctl enable --now azazel-web.service
+```
+
+デフォルトのバインドは `127.0.0.1:8084` です。変更する場合:
+
+```bash
+export AZAZEL_WEB_HOST=0.0.0.0
+export AZAZEL_WEB_PORT=8084
+python3 azazel_web/app.py
+```
+
 ## 使用方法
 
 ### コマンドラインインターフェース

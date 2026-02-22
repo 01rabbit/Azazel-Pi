@@ -260,6 +260,26 @@ This will:
 Afterwards, Mattermost should be reachable at `http://<device-ip>/` (port 80) and proxied to `127.0.0.1:8065`.
 For HTTPS, add your TLS server block or use Certbot.
 
+### Optional: Flask Web UI Dashboard
+
+Azazel-Pi now includes a Flask-based Web UI backend and dashboard assets in `azazel_web/`.
+
+```bash
+# local run (dev)
+python3 azazel_web/app.py
+
+# systemd run (installed host)
+sudo systemctl enable --now azazel-web.service
+```
+
+Default bind is `127.0.0.1:8084`. Change with:
+
+```bash
+export AZAZEL_WEB_HOST=0.0.0.0
+export AZAZEL_WEB_PORT=8084
+python3 azazel_web/app.py
+```
+
 ### Modular TUI Menu System
 
 The interactive Terminal User Interface (TUI) menu provides comprehensive system management through a modular architecture designed for maintainability and extensibility:

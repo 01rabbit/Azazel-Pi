@@ -266,6 +266,7 @@ APT_PACKAGES=(
   netfilter-persistent
   nginx
   python3
+  python3-flask
   python3-pip
   python3-toml
   python3-venv
@@ -386,7 +387,7 @@ fi
 log "Staging Azazel runtime under $TARGET_ROOT"
 mkdir -p "$TARGET_ROOT" "$CONFIG_ROOT"
 # Copy current package layout (azazel_pi) and azctl CLI into target runtime
-rsync -a --delete "$REPO_ROOT/azazel_pi" "$REPO_ROOT/azctl" "$TARGET_ROOT/"
+rsync -a --delete "$REPO_ROOT/azazel_pi" "$REPO_ROOT/azctl" "$REPO_ROOT/azazel_web" "$TARGET_ROOT/"
 rsync -a "$REPO_ROOT/configs/" "$CONFIG_ROOT/"
 rsync -a "$REPO_ROOT/systemd/" /etc/systemd/system/
 
@@ -409,6 +410,9 @@ systemctl daemon-reload
 # installer if the unit isn't available for some reason.
 if systemctl list-unit-files | grep -q '^azctl-unified.service'; then
   systemctl enable --now azctl-unified.service || log "Failed to enable/start azctl-unified.service; continue"
+fi
+if systemctl list-unit-files | grep -q '^azazel-web.service'; then
+  systemctl enable --now azazel-web.service || log "Failed to enable/start azazel-web.service; continue"
 fi
 configure_internal_network
 install_mattermost
