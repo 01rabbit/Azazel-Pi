@@ -33,6 +33,18 @@ _DEFAULTS: Dict[str, Any] = {
         "cooldown_seconds": 60,
         "summary_interval_mins": 5,
     },
+    "notify": {
+        "notify_retries": 2,
+        "ntfy": {
+            "enabled": True,
+            "base_url": "http://10.55.0.10:8081",
+            "token_file": "/etc/azazel/ntfy.token",
+            "topic_alert": "azg-alert-critical",
+            "topic_info": "azg-info-status",
+            "cooldown_sec": 30,
+            "timeout_seconds": 2.0,
+        },
+    },
     "opencanary": {
         "ip": "172.16.10.3",
         "ports": [2222, 8081, 5432],

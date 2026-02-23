@@ -1,7 +1,8 @@
-"""Mattermost notification helper constrained to security workflow events."""
+"""Notification helpers for security workflow events (Mattermost + ntfy)."""
 from __future__ import annotations
 
 import json
+import os
 import time
 import urllib.error
 import urllib.request
@@ -142,3 +143,200 @@ class MattermostNotifier:
             return False
         except Exception:
             return False
+
+
+class NtfyNotifier:
+    """Send security notifications to a self-hosted ntfy endpoint."""
+
+    def __init__(self) -> None:
+        notify_cfg = notify_config.get("notify", {}) or {}
+        ntfy_cfg = notify_cfg.get("ntfy", {}) if isinstance(notify_cfg, dict) else {}
+        suppress = notify_config.get("suppress", {}) or {}
+
+        self.base_url = str(ntfy_cfg.get("base_url", "http://10.55.0.10:8081")).rstrip("/")
+        self.topic_alert = str(ntfy_cfg.get("topic_alert", "azg-alert-critical"))
+        self.topic_info = str(ntfy_cfg.get("topic_info", "azg-info-status"))
+        self.token_file = str(ntfy_cfg.get("token_file", "/etc/azazel/ntfy.token"))
+        self.cooldown_seconds = int(
+            ntfy_cfg.get("cooldown_sec", suppress.get("cooldown_seconds", 60)) or 60
+        )
+        self.timeout = float(ntfy_cfg.get("timeout_seconds", 2.0) or 2.0)
+
+        enabled_flag = bool(ntfy_cfg.get("enabled", True))
+        self.token = self._read_token(self.token_file)
+        self.enabled = bool(enabled_flag and self.base_url and self.token)
+        self._last_sent: Dict[str, float] = {}
+
+    def notify_threat_detected(self, alert: Dict[str, Any]) -> bool:
+        if not alert:
+            return False
+        signature = alert.get("signature") or alert.get("event") or "Unknown threat"
+        src_ip = alert.get("src_ip") or "-"
+        sev = alert.get("severity") or "-"
+        body = "\n".join(
+            [
+                f"Signature: {signature}",
+                f"Severity: {sev}",
+                f"Source IP: {src_ip}",
+                f"Destination IP: {alert.get('dest_ip') or '-'}",
+                f"Protocol: {alert.get('proto') or '-'}",
+                f"Destination Port: {alert.get('dest_port') or '-'}",
+            ]
+        )
+        key = f"ntfy:threat:{signature}:{src_ip}"
+        return self._send(
+            topic=self.topic_alert,
+            title="Suricata detected a new threat",
+            body=body,
+            key=key,
+            priority=5,
+            tags=("warning", "shield"),
+            payload={"type": "suricata_threat", "signature": signature, "src_ip": src_ip},
+        )
+
+    def notify_redirect_change(self, target_ip: str, endpoints: Iterable[Dict[str, Any]], applied: bool) -> bool:
+        status = "applied" if applied else "removed"
+        endpoint_list = list(endpoints or [])
+        ports = ", ".join(
+            f"{ep.get('protocol', 'tcp').lower()}/{ep.get('port')}" for ep in endpoint_list
+        ) if endpoint_list else "all protocols"
+        body = "\n".join(
+            [
+                f"Target IP: {target_ip}",
+                f"Status: {status}",
+                f"Ports: {ports}",
+            ]
+        )
+        key = f"ntfy:redirect:{target_ip}:{status}"
+        return self._send(
+            topic=self.topic_info,
+            title="Traffic diversion change",
+            body=body,
+            key=key,
+            priority=3 if applied else 2,
+            tags=("arrows_counterclockwise", "network"),
+            payload={"type": "traffic_redirect", "target_ip": target_ip, "status": status},
+        )
+
+    def notify_mode_change(self, previous: str, current: str, average: float) -> bool:
+        body = "\n".join(
+            [
+                f"Previous: {previous}",
+                f"Current: {current}",
+                f"Average score: {round(float(average), 2)}",
+            ]
+        )
+        key = f"ntfy:mode:{previous}->{current}"
+        return self._send(
+            topic=self.topic_info,
+            title="Defense mode changed",
+            body=body,
+            key=key,
+            priority=3,
+            tags=("shield",),
+            payload={"type": "mode_change", "previous": previous, "current": current},
+        )
+
+    @staticmethod
+    def _read_token(path: str) -> str:
+        try:
+            if path and os.path.exists(path):
+                return open(path, "r", encoding="utf-8").read().strip()
+        except Exception:
+            return ""
+        return ""
+
+    def _should_send(self, key: str) -> bool:
+        if not key:
+            return True
+        now = time.time()
+        last = self._last_sent.get(key)
+        if not last or (now - last) > self.cooldown_seconds:
+            self._last_sent[key] = now
+            return True
+        return False
+
+    def _send(
+        self,
+        topic: str,
+        title: str,
+        body: str,
+        key: str,
+        priority: int,
+        tags: Iterable[str],
+        payload: Dict[str, Any],
+    ) -> bool:
+        del payload  # payload kept for parity with Mattermost; not needed in HTTP request.
+        if not self.enabled or not topic:
+            return False
+        if not self._should_send(key):
+            return False
+
+        url = f"{self.base_url}/{topic}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Title": title,
+            "Priority": str(priority),
+            "Tags": ",".join(tags),
+            "Content-Type": "text/plain; charset=utf-8",
+        }
+        data = body.encode("utf-8")
+        try:
+            req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                return 200 <= resp.getcode() < 300
+        except urllib.error.HTTPError:
+            return False
+        except Exception:
+            return False
+
+
+class CompositeNotifier:
+    """Fan-out notifier that invokes all configured notifier backends."""
+
+    def __init__(self, notifiers: Iterable[object]) -> None:
+        self._notifiers = list(notifiers)
+
+    def notify_threat_detected(self, alert: Dict[str, Any]) -> bool:
+        return self._broadcast("notify_threat_detected", alert)
+
+    def notify_redirect_change(self, target_ip: str, endpoints: Iterable[Dict[str, Any]], applied: bool) -> bool:
+        return self._broadcast("notify_redirect_change", target_ip, endpoints, applied)
+
+    def notify_mode_change(self, previous: str, current: str, average: float) -> bool:
+        return self._broadcast("notify_mode_change", previous, current, average)
+
+    def _broadcast(self, method: str, *args: Any) -> bool:
+        sent = False
+        for notifier in self._notifiers:
+            fn = getattr(notifier, method, None)
+            if not fn:
+                continue
+            try:
+                sent = bool(fn(*args)) or sent
+            except Exception:
+                continue
+        return sent
+
+
+def build_default_notifier() -> object | None:
+    """Build default notifier chain (Mattermost + ntfy when configured)."""
+    backends: list[object] = []
+    try:
+        mm = MattermostNotifier()
+        if getattr(mm, "enabled", False):
+            backends.append(mm)
+    except Exception:
+        pass
+    try:
+        ntfy = NtfyNotifier()
+        if getattr(ntfy, "enabled", False):
+            backends.append(ntfy)
+    except Exception:
+        pass
+
+    if not backends:
+        return None
+    if len(backends) == 1:
+        return backends[0]
+    return CompositeNotifier(backends)

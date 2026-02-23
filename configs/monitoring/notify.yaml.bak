@@ -66,3 +66,15 @@ ai:
   policy_scripts:              # AI判定によるポリシー適用スクリプト
     delay: "/home/azazel/Azazel-Edge/scripts/ai_policy_delay.sh"
     block: "/home/azazel/Azazel-Edge/scripts/ai_policy_block.sh"
+
+# 通知周りの挙動調整
+notify:
+  notify_retries: 2
+  ntfy:
+    enabled: true
+    base_url: "http://10.55.0.10:8081"
+    token_file: "/etc/azazel/ntfy.token"
+    topic_alert: "azg-alert-critical"
+    topic_info: "azg-info-status"
+    cooldown_sec: 30
+    timeout_seconds: 2.0

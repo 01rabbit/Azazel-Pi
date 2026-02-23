@@ -16,6 +16,9 @@ sudo scripts/install_azazel_complete.sh
 
 # Skip Ollama model setup (for manual configuration)
 sudo scripts/install_azazel_complete.sh --skip-models
+
+# Include local ntfy push notification server
+sudo scripts/install_azazel_complete.sh --enable-ntfy
 ```
 
 **Includes:**
@@ -129,6 +132,13 @@ sudo scripts/install_azazel_complete.sh --enable-epd [--epd-emulate]
 
 ```bash
 sudo scripts/setup_nginx_mattermost.sh
+```
+
+### `install_ntfy.sh`
+**Install and configure local ntfy server (TCP/8081).**
+
+```bash
+sudo scripts/install_ntfy.sh
 ```
 
 ### `install_ollama.sh`

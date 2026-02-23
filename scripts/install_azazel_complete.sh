@@ -23,7 +23,7 @@ success() {
 
 usage() {
   cat <<USAGE
-Usage: $0 [--start] [--skip-models] [--enable-epd] [--epd-force] [--epd-emulate]
+Usage: $0 [--start] [--skip-models] [--enable-epd] [--epd-force] [--epd-emulate] [--enable-ntfy]
 
 Options:
   --start        Start all services after installation completes
@@ -31,6 +31,7 @@ Options:
   --enable-epd   Install and integrate E-Paper display (library + service)
   --epd-force    Proceed with E-Paper service install even if SPI device absent
   --epd-emulate  Enable E-Paper emulation mode (no hardware required)
+  --enable-ntfy  Install and configure local ntfy server (TCP/8081)
   -h, --help     Show this help message
 
 This script performs a complete Azazel-Edge installation including:
@@ -50,6 +51,7 @@ SKIP_MODELS=0
 ENABLE_EPD=0
 EPD_FORCE=0
 EPD_EMULATE=0
+ENABLE_NTFY=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --start)
@@ -70,6 +72,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --epd-emulate)
       EPD_EMULATE=1
+      shift
+      ;;
+    --enable-ntfy)
+      ENABLE_NTFY=1
       shift
       ;;
     -h|--help)
@@ -96,11 +102,11 @@ fi
 log "Starting complete Azazel-Edge installation..."
 
 # Step 1: Run base installation
-log "Step 1/9: Running base installation (dependencies, Docker, services)"
+log "Step 1/10: Running base installation (dependencies, Docker, services)"
 bash scripts/install_azazel.sh || error "Base installation failed"
 
 # Step 2: Optional E-Paper integration
-log "Step 2/9: Optional E-Paper integration"
+log "Step 2/10: Optional E-Paper integration"
 if [[ $ENABLE_EPD -eq 1 ]]; then
   log "E-Paper integration requested (--enable-epd)"
   apt-get update
@@ -257,7 +263,7 @@ else
 fi
 
 # Step 3: Configure all service files
-log "Step 3/9: Deploying configuration files"
+log "Step 3/10: Deploying configuration files"
 
 # Copy all configs to /etc/azazel
 cp -r configs/* /etc/azazel/ || error "Failed to copy configuration files"
@@ -323,7 +329,7 @@ fi
 success "Configuration files deployed"
 
 # Step 4: Enhanced Docker Configuration and Services
-log "Step 4/9: Enhanced Docker configuration and services (PostgreSQL + Ollama)"
+log "Step 4/10: Enhanced Docker configuration and services (PostgreSQL + Ollama)"
 
 # Configure Docker with optimized settings for Raspberry Pi
 DOCKER_CONFIG_FILE="/etc/docker/daemon.json"
@@ -416,8 +422,21 @@ for i in {1..15}; do
   sleep 2
 done
 
-# Step 5: Enhanced Suricata Configuration
-log "Step 5/9: Enhanced Suricata configuration with auto-update system"
+# Step 5: Optional ntfy integration
+log "Step 5/10: Optional ntfy integration"
+if [[ $ENABLE_NTFY -eq 1 ]]; then
+  if [[ -x "scripts/install_ntfy.sh" ]]; then
+    log "Installing ntfy server and token provisioning"
+    bash scripts/install_ntfy.sh || warn "ntfy installation failed"
+  else
+    warn "scripts/install_ntfy.sh not found; skipping ntfy integration"
+  fi
+else
+  log "ntfy integration not requested (use --enable-ntfy to include)"
+fi
+
+# Step 6: Enhanced Suricata Configuration
+log "Step 6/10: Enhanced Suricata configuration with auto-update system"
 
 # Configure Suricata for non-root execution with proper capabilities
 SURICATA_USER=suricata
@@ -550,8 +569,8 @@ EOF
 
 success "Enhanced Suricata configuration completed"
 
-# Step 5b: Configure all systemd services
-log "Step 5b/9: Configuring systemd services"
+# Step 6b: Configure all systemd services
+log "Step 6b/10: Configuring systemd services"
 
 # Enable core services
 systemctl enable azctl-unified.service || warn "Failed to enable azctl-unified.service"
@@ -560,14 +579,17 @@ systemctl enable suricata.service || warn "Failed to enable suricata.service"
 systemctl enable vector.service || warn "Failed to enable vector.service"
 systemctl enable mattermost.service || warn "Failed to enable mattermost.service"
 systemctl enable nginx.service || warn "Failed to enable nginx.service"
+if [[ $ENABLE_NTFY -eq 1 ]]; then
+  systemctl enable ntfy.service || warn "Failed to enable ntfy.service"
+fi
 
 # Enable Suricata auto-update timer
 systemctl enable azazel-suricata-update.timer || warn "Failed to enable suricata auto-update timer"
 
 success "Systemd services configured"
 
-# Step 6: Configure Nginx reverse proxy
-log "Step 6/9: Setting up Nginx reverse proxy"
+# Step 7: Configure Nginx reverse proxy
+log "Step 7/10: Setting up Nginx reverse proxy"
 
 if [[ -f "deploy/nginx-site.conf" ]]; then
   # Deploy nginx configuration
@@ -584,8 +606,8 @@ else
   warn "Nginx configuration file not found, skipping..."
 fi
 
-# Step 7: Ollama model setup instructions
-log "Step 7/9: Ollama model setup"
+# Step 8: Ollama model setup instructions
+log "Step 8/10: Ollama model setup"
 
 if [[ $SKIP_MODELS -eq 0 ]]; then
   # Create models directory
@@ -639,8 +661,8 @@ else
   log "Skipping model setup as requested"
 fi
 
-# Step 8: Final service startup
-log "Step 8/9: Final configuration and service startup"
+# Step 9: Final service startup
+log "Step 9/10: Final configuration and service startup"
 
 # Ensure log directories exist
 mkdir -p /var/log/azazel
@@ -706,6 +728,7 @@ cat <<SUMMARY
   • Suricata IDS/IPS with auto-update system
   • Vector log shipper (enhanced configuration)
   • OpenCanary honeypot (Docker)
+$( [[ $ENABLE_NTFY -eq 1 ]] && echo "  • ntfy local push server (TCP/8081)" )
   • PostgreSQL (Docker, optimized)
   • Ollama AI (Docker, optimized)
   • Nginx reverse proxy
@@ -722,10 +745,11 @@ $( [[ $ENABLE_EPD -eq 1 ]] && echo "   • E-Paper display integration ("$([ $EP
   1. Download Ollama model to /opt/models/ (see instructions above)
   2. Configure network interfaces in /etc/azazel/azazel.yaml if needed
   3. Set up Mattermost webhooks at http://YOUR_IP:8065
-  4. (Optional) Reboot if SPI was just enabled for E-Paper
-  5. Start services: sudo systemctl start azctl-unified.service (if not auto-started)
-  6. Monitor status: python3 -m azctl.cli status
-$( [[ $ENABLE_EPD -eq 1 ]] && echo "   7. Test E-Paper daemon: sudo systemctl status azazel-epd.service" )
+$( [[ $ENABLE_NTFY -eq 1 ]] && echo "  4. Confirm ntfy health: curl http://10.55.0.10:8081/v1/health" )
+  5. (Optional) Reboot if SPI was just enabled for E-Paper
+  6. Start services: sudo systemctl start azctl-unified.service (if not auto-started)
+  7. Monitor status: python3 -m azctl.cli status
+$( [[ $ENABLE_EPD -eq 1 ]] && echo "   8. Test E-Paper daemon: sudo systemctl status azazel-epd.service" )
 
 📖 Documentation: docs/ja/INSTALLATION.md
 🔧 Troubleshooting: scripts/sanity_check.sh

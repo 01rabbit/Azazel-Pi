@@ -78,6 +78,8 @@ PORTAL_VIEWER_ENV_PATH = portal_env_candidates()[0]
 NTFY_CONFIG_PATHS = [
     Path(os.environ.get("AZAZEL_CONFIG_PATH", str(first_minute_config_candidates()[0]))),
     Path("configs/first_minute.yaml"),
+    Path("/etc/azazel/notify.yaml"),
+    Path("configs/notify.yaml"),
 ]
 NTFY_SSE_KEEPALIVE_SEC = int(os.environ.get("AZAZEL_SSE_KEEPALIVE_SEC", "20"))
 NTFY_SSE_READ_TIMEOUT_SEC = int(os.environ.get("AZAZEL_NTFY_READ_TIMEOUT_SEC", "35"))

@@ -19,9 +19,9 @@ from azazel_edge.core.scorer import ScoreEvaluator
 from azazel_edge.core.state_machine import Event, StateMachine
 
 try:
-    from azazel_edge.core.notify import MattermostNotifier
+    from azazel_edge.core.notify import build_default_notifier
 except Exception:
-    MattermostNotifier = None
+    build_default_notifier = None
 
 
 @dataclass
@@ -32,7 +32,9 @@ class AzazelDaemon:
     decisions_log: Path = field(default_factory=lambda: Path("/var/log/azazel/decisions.log"))
     # Optional integrations
     traffic_engine: object | None = field(default_factory=lambda: get_traffic_control_engine())
-    notifier: object | None = field(default_factory=lambda: MattermostNotifier() if MattermostNotifier is not None else None)
+    notifier: object | None = field(
+        default_factory=lambda: build_default_notifier() if build_default_notifier is not None else None
+    )
 
     def __post_init__(self) -> None:
         self._ip_control_modes: Dict[str, str] = {}

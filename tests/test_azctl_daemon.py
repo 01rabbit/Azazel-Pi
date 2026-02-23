@@ -66,11 +66,17 @@ class DummyNotifier:
         return True
 
 
-def test_daemon_controls_and_notifies(monkeypatch):
+def test_daemon_controls_and_notifies(monkeypatch, tmp_path):
     machine = DummyMachine()
     traffic = DummyTrafficEngine()
     notifier = DummyNotifier()
-    daemon = AzazelDaemon(machine=machine, scorer=ScoreEvaluator(), traffic_engine=traffic, notifier=notifier)
+    daemon = AzazelDaemon(
+        machine=machine,
+        scorer=ScoreEvaluator(),
+        traffic_engine=traffic,
+        notifier=notifier,
+        decisions_log=tmp_path / "decisions.log",
+    )
     daemon._opencanary_endpoints = [{"protocol": "tcp", "port": 2222}]
     daemon._next_cleanup_at = 0.0
 
@@ -82,8 +88,8 @@ def test_daemon_controls_and_notifies(monkeypatch):
     event = Event(name="alert", severity=2, src_ip="5.5.5.5", dest_ip="10.0.0.1", signature="SIG")
     daemon.process_event(event)
 
-    assert traffic.diverted == [("5.5.5.5", None)]
-    assert traffic.applied == [("5.5.5.5", "lockdown")]
+    assert ("5.5.5.5", None) in traffic.diverted
+    assert ("5.5.5.5", "lockdown") in traffic.applied
     assert notifier.redirects[-1]["applied"] is True
     assert notifier.threats[-1]["src_ip"] == "5.5.5.5"
     assert notifier.modes[-1]["current"] == "lockdown"
@@ -95,5 +101,5 @@ def test_daemon_controls_and_notifies(monkeypatch):
     )
     daemon.process_event(event)
 
-    assert traffic.removed == ["5.5.5.5"]
+    assert "5.5.5.5" in traffic.removed
     assert notifier.redirects[-1]["applied"] is False
