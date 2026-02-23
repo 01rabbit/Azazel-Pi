@@ -1,4 +1,4 @@
-# Azazel-Pi AI Edge Computing Implementation (Current)
+# Azazel-Edge AI Edge Computing Implementation (Current)
 
 ## Overview
 
@@ -22,7 +22,7 @@ This implementation is a hybrid threat evaluation system that integrates "Offlin
 
 ## Implementation Components
 
-### 1) Hybrid Threat Evaluator (`azazel_pi/core/hybrid_threat_evaluator.py`)
+### 1) Hybrid Threat Evaluator (`azazel_edge/core/hybrid_threat_evaluator.py`)
 - Integrates Legacy rule evaluation and Offline AI (including Mock LLM)
 - **Ollama Integration**: Executes deep analysis when unknown threats are detected
   - Trigger conditions: Confidence < 0.7, unknown category, low risk but uncertain
@@ -33,20 +33,20 @@ This implementation is a hybrid threat evaluation system that integrates "Offlin
 - Benign traffic override judgment
 - Returns detailed components (legacy_score/mock_llm_score/weights)
 
-### 2) AI Evaluator (`azazel_pi/core/ai_evaluator.py`)
+### 2) AI Evaluator (`azazel_edge/core/ai_evaluator.py`)
 - **Ollama LLM Evaluator**: Deep analysis for unknown threats
 - API endpoint: `http://127.0.0.1:11434/api/generate`
 - Model: threatjudge (Qwen2.5-1.5B-Instruct-uncensored)
 - Timeout: 30 seconds (configurable)
 - Fallback functionality: Automatically falls back to Mock LLM when Ollama is unavailable
 
-### 3) Offline AI Evaluator (`azazel_pi/core/offline_ai_evaluator.py`)
+### 3) Offline AI Evaluator (`azazel_edge/core/offline_ai_evaluator.py`)
 - Features: Signature/payload complexity/target service criticality/reputation/temporal frequency/protocol anomaly
 - Reputation: Strict classification of RFC1918・loopback・link-local・invalid addresses using `ipaddress`
 - No model dependency. Pseudo-deterministic even when using Mock LLM (random seed from prompt hash)
 - Outputs risk as 1-5, converted to 0-100 on integration side
 
-### 4) Suricata Monitor (`azazel_pi/monitor/main_suricata.py`)
+### 4) Suricata Monitor (`azazel_edge/monitor/main_suricata.py`)
 - Category normalization in `parse_alert` (absorbs uppercase/lowercase/underscore differences)
 - Reads allow/deny categories from `soc.allowed_categories` / `soc.denied_categories` in `configs/network/azazel.yaml` (uses default list when unset)
 - Independent frequency counter (signature×src_ip time series) for stable concentrated attack detection
@@ -55,17 +55,17 @@ This implementation is a hybrid threat evaluation system that integrates "Offlin
 - Moving average reflection and mode transition via `state_machine.apply_score()`
 - Cleanup call for expired rules every 10 minutes
 
-### 5) State Machine (`azazel_pi/core/state_machine.py`)
+### 5) State Machine (`azazel_edge/core/state_machine.py`)
 - 3 modes: portal/shield/lockdown + temporary user mode
 - Reads thresholds and unlock delays from YAML. Added `configs/network/azazel.yaml` as fallback in path search
 - Transition judgment using moving average window, supports user mode timeout
 
-### 6) Integrated Traffic Control (`azazel_pi/core/enforcer/traffic_control.py`)
+### 6) Integrated Traffic Control (`azazel_edge/core/enforcer/traffic_control.py`)
 - Composite control: DNAT→OpenCanary + suspect QoS + netem delay + HTB shaping
 - Idempotency: Suppresses re-application of same rule type to same IP, uses retained `prio` for accurate filter removal on deletion
 - Expired cleanup API and statistics retrieval API
 
-### 7) Wrapper Compatibility (`azazel_pi/utils/delay_action.py`)
+### 7) Wrapper Compatibility (`azazel_edge/utils/delay_action.py`)
 - Bridge from old API to integrated engine. Legacy fallback is deprecated
 
 ## Configuration
@@ -154,7 +154,7 @@ services:
 ### Management Commands
 
 ```bash
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 
 # Start all services
 docker compose up -d
@@ -175,7 +175,7 @@ docker logs -f azazel_ollama
 
 ```bash
 # Run automatic setup script
-sudo /home/azazel/Azazel-Pi/scripts/setup_ollama.sh
+sudo /home/azazel/Azazel-Edge/scripts/setup_ollama.sh
 ```
 
 Download model file in advance:
@@ -193,7 +193,7 @@ pytest -q
 ### 3. Integration Test
 ```bash
 python3 - << 'PY'
-from azazel_pi.monitor.main_suricata import calculate_threat_score
+from azazel_edge.monitor.main_suricata import calculate_threat_score
 
 # Known threat test (Mock LLM)
 print("=== Known Threat: SQLi ===")
@@ -257,7 +257,7 @@ Expected output:
 docker logs azazel_ollama
 
 # Restart
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose restart ollama
 
 # Health check

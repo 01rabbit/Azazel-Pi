@@ -16,9 +16,6 @@ All notable changes to this project will be documented in this file.
 
 ### Notes
 - Backups of any replaced files are stored as `/opt/azazel/config/<name>.bak.<timestamp>` on the host.
-# Changelog
-
-All notable changes to this project will be documented in this file.
 
 ## [3.1.0] - 2025-11-09
 ### Added
@@ -30,7 +27,7 @@ All notable changes to this project will be documented in this file.
 - Backwards-compatible `StatusCollector` initialization handling in `epd_daemon` — older installs without the new `wan_state_path` parameter are tolerated.
 
 ### Notes
-- These are backward-compatible improvements (minor release). See commit 478b8ee for details and files changed: `azazel_pi/core/display/status_collector.py`, `epd_daemon.py`, `renderer.py`.
+- These are backward-compatible improvements (minor release). See commit 478b8ee for details and files changed: `azazel_edge/core/display/status_collector.py`, `epd_daemon.py`, `renderer.py`.
   - Suricata integration for network threat detection
   - AI-based threat evaluation pipeline and scoring
   - Basic TUI and CLI utilities for status and control
@@ -68,7 +65,7 @@ All notable changes to this project will be documented in this file.
   - Interactive TUI management tool (`bin/azazel-qos-menu.sh`) for privileged host operations.
   - New scripts: `bin/azazel-traffic-init.sh`, `bin/azazel-qos-apply.sh` with DRY_RUN mode for safe testing.
   - systemd units: `azazel-traffic-init.service`, `azazel-qos-apply.service`, `azazel-priorityd.service`.
-  - Python module: `azazel_pi/core/network/internal_control.py` (InternalControlManager skeleton).
+  - Python module: `azazel_edge/core/network/internal_control.py` (InternalControlManager skeleton).
 - Extended `configs/network/azazel.yaml` with QoS configuration keys (mark_map, classes, thresholds, dynamic_bias).
 - Documentation: `docs/INTERNAL_NETWORK_CONTROL.md` (architecture), `docs/QOS_TESTING.md` (testing guide with DRY_RUN results).
 
@@ -137,4 +134,4 @@ Semantic versioning: MAJOR.MINOR.PATCH. Deprecations queued for removal after at
 
 ## [1.0.0] - 2025-10-05
 ### Initial release
-- Initial public baseline of Azazel-Pi with core features:
+- Initial public baseline of Azazel-Edge with core features:

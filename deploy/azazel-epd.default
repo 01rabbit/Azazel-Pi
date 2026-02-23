@@ -1,4 +1,4 @@
-# Azazel Pi E-Paper Display Configuration
+# Azazel Edge E-Paper Display Configuration
 # Place this file in /etc/default/azazel-epd
 
 # Update interval in seconds (default: 10)

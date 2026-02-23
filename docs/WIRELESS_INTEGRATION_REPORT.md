@@ -82,7 +82,7 @@ The wireless network setup scripts `setup_wlan0_ap.sh` and `setup_suricata_wlan1
 Internet
     ↕
 [wlan1] ← Raspberry Pi → [wlan0]
-         (Azazel-Pi)       ↓
+         (Azazel-Edge)       ↓
                      Internal Network
                      (172.16.0.0/24)
                            ↓
@@ -191,13 +191,13 @@ ip addr show wlan0 wlan1
 
 ## Conclusion
 
-The unified wireless setup script represents a significant improvement in Azazel-Pi's network configuration capabilities. By combining AP setup and Suricata monitoring into a single, well-structured script, we have:
+The unified wireless setup script represents a significant improvement in Azazel-Edge's network configuration capabilities. By combining AP setup and Suricata monitoring into a single, well-structured script, we have:
 
 - **Simplified** the user experience
 - **Enhanced** reliability and error handling
 - **Improved** flexibility and automation support
 - **Reduced** maintenance overhead
 
-The new script is production-ready and provides a solid foundation for Azazel-Pi's wireless networking requirements.
+The new script is production-ready and provides a solid foundation for Azazel-Edge's wireless networking requirements.
 
 **Status**: ✅ Ready for production use and integration into main installer.

@@ -1,10 +1,10 @@
 # E-Paper ディスプレイ設定ガイド
 
-このガイドでは、Azazel-PiでのWaveshare E-Paperディスプレイの設定、インストール、トラブルシューティングについて説明します。E-Paperディスプレイは、システム状態、防御モード、アラート情報を物理的に表示する機能を提供します。
+このガイドでは、Azazel-EdgeでのWaveshare E-Paperディスプレイの設定、インストール、トラブルシューティングについて説明します。E-Paperディスプレイは、システム状態、防御モード、アラート情報を物理的に表示する機能を提供します。
 
 ## 概要
 
-Azazel-PiのE-Paperディスプレイ機能：
+Azazel-EdgeのE-Paperディスプレイ機能：
 
 - **リアルタイム状態表示**: 現在の防御モード、システム負荷、ネットワーク状態
 - **アラート通知**: セキュリティインシデントやシステム異常の視覚化
@@ -169,7 +169,7 @@ sudo nano /etc/default/azazel-epd
 ```
 
 ```bash
-# Azazel Pi E-Paper Display Configuration
+# Azazel Edge E-Paper Display Configuration
 
 # 更新間隔（秒）- デフォルト: 10
 UPDATE_INTERVAL=10
@@ -217,7 +217,7 @@ sudo journalctl -u azazel-epd.service --since \"10 minutes ago\"
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ Azazel-Pi              [Mode: PORTAL]   12:34  │
+│ Azazel-Edge              [Mode: PORTAL]   12:34  │
 ├─────────────────────────────────────────────────┤
 │ CPU: ██████░░░░ 60%    Mem: ███████░░░ 70%     │
 │ Net: ↑ 1.2MB/s ↓ 0.8MB/s                      │
@@ -275,37 +275,37 @@ Delay: 300ms | Limit: 64kbps
 
 ```bash
 # テストパターンを表示
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test --emulate
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=test --emulate
 
 # 起動アニメーションを表示
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=boot
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=boot
 
 # 単発更新
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=once
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=once
 
 # エミュレーションモード（画像ファイル出力）
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test --emulate
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=test --emulate
 ```
 
 ### デバッグモード
 
 ```bash
 # デバッグ出力有効化
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --debug --mode=test
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --debug --mode=test
 
 # 詳細ログ出力
 sudo systemctl stop azazel-epd.service
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --debug --interval=5
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --debug --interval=5
 ```
 
 ### ディスプレイリセット
 
 ```bash
 # ディスプレイをクリア
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=clear
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=clear
 
 # 完全リフレッシュ
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=refresh
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=refresh
 
 # サービス再起動
 sudo systemctl restart azazel-epd.service
@@ -333,7 +333,7 @@ lsmod | grep spi
 sudo systemctl status azazel-epd.service
 
 # 手動テスト
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=test
 ```
 
 **解決策:**
@@ -361,7 +361,7 @@ sudo systemctl restart azazel-epd.service
 
 ```bash
 # 完全リフレッシュを実行
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=refresh
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=refresh
 
 # ジェントル更新を無効化
 sudo nano /etc/default/azazel-epd
@@ -464,7 +464,7 @@ sudo nano /etc/default/azazel-epd
 
 ```bash
 # カスタムレンダラーファイル
-sudo nano /opt/azazel/azazel_pi/core/display/renderer.py
+sudo nano /opt/azazel/azazel_edge/core/display/renderer.py
 
 # カスタムレイアウト関数を追加
 # class EPaperRenderer:
@@ -482,7 +482,7 @@ sudo apt install fonts-noto-cjk
 ls /usr/share/fonts/truetype/noto/
 
 # カスタムフォント設定
-sudo nano /opt/azazel/azazel_pi/core/display/fonts.py
+sudo nano /opt/azazel/azazel_edge/core/display/fonts.py
 ```
 
 ### アイコンの追加
@@ -589,7 +589,7 @@ top -p $(pgrep -f epd_daemon)
 
 ## 関連ドキュメント
 
-- [`INSTALLATION_ja.md`](INSTALLATION_ja.md) - Azazel-Pi完全インストールガイド
+- [`INSTALLATION_ja.md`](INSTALLATION_ja.md) - Azazel-Edge完全インストールガイド
 - [`TROUBLESHOOTING_ja.md`](TROUBLESHOOTING_ja.md) - 包括的トラブルシューティング
 - [`OPERATIONS_ja.md`](OPERATIONS_ja.md) - 日常運用とメンテナンス
 - [Waveshare公式ドキュメント](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT) - ハードウェア仕様
@@ -622,4 +622,4 @@ top -p $(pgrep -f epd_daemon)
 
 ---
 
-*E-Paperディスプレイの詳細な設定については、[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)とWaveshare公式ドキュメントを参照してください。*
+*E-Paperディスプレイの詳細な設定については、[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)とWaveshare公式ドキュメントを参照してください。*

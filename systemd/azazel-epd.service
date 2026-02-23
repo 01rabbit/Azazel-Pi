@@ -1,6 +1,6 @@
 [Unit]
-Description=Azazel Pi E-Paper Status Display
-Documentation=https://github.com/01rabbit/Azazel-Pi
+Description=Azazel Edge E-Paper Status Display
+Documentation=https://github.com/01rabbit/Azazel-Edge
 After=multi-user.target network-online.target azctl.service
 Wants=network-online.target
 Before=poweroff.target halt.target shutdown.target
@@ -15,12 +15,12 @@ Environment=PYTHONUNBUFFERED=1
 EnvironmentFile=-/etc/default/azazel-epd
 # Main daemon process
 # Use /bin/sh -c so shell parameter expansion with defaults (e.g. ${UPDATE_INTERVAL:-10}) works
-ExecStart=/bin/sh -c '/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py \
+ExecStart=/bin/sh -c '/usr/bin/python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py \
     --interval=${UPDATE_INTERVAL:-10} \
     --events-log=${EVENTS_LOG:-/var/log/azazel/events.json} \
     --mode=daemon ${EPD_OPTS:-}'
 # Graceful shutdown
-ExecStop=/usr/bin/python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
+ExecStop=/usr/bin/python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=shutdown
 # Logging
 StandardOutput=journal
 StandardError=journal

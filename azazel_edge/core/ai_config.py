@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Integration Configuration for Azazel-Pi
+AI Integration Configuration for Azazel-Edge
 Sets up the enhanced AI evaluator with Mock LLM support
 """
 
@@ -51,7 +51,7 @@ class AIConfig:
         }
     
     @staticmethod
-    def save_config(config_path: str = "/home/azazel/Azazel-Pi/configs/ai_config.json"):
+    def save_config(config_path: str = "/home/azazel/Azazel-Edge/configs/ai_config.json"):
         """Save AI configuration to file"""
         config = AIConfig.get_config()
         

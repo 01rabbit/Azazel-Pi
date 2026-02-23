@@ -22,7 +22,7 @@ bash -n bin/azazel-qos-menu.sh      # ✅ PASS
 
 #### 2. Python Module Import
 ```bash
-python3 -c "from azazel_pi.core.network.internal_control import InternalControlManager"  # ✅ PASS
+python3 -c "from azazel_edge.core.network.internal_control import InternalControlManager"  # ✅ PASS
 python3 -c "import sys; sys.path.insert(0, 'services'); import azazel_priorityd"        # ✅ PASS
 ```
 

@@ -1,6 +1,6 @@
-# Azazel-Pi Installation Scripts
+# Azazel-Edge Installation Scripts
 
-This directory contains automated installation and setup scripts for Azazel-Pi.
+This directory contains automated installation and setup scripts for Azazel-Edge.
 
 ## Complete Installation (Recommended)
 
@@ -63,7 +63,7 @@ sudo scripts/setup_ollama_unified.sh --skip-restart
 - **Docker Deployment**: Ollama container setup with Docker Compose
 - **Model Management**: Downloads Qwen2.5-1.5B-Instruct-uncensored (~1.1GB)
 - **Enhanced Modelfile**: v3 optimized for JSON threat analysis
-- **AI Integration**: Updates Azazel-Pi AI configuration
+- **AI Integration**: Updates Azazel-Edge AI configuration
 - **Service Integration**: Automatic restart and status verification
 - **Flexible Phases**: Can run Docker-only, model-only, or complete setup
 
@@ -89,7 +89,7 @@ sudo scripts/setup_ollama_unified.sh --skip-restart
 - **Phase Control**: Deploy-only, model-only, or full setup options
 - **Enhanced Model**: v3 Modelfile optimized for JSON threat analysis
 - **Automated Testing**: Built-in functionality verification
-- **Service Integration**: Seamless Azazel-Pi system integration
+- **Service Integration**: Seamless Azazel-Edge system integration
 
 ## Specialized Setup Scripts
 

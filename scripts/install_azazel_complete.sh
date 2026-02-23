@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Complete Azazel-Pi Installation Script
+# Complete Azazel-Edge Installation Script
 # Handles all dependencies, configurations, and service setup automatically
 set -euo pipefail
 
@@ -33,7 +33,7 @@ Options:
   --epd-emulate  Enable E-Paper emulation mode (no hardware required)
   -h, --help     Show this help message
 
-This script performs a complete Azazel-Pi installation including:
+This script performs a complete Azazel-Edge installation including:
 - Base dependencies (Suricata, Docker, Vector, OpenCanary)
 - Service configuration and systemd units
 - Ollama setup with Docker
@@ -88,12 +88,12 @@ if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
   error "This installer must be run as root. Use sudo if necessary."
 fi
 
-# Verify we're in the Azazel-Pi directory
+# Verify we're in the Azazel-Edge directory
 if [[ ! -f "scripts/install_azazel.sh" || ! -f "pyproject.toml" ]]; then
-  error "Please run this script from the Azazel-Pi project root directory"
+  error "Please run this script from the Azazel-Edge project root directory"
 fi
 
-log "Starting complete Azazel-Pi installation..."
+log "Starting complete Azazel-Edge installation..."
 
 # Step 1: Run base installation
 log "Step 1/9: Running base installation (dependencies, Docker, services)"
@@ -274,7 +274,7 @@ if [[ -f "deploy/vector.toml" ]]; then
 else
   # Create optimized Vector configuration if not present
   cat > /etc/azazel/vector/vector.toml <<'EOF'
-# Enhanced Vector configuration for Azazel-Pi
+# Enhanced Vector configuration for Azazel-Edge
 [sources.suricata_eve]
 type = "file"
 include = ["/var/log/suricata/eve.json"]
@@ -700,7 +700,7 @@ fi
 cat <<SUMMARY
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎉 AZAZEL-PI INSTALLATION COMPLETE
+🎉 AZAZEL-EDGE INSTALLATION COMPLETE
 
 ✅ Installed components:
   • Suricata IDS/IPS with auto-update system

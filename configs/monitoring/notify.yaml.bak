@@ -64,5 +64,5 @@ ai:
     - "qwen2.5:3b"
     - "tinyllama"
   policy_scripts:              # AI判定によるポリシー適用スクリプト
-    delay: "/home/azazel/Azazel-Pi/scripts/ai_policy_delay.sh"
-    block: "/home/azazel/Azazel-Pi/scripts/ai_policy_block.sh"
+    delay: "/home/azazel/Azazel-Edge/scripts/ai_policy_delay.sh"
+    block: "/home/azazel/Azazel-Edge/scripts/ai_policy_block.sh"

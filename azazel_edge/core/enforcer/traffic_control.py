@@ -56,7 +56,7 @@ class TrafficControlEngine:
     """統合トラフィック制御エンジン"""
     
     def __init__(self, config_path: Optional[str] = None):
-        self.config_path = config_path or "/home/azazel/Azazel-Pi/configs/network/azazel.yaml"
+        self.config_path = config_path or "/home/azazel/Azazel-Edge/configs/network/azazel.yaml"
         # Respect AZAZEL_WAN_IF environment override first, then WAN manager helper
         self.interface = os.environ.get("AZAZEL_WAN_IF") or get_active_wan_interface()
         self._testing = bool(os.environ.get("PYTEST_CURRENT_TEST"))

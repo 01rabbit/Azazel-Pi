@@ -9,6 +9,7 @@ build/
 
 # Local artifacts
 AI_IMPLEMENTATION_REPORT.json
+runtime/serve.pid
 
 # Large model files
 models/

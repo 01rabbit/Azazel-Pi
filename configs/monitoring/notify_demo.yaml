@@ -1,4 +1,4 @@
-# Demo notification configuration for Azazel-Pi
+# Demo notification configuration for Azazel-Edge
 # WARNING: Replace `webhook_url` with your test webhook before enabling in a real environment.
 mattermost:
   enabled: true

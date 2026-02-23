@@ -6,7 +6,7 @@ the behaviour during testing.
 
 ## `azctl.tui_zero` - Unified Textual TUI
 
-Azazel-Pi now uses the Azazel-Zero style unified Textual TUI.  
+Azazel-Edge now uses the Azazel-Zero style unified Textual TUI.  
 The legacy `azctl/menu` modular implementation was removed.
 
 ### Runtime modules

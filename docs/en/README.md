@@ -1,6 +1,6 @@
-# Azazel-Pi Documentation (English)
+# Azazel-Edge Documentation (English)
 
-This directory contains English documentation for the Azazel-Pi project.
+This directory contains English documentation for the Azazel-Edge project.
 
 ## Available Documentation
 

@@ -7,7 +7,7 @@ and uses Ollama for unknown/uncertain threats
 
 import logging
 from typing import Dict, Any, Tuple, Optional
-from azazel_pi.core.offline_ai_evaluator import evaluate_with_offline_ai
+from azazel_edge.core.offline_ai_evaluator import evaluate_with_offline_ai
 from .async_ai import enqueue as enqueue_deep_eval
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ def _get_ollama_evaluator(config: Optional[Dict[str, Any]] = None):
     global _ollama_evaluator
     if _ollama_evaluator is None:
         try:
-            from azazel_pi.core.ai_evaluator import get_ai_evaluator
+            from azazel_edge.core.ai_evaluator import get_ai_evaluator
             _ollama_evaluator = get_ai_evaluator(config)
             logger.info("Ollama evaluator initialized for unknown threat analysis")
         except Exception as e:
@@ -357,7 +357,7 @@ def evaluate_with_hybrid_system(alert_data: Dict[str, Any],
             try:
                 # Provide decisions log path to async worker so deep result can be persisted
                 try:
-                    from azazel_pi.core import notify_config as _nc
+                    from azazel_edge.core import notify_config as _nc
                     decisions_path = _nc._get_nested(_nc._CFG, "paths.decisions", None) or _nc._DEFAULTS["paths"]["decisions"]
                 except Exception:
                     decisions_path = None

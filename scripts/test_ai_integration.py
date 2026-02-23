@@ -11,9 +11,9 @@ import logging
 from datetime import datetime
 
 # Add project root to path
-sys.path.append('/home/azazel/Azazel-Pi')
+sys.path.append('/home/azazel/Azazel-Edge')
 
-from azazel_pi.core.offline_ai_evaluator import get_offline_evaluator
+from azazel_edge.core.offline_ai_evaluator import get_offline_evaluator
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ def test_ollama_connection():
     
     try:
         import subprocess
-        from azazel_pi.utils.cmd_runner import run as run_cmd
+        from azazel_edge.utils.cmd_runner import run as run_cmd
         
         # Test if container is running
         result = run_cmd(
@@ -130,7 +130,7 @@ def test_ollama_connection():
 def main():
     """Main test function"""
     
-    logger.info("=== Azazel-Pi AI Evaluator Test Suite ===")
+    logger.info("=== Azazel-Edge AI Evaluator Test Suite ===")
     logger.info(f"Test started at: {datetime.now()}")
     
     # Test offline evaluator (should always work)

@@ -3,7 +3,7 @@ import time
 
 from azctl.daemon import AzazelDaemon
 from azctl.cli import build_machine
-from azazel_pi.core.scorer import ScoreEvaluator
+from azazel_edge.core.scorer import ScoreEvaluator
 
 
 class FakeTrafficEngine:

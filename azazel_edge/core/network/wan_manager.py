@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import yaml
-from azazel_pi.utils.cmd_runner import run as run_cmd
+from azazel_edge.utils.cmd_runner import run as run_cmd
 
-from azazel_pi.utils.wan_state import (
+from azazel_edge.utils.wan_state import (
     InterfaceSnapshot,
     WANState,
     load_wan_state,
@@ -24,8 +24,8 @@ LOG = logging.getLogger("azazel.wan_manager")
 
 
 def _repo_root() -> Path:
-    # Path(__file__) -> .../azazel_pi/core/network/wan_manager.py
-    # parents indices: 0=network,1=core,2=azazel_pi,3=<repo root>
+    # Path(__file__) -> .../azazel_edge/core/network/wan_manager.py
+    # parents indices: 0=network,1=core,2=azazel_edge,3=<repo root>
     return Path(__file__).resolve().parents[3]
 
 

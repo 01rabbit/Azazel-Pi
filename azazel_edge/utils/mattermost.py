@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 """
-Mattermost通知機能 - Azazel-Pi用
+Mattermost通知機能 - Azazel-Edge用
 """
 
 import json
@@ -139,7 +139,7 @@ def send_alert_to_mattermost(source: str, alert_data: Dict[str, Any]) -> bool:
         # HTTPリクエスト作成
         headers = {
             'Content-Type': 'application/json',
-            'User-Agent': 'Azazel-Pi/1.0'
+            'User-Agent': 'Azazel-Edge/1.0'
         }
         
         request = urllib.request.Request(
@@ -242,7 +242,7 @@ def test_mattermost_connection() -> bool:
         return False
     
     # テストメッセージを送信
-    test_message = "🧪 Azazel-Pi Mattermost接続テスト（最小構成）"
+    test_message = "🧪 Azazel-Edge Mattermost接続テスト（最小構成）"
     success = send_simple_message(test_message, "info")
     
     if success:

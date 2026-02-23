@@ -1,6 +1,6 @@
 import json
 
-from azazel_pi.monitor.main_suricata import parse_alert
+from azazel_edge.monitor.main_suricata import parse_alert
 
 
 def test_parse_alert_accepts_et_malware():

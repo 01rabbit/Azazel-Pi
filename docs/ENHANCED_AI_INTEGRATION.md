@@ -67,7 +67,7 @@ Alert → Exception Check → Mock LLM → Enhanced Ollama → Fallback
 
 #### A. 単独使用
 ```python
-from azazel_pi.core.enhanced_ai_evaluator import EnhancedAIThreatEvaluator
+from azazel_edge.core.enhanced_ai_evaluator import EnhancedAIThreatEvaluator
 
 evaluator = EnhancedAIThreatEvaluator(model="qwen2.5-threat-v3")
 result = evaluator.evaluate_threat(alert_data)
@@ -75,7 +75,7 @@ result = evaluator.evaluate_threat(alert_data)
 
 #### B. 統合システム使用
 ```python
-from azazel_pi.core.integrated_threat_evaluator import IntegratedThreatEvaluator
+from azazel_edge.core.integrated_threat_evaluator import IntegratedThreatEvaluator
 
 evaluator = IntegratedThreatEvaluator(config)
 result = evaluator.evaluate_threat(alert_data)
@@ -209,6 +209,6 @@ sudo docker exec azazel_ollama ollama list
 Alert → Exception (0.0ms) → Mock LLM (0.2ms) → Ollama (3-8s) → Result
 ```
 
-この検証により、Azazel-Pi は AI 支援なしでも完全に機能し、
+この検証により、Azazel-Edge は AI 支援なしでも完全に機能し、
 未知の脅威に対してOllamaが仕様通り深度分析を実行する
 統合システムが完成したことが証明されました。

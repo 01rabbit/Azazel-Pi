@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import tempfile
 
-from azazel_pi.core.ingest.canary_tail import CanaryTail
+from azazel_edge.core.ingest.canary_tail import CanaryTail
 
 
 def test_canary_tail_reads_existing_lines(tmp_path: Path):

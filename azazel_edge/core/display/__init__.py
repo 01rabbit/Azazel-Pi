@@ -1,4 +1,4 @@
-"""E-Paper display module for Azazel Pi status visualization."""
+"""E-Paper display module for Azazel Edge status visualization."""
 from __future__ import annotations
 
 from .renderer import EPaperRenderer

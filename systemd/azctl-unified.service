@@ -1,14 +1,14 @@
 [Unit]
 Description=Azazel Unified Control Daemon with AI Edge Computing
-Documentation=https://github.com/01rabbit/Azazel-Pi
+Documentation=https://github.com/01rabbit/Azazel-Edge
 After=network-online.target suricata.service azazel-ai-services.service azazel-wan-manager.service
 Wants=network-online.target azazel-ai-services.service azazel-wan-manager.service
 Requires=suricata.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/azazel/Azazel-Pi
-Environment=PYTHONPATH=/home/azazel/Azazel-Pi
+WorkingDirectory=/home/azazel/Azazel-Edge
+Environment=PYTHONPATH=/home/azazel/Azazel-Edge
 
 # Ensure required directories exist (created as root).
 # This service runs as root to allow nft/tc operations; adjust permissions as needed.

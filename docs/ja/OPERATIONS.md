@@ -10,7 +10,7 @@
 
 ```bash
 TAG=v1.0.0
-curl -fsSL https://github.com/01rabbit/Azazel-Pi/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
+curl -fsSL https://github.com/01rabbit/Azazel-Edge/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
   | tar xz -C /tmp
 ```
 
@@ -418,4 +418,4 @@ sudo journalctl -u azctl-unified.service --since "1 hour ago" | grep -i error
 
 ---
 
-*最新の運用ガイダンスについては、[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)を参照し、企業展開については管理者に相談してください。*
+*最新の運用ガイダンスについては、[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)を参照し、企業展開については管理者に相談してください。*

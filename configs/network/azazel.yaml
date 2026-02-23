@@ -1,4 +1,4 @@
-node: azazel-pi-01
+node: azazel-edge-01
 interfaces:
   lan: wlan0
   wan: wlan1

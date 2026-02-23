@@ -1,10 +1,10 @@
 # ネットワーク設定ガイド
 
-このガイドでは、Azazel-Piの展開におけるネットワーク設定について、インストーラーによる自動設定と高度な用途向けの手動設定手順を含めて説明します。
+このガイドでは、Azazel-Edgeの展開におけるネットワーク設定について、インストーラーによる自動設定と高度な用途向けの手動設定手順を含めて説明します。
 
 ## 概要
 
-Azazel-Piは複数のネットワークモードで動作できます：
+Azazel-Edgeは複数のネットワークモードで動作できます：
 
 1. **ゲートウェイモード**: インターネット共有機能付きのWi-Fiアクセスポイントとして動作
 2. **モニターモード**: ルーティングを行わず、既存のネットワークトラフィックを監視
@@ -63,7 +63,7 @@ ip route show
 
 ## ゲートウェイモードの設定
 
-Azazel-Piがインターネット共有機能付きのWi-Fiアクセスポイントとして動作する必要がある場合：
+Azazel-Edgeがインターネット共有機能付きのWi-Fiアクセスポイントとして動作する必要がある場合：
 
 ### 自動ゲートウェイ設定
 
@@ -181,7 +181,7 @@ sudo systemctl enable --now hostapd
 sudo tee /etc/dnsmasq.d/01-azazel.conf <<EOF
 interface=wlan0
 dhcp-range=172.16.0.10,172.16.0.200,255.255.255.0,24h
-dhcp-option=3,172.16.0.254  # ゲートウェイ（Azazel-Pi）
+dhcp-option=3,172.16.0.254  # ゲートウェイ（Azazel-Edge）
 dhcp-option=6,8.8.8.8,8.8.4.4  # DNS
 server=8.8.8.8
 domain-needed
@@ -199,7 +199,7 @@ sudo systemctl restart dnsmasq
 # APインターフェース用の静的IPを設定
 sudo tee -a /etc/dhcpcd.conf <<EOF
 
-# Azazel-Pi AP設定（内部ゲートウェイ）
+# Azazel-Edge AP設定（内部ゲートウェイ）
 interface wlan0
 static ip_address=172.16.0.254/24
 nohook wpa_supplicant
@@ -499,4 +499,4 @@ sudo nano /etc/hostapd/hostapd.conf
 
 ---
 
-*最新のネットワーキングガイダンスについては、[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)を参照し、企業展開については管理者に相談してください。*
+*最新のネットワーキングガイダンスについては、[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)を参照し、企業展開については管理者に相談してください。*

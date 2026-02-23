@@ -2,7 +2,7 @@
 
 **⚠️ NOTICE: These nftables configuration files are no longer used.**
 
-Azazel-Pi has been migrated from nftables to iptables for better compatibility with Docker and to avoid conflicts with the `inet filter/forward` chain.
+Azazel-Edge has been migrated from nftables to iptables for better compatibility with Docker and to avoid conflicts with the `inet filter/forward` chain.
 
 ## What changed?
 

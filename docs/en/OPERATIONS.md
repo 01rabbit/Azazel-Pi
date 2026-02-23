@@ -12,7 +12,7 @@ Pick a signed Git tag (for example `v1.0.0`) and download the installer bundle:
 
 ```bash
 TAG=v1.0.0
-curl -fsSL https://github.com/01rabbit/Azazel-Pi/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
+curl -fsSL https://github.com/01rabbit/Azazel-Edge/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
   | tar xz -C /tmp
 ```
 
@@ -434,4 +434,4 @@ sudo journalctl -u azctl-unified.service --since "1 hour ago" | grep -i error
 
 ---
 
-*For the latest operational guidance, refer to the [Azazel-Pi repository](https://github.com/01rabbit/Azazel-Pi) and consult with administrators for enterprise deployments.*
+*For the latest operational guidance, refer to the [Azazel-Edge repository](https://github.com/01rabbit/Azazel-Edge) and consult with administrators for enterprise deployments.*

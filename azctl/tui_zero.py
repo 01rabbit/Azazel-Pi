@@ -1,6 +1,6 @@
-"""Azazel-Zero style unified Textual TUI for Azazel-Pi.
+"""Azazel-Zero style unified Textual TUI for Azazel-Edge.
 
-Ported from Azazel-Zero unified TUI and adapted to Azazel-Pi control paths.
+Ported from Azazel-Zero unified TUI and adapted to Azazel-Edge control paths.
 """
 from __future__ import annotations
 

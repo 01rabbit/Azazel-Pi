@@ -1,4 +1,4 @@
-from azazel_pi.monitor.main_suricata import calculate_threat_score
+from azazel_edge.monitor.main_suricata import calculate_threat_score
 
 
 def test_high_risk_exceeds_t1():

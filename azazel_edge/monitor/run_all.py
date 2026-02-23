@@ -4,7 +4,7 @@ import sys
 import time
 import logging
 import subprocess
-from azazel_pi.utils.cmd_runner import run as run_cmd
+from azazel_edge.utils.cmd_runner import run as run_cmd
 from datetime import datetime, timedelta
 
 from ..core import notify_config as notice

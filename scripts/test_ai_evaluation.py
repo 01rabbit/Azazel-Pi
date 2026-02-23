@@ -110,7 +110,7 @@ def inject_alert_to_eve(eve_path: Path, alert: dict):
 def test_ai_evaluator_direct():
     """Test AI evaluator directly without file injection"""
     try:
-        from azazel_pi.core.ai_evaluator import evaluate_alert_with_ai
+        from azazel_edge.core.ai_evaluator import evaluate_alert_with_ai
         
         print("\n=== Direct AI Evaluator Testing ===")
         
@@ -140,7 +140,7 @@ def test_ai_evaluator_direct():
             
     except ImportError as e:
         print(f"✗ Cannot import AI evaluator: {e}")
-        print("Make sure you're running from Azazel-Pi root directory")
+        print("Make sure you're running from Azazel-Edge root directory")
     except Exception as e:
         print(f"✗ Direct test failed: {e}")
 

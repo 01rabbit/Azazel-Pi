@@ -1,4 +1,4 @@
-# Suricata installer (Azazel-Pi)
+# Suricata installer (Azazel-Edge)
 
 This document describes the installer `scripts/install_suricata_env.sh` included in this repository. The installer recreates the Suricata runtime setup used on the Pi:
 

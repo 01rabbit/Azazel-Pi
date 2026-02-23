@@ -58,11 +58,11 @@ try:
 except Exception:
     cp_read_snapshot_payload = None
     cp_watch_snapshots = None
-    config_dir_candidates = lambda: [Path("/etc/azazel-pi"), Path("/etc/azazel-gadget"), Path("/etc/azazel-zero")]  # type: ignore
-    first_minute_config_candidates = lambda: [Path("/etc/azazel-pi/first_minute.yaml"), Path("/etc/azazel-gadget/first_minute.yaml"), Path("/etc/azazel-zero/first_minute.yaml")]  # type: ignore
-    portal_env_candidates = lambda: [Path("/etc/azazel-pi/portal-viewer.env"), Path("/etc/azazel-gadget/portal-viewer.env"), Path("/etc/azazel-zero/portal-viewer.env")]  # type: ignore
+    config_dir_candidates = lambda: [Path("/etc/azazel-edge"), Path("/etc/azazel-gadget"), Path("/etc/azazel-zero")]  # type: ignore
+    first_minute_config_candidates = lambda: [Path("/etc/azazel-edge/first_minute.yaml"), Path("/etc/azazel-gadget/first_minute.yaml"), Path("/etc/azazel-zero/first_minute.yaml")]  # type: ignore
+    portal_env_candidates = lambda: [Path("/etc/azazel-edge/portal-viewer.env"), Path("/etc/azazel-gadget/portal-viewer.env"), Path("/etc/azazel-zero/portal-viewer.env")]  # type: ignore
     snapshot_path_candidates = lambda: [Path("/run/azazel/ui_snapshot.json"), Path("/var/run/azazel/ui_snapshot.json"), Path("/run/azazel-gadget/ui_snapshot.json"), Path("/run/azazel-zero/ui_snapshot.json"), Path("runtime/ui_snapshot.json"), Path(".azazel-gadget/run/ui_snapshot.json"), Path(".azazel-zero/run/ui_snapshot.json")]  # type: ignore
-    web_token_candidates = lambda: [Path.home() / ".azazel-pi" / "web_token.txt", Path.home() / ".azazel-gadget" / "web_token.txt", Path.home() / ".azazel-zero" / "web_token.txt"]  # type: ignore
+    web_token_candidates = lambda: [Path.home() / ".azazel-edge" / "web_token.txt", Path.home() / ".azazel-gadget" / "web_token.txt", Path.home() / ".azazel-zero" / "web_token.txt"]  # type: ignore
     warn_if_legacy_path = lambda *args, **kwargs: None  # type: ignore
 
 # Configuration
@@ -618,7 +618,7 @@ def get_monitoring_state() -> Dict[str, str]:
 
 
 def _mode_to_webui_state(mode: str) -> Tuple[str, int]:
-    """Map Azazel-Pi mode name to Web UI state/suspicion."""
+    """Map Azazel-Edge mode name to Web UI state/suspicion."""
     normalized = str(mode or "").strip().lower()
     if normalized in {"lockdown", "user_lockdown"}:
         return ("CONTAIN", 85)
@@ -691,7 +691,7 @@ def _read_azctl_status_snapshot() -> Optional[Dict[str, Any]]:
 
 
 def _apply_pi_mode(mode: str) -> Dict[str, Any]:
-    """Apply Azazel-Pi mode by invoking `azctl.cli events` with a temp config."""
+    """Apply Azazel-Edge mode by invoking `azctl.cli events` with a temp config."""
     event_name = str(mode or "").strip().lower()
     if event_name not in {"portal", "shield", "lockdown"}:
         return {"ok": False, "action": mode, "error": f"Unsupported mode: {mode}"}
@@ -1069,11 +1069,11 @@ def _send_control_command_socket(
 
 
 def _pi_not_implemented_result(action: str) -> Dict[str, Any]:
-    """Return a stable error payload for features not wired on Azazel-Pi."""
+    """Return a stable error payload for features not wired on Azazel-Edge."""
     return {
         "ok": False,
         "action": action,
-        "error": f"{action} is not implemented in Azazel-Pi unified port",
+        "error": f"{action} is not implemented in Azazel-Edge unified port",
         "ts": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }
 
@@ -1200,7 +1200,7 @@ def api_portal_viewer_open():
     )
 
     if not daemon_result.get("ok"):
-        status_code = 501 if "not implemented in Azazel-Pi unified port" in str(daemon_result.get("error", "")) else 500
+        status_code = 501 if "not implemented in Azazel-Edge unified port" in str(daemon_result.get("error", "")) else 500
         return jsonify({
             "ok": False,
             "error": daemon_result.get("error", "Failed to start portal viewer"),
@@ -1396,7 +1396,7 @@ def api_wifi_scan():
     if result.get("ok"):
         return jsonify(result), 200
     else:
-        status_code = 501 if "not implemented in Azazel-Pi unified port" in str(result.get("error", "")) else 500
+        status_code = 501 if "not implemented in Azazel-Edge unified port" in str(result.get("error", "")) else 500
         return jsonify(result), status_code
 
 
@@ -1447,7 +1447,7 @@ def api_wifi_connect():
     if result.get("ok"):
         return jsonify(result), 200
     else:
-        status_code = 501 if "not implemented in Azazel-Pi unified port" in str(result.get("error", "")) else 500
+        status_code = 501 if "not implemented in Azazel-Edge unified port" in str(result.get("error", "")) else 500
         return jsonify(result), status_code
 
 

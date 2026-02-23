@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Optional, Any
 import yaml
-from azazel_pi.utils.cmd_runner import run as run_cmd
+from azazel_edge.utils.cmd_runner import run as run_cmd
 
 # ログ設定
 logging.basicConfig(level=logging.INFO)

@@ -1,4 +1,4 @@
-## Azazel-Pi E2E デモ: Suricata EVE リプレイで検出→評価→遷移→通知を再現する
+## Azazel-Edge E2E デモ: Suricata EVE リプレイで検出→評価→遷移→通知を再現する
 
 このドキュメントは E2E デモ用に特化しています。目的は以下のとおりです。
 

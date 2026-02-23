@@ -1,6 +1,6 @@
-# Azazel-Pi トラブルシューティングガイド
+# Azazel-Edge トラブルシューティングガイド
 
-この包括的なトラブルシューティングガイドでは、Azazel-Piシステムのインストール、設定、運用中に遭遇する一般的な問題について説明します。
+この包括的なトラブルシューティングガイドでは、Azazel-Edgeシステムのインストール、設定、運用中に遭遇する一般的な問題について説明します。
 
 ## クイック診断
 
@@ -524,7 +524,7 @@ sudo systemctl status azazel-epd.service
 sudo journalctl -u azazel-epd.service --no-pager
 
 # 手動でディスプレイをテスト
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 
 # 配線接続を確認
 # ピンが期待されるGPIO割り当てと一致することを確認
@@ -541,8 +541,8 @@ sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
 
 ```bash
 # 完全リフレッシュを強制
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode shutdown
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode shutdown
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 
 # ジェントル更新を無効化
 sudo nano /etc/default/azazel-epd
@@ -796,7 +796,7 @@ sudo journalctl --since "1 hour ago" > /tmp/recent-logs.txt
 
 ### サポートリソース
 
-- **GitHub Issues**: [Azazel-Pi Issues](https://github.com/01rabbit/Azazel-Pi/issues)
+- **GitHub Issues**: [Azazel-Edge Issues](https://github.com/01rabbit/Azazel-Edge/issues)
 - **ドキュメント**: このトラブルシューティングガイドと関連ドキュメント
 - **コミュニティ**: Mattermostチャンネル（利用可能な場合）
 - **専門サポート**: 企業展開についてはメンテナーに連絡
@@ -837,7 +837,7 @@ sudo nano /etc/logrotate.d/azazel
 
 ## TUIメニューシステム問題
 
-Azazel-PiのメニューTUIは `azctl/menu` ではなく、`azctl/tui_zero.py` / `azctl/tui_zero_textual.py` を使用します。
+Azazel-EdgeのメニューTUIは `azctl/menu` ではなく、`azctl/tui_zero.py` / `azctl/tui_zero_textual.py` を使用します。
 
 ### メニュー起動失敗
 
@@ -1099,4 +1099,4 @@ sudo nano /etc/systemd/journald.conf
 
 ---
 
-*追加のトラブルシューティングヘルプについては、[`INSTALLATION_ja.md`](INSTALLATION_ja.md)、[`OPERATIONS_ja.md`](OPERATIONS_ja.md)、[`NETWORK_SETUP_ja.md`](NETWORK_SETUP_ja.md)ガイドを参照するか、[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)でissueを報告してください。*
+*追加のトラブルシューティングヘルプについては、[`INSTALLATION_ja.md`](INSTALLATION_ja.md)、[`OPERATIONS_ja.md`](OPERATIONS_ja.md)、[`NETWORK_SETUP_ja.md`](NETWORK_SETUP_ja.md)ガイドを参照するか、[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)でissueを報告してください。*

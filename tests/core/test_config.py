@@ -2,7 +2,7 @@ from pathlib import Path
 
 import yaml
 
-from azazel_pi.core.config import AzazelConfig
+from azazel_edge.core.config import AzazelConfig
 
 
 def test_config_from_file(tmp_path: Path):

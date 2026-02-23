@@ -1,10 +1,10 @@
-# Azazel-Pi Installation Guide
+# Azazel-Edge Installation Guide
 
-This comprehensive guide covers the installation and initial setup of Azazel-Pi on Raspberry Pi systems, including the main system components, E-Paper display integration, and troubleshooting procedures.
+This comprehensive guide covers the installation and initial setup of Azazel-Edge on Raspberry Pi systems, including the main system components, E-Paper display integration, and troubleshooting procedures.
 
 ## Overview
 
-Azazel-Pi provides a **single-script installation** that automatically provisions all required components:
+Azazel-Edge provides a **single-script installation** that automatically provisions all required components:
 - **Core services**: Suricata IDS/IPS, OpenCanary honeypot, Vector log collection
 - **Control plane**: azctl daemon and state machine
 - **Collaboration platform**: Mattermost with PostgreSQL database
@@ -40,19 +40,19 @@ sudo apt update && sudo apt upgrade -y
 sudo reboot
 ```
 
-### 2. Download Azazel-Pi
+### 2. Download Azazel-Edge
 
 #### Option A: Clone from GitHub (Development)
 ```bash
-git clone https://github.com/01rabbit/Azazel-Pi.git
-cd Azazel-Pi
+git clone https://github.com/01rabbit/Azazel-Edge.git
+cd Azazel-Edge
 ```
 
 #### Option B: Download Release Bundle (Production)
 ```bash
 # Use specific version tag (recommended for production)
 TAG=v1.0.0
-curl -fsSL https://github.com/01rabbit/Azazel-Pi/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
+curl -fsSL https://github.com/01rabbit/Azazel-Edge/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
   | tar xz -C /tmp
 cd /tmp/azazel-installer
 ```
@@ -223,7 +223,7 @@ sudo reboot
 sudo scripts/install_epd.sh
 
 # Test the display
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 ```
 
 ### 4. Enable E-Paper Service
@@ -348,7 +348,7 @@ sudo systemctl restart azctl-unified.service
 ls -l /dev/spidev0.0
 
 # Test display manually
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 
 # Check for driver conflicts
 sudo journalctl -u azazel-epd.service | grep -i error
@@ -521,4 +521,4 @@ After successful installation:
 
 ---
 
-*For the latest installation instructions and updates, always refer to the official [Azazel-Pi repository](https://github.com/01rabbit/Azazel-Pi).*
+*For the latest installation instructions and updates, always refer to the official [Azazel-Edge repository](https://github.com/01rabbit/Azazel-Edge).*

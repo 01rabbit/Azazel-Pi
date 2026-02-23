@@ -5,9 +5,9 @@ Wants=azazel-wan-manager.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/azazel/Azazel-Pi
-Environment=PYTHONPATH=/home/azazel/Azazel-Pi
-ExecStart=/usr/bin/env python3 -m azazel_pi.core.network.suricata_wrapper
+WorkingDirectory=/home/azazel/Azazel-Edge
+Environment=PYTHONPATH=/home/azazel/Azazel-Edge
+ExecStart=/usr/bin/env python3 -m azazel_edge.core.network.suricata_wrapper
 Restart=on-failure
 
 [Install]

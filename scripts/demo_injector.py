@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo event injector for Azazel-Pi
+"""Demo event injector for Azazel-Edge
 
 Append crafted Suricata-like alert JSON lines to the configured eve.json
 to drive scoring for demos. Run with sudo to write to /var/log/suricata/eve.json.

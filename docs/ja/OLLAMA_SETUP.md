@@ -2,7 +2,7 @@
 
 ## 概要
 
-Azazel-Piは、既知の脅威にはMock LLM（高速・軽量）を使用し、未知の脅威にはOllama（深堀り分析）を使用するハイブリッドAIシステムです。
+Azazel-Edgeは、既知の脅威にはMock LLM（高速・軽量）を使用し、未知の脅威にはOllama（深堀り分析）を使用するハイブリッドAIシステムです。
 
 OllamaはDocker Composeで管理され、PostgreSQL/Mattermostと統合されています。
 
@@ -61,7 +61,7 @@ wget https://huggingface.co/mradermacher/Qwen2.5-1.5B-Instruct-uncensored-GGUF/r
 
 ```bash
 # 自動セットアップスクリプト実行
-sudo /home/azazel/Azazel-Pi/scripts/setup_ollama.sh
+sudo /home/azazel/Azazel-Edge/scripts/setup_ollama.sh
 ```
 
 このスクリプトは以下を実行します：
@@ -76,7 +76,7 @@ sudo /home/azazel/Azazel-Pi/scripts/setup_ollama.sh
 ### Docker Composeでの操作
 
 ```bash
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 
 # 全サービス起動（PostgreSQL + Ollama）
 docker compose up -d
@@ -142,7 +142,7 @@ docker exec -it azazel_ollama /bin/bash
 ### Docker Composeステータス確認
 
 ```bash
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose ps
 ```
 
@@ -168,7 +168,7 @@ curl -X POST http://127.0.0.1:11434/api/generate \
 ### 統合テスト
 
 ```python
-from azazel_pi.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
+from azazel_edge.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
 
 # テストアラート（未知の脅威）
 alert = {
@@ -209,7 +209,7 @@ print(f"Reason: {result['reason']}")
 docker logs azazel_ollama
 
 # 再起動
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose restart ollama
 ```
 
@@ -256,7 +256,7 @@ Docker Composeの再起動ポリシーにより、システム再起動時に自
 sudo systemctl enable docker
 
 # 起動時にコンテナを自動起動
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose up -d
 ```
 

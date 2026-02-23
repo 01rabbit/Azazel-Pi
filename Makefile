@@ -8,8 +8,8 @@ lint:
 	test -f scripts/sanity_check.sh
 	test -f scripts/tc_reset.sh
 test:
-	pytest tests/unit -q
+	pytest tests -q
 package:
 	mkdir -p dist/azazel-installer && \
-	cp -r scripts systemd configs azazel_core azctl docs Makefile dist/azazel-installer/ && \
+	cp -r scripts systemd configs azazel_edge azctl azazel_web docs Makefile pyproject.toml pytest.ini dist/azazel-installer/ && \
 	tar -C dist -czf dist/azazel-installer.tar.gz azazel-installer

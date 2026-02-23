@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from azazel_pi.utils.cmd_runner import run as run_cmd
+from azazel_edge.utils.cmd_runner import run as run_cmd
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import os
@@ -60,7 +60,7 @@ class SystemStatus:
 
 
 class StatusCollector:
-    """Collects status information from various Azazel Pi components."""
+    """Collects status information from various Azazel Edge components."""
 
     def __init__(
         self,
@@ -93,9 +93,9 @@ class StatusCollector:
         """Get system hostname."""
         try:
             result = run_cmd(["hostname"], capture_output=True, text=True, timeout=1, check=False)
-            return result.stdout.strip() or "azazel-pi"
+            return result.stdout.strip() or "azazel-edge"
         except Exception:
-            return "azazel-pi"
+            return "azazel-edge"
 
     def _get_network_status(self, interface: Optional[str] = None) -> NetworkStatus:
         """Get network interface status."""

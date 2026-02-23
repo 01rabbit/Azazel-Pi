@@ -1,4 +1,4 @@
-# Suricata インストーラー (Azazel-Pi)
+# Suricata インストーラー (Azazel-Edge)
 
 このドキュメントでは、このリポジトリに含まれるインストーラー`scripts/install_suricata_env.sh`について説明します。このインストーラーは、Pi上で使用されるSuricataランタイム環境を再構築します。
 
@@ -112,7 +112,7 @@ sudo systemctl daemon-reload
 # 更新スクリプトを作成
 sudo tee /usr/local/bin/azazel-suricata-update.sh <<'EOF'
 #!/bin/bash
-# Azazel-Pi Suricata rule updater
+# Azazel-Edge Suricata rule updater
 
 set -euo pipefail
 
@@ -176,8 +176,8 @@ sudo chmod +x /usr/local/bin/azazel-suricata-update.sh
 # systemdサービスを作成
 sudo tee /etc/systemd/system/azazel-suricata-update.service <<EOF
 [Unit]
-Description=Azazel-Pi Suricata Rule Update
-Documentation=https://github.com/01rabbit/Azazel-Pi
+Description=Azazel-Edge Suricata Rule Update
+Documentation=https://github.com/01rabbit/Azazel-Edge
 After=network-online.target
 Wants=network-online.target
 
@@ -192,8 +192,8 @@ EOF
 # systemdタイマーを作成
 sudo tee /etc/systemd/system/azazel-suricata-update.timer <<EOF
 [Unit]
-Description=Daily Azazel-Pi Suricata Rule Update
-Documentation=https://github.com/01rabbit/Azazel-Pi
+Description=Daily Azazel-Edge Suricata Rule Update
+Documentation=https://github.com/01rabbit/Azazel-Edge
 
 [Timer]
 OnCalendar=daily
@@ -258,7 +258,7 @@ EOF
 # ローカルルールディレクトリを作成
 sudo mkdir -p /etc/suricata/rules/local
 
-# Azazel-Pi固有のルールを配布
+# Azazel-Edge固有のルールを配布
 sudo cp configs/suricata/local.rules /etc/suricata/rules/local/
 
 # ルールファイルの権限設定
@@ -583,4 +583,4 @@ sudo sha256sum /var/log/suricata/eve.json > /var/log/suricata/eve.json.sha256
 
 ---
 
-*Suricataインストールの詳細については、[公式ドキュメント](https://suricata.readthedocs.io/)と[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)を参照してください。*
+*Suricataインストールの詳細については、[公式ドキュメント](https://suricata.readthedocs.io/)と[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)を参照してください。*

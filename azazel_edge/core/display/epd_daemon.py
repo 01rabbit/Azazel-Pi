@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""E-Paper status display daemon for Azazel Pi."""
+"""E-Paper status display daemon for Azazel Edge."""
 from __future__ import annotations
 
 import argparse
@@ -10,14 +10,14 @@ import sys
 import time
 from pathlib import Path
 
-# Add project root (/opt/azazel) to sys.path so `import azazel_pi` works
-# __file__ = .../azazel_pi/core/display/epd_daemon.py
-# parents[0]=display, [1]=core, [2]=azazel_pi, [3]=/opt/azazel (project root)
+# Add project root (/opt/azazel) to sys.path so `import azazel_edge` works
+# __file__ = .../azazel_edge/core/display/epd_daemon.py
+# parents[0]=display, [1]=core, [2]=azazel_edge, [3]=/opt/azazel (project root)
 sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
-from azazel_pi.core.display import EPaperRenderer, StatusCollector
-from azazel_pi.core.state_machine import StateMachine
-from azazel_pi.core.config import AzazelConfig
+from azazel_edge.core.display import EPaperRenderer, StatusCollector
+from azazel_edge.core.state_machine import StateMachine
+from azazel_edge.core.config import AzazelConfig
 from collections import deque
 from pathlib import Path
 
@@ -369,7 +369,7 @@ class EPaperDaemon:
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="E-Paper status display daemon for Azazel Pi"
+        description="E-Paper status display daemon for Azazel Edge"
     )
     parser.add_argument(
         "--interval",

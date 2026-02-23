@@ -2,7 +2,7 @@
 
 ## Design Background
 
-Mock LLM is a **completely original threat evaluation system** developed for the Azazel-Pi project.
+Mock LLM is a **completely original threat evaluation system** developed for the Azazel-Edge project.
 
 ### Referenced Technical Elements
 

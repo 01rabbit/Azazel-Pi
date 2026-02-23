@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Mock LLM vs Real LLM Comparison Analysis
-Comprehensive comparison for Azazel-Pi edge AI deployment
+Comprehensive comparison for Azazel-Edge edge AI deployment
 """
 
 import json

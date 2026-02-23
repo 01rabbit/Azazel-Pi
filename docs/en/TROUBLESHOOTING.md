@@ -1,6 +1,6 @@
-# Azazel-Pi Troubleshooting Guide
+# Azazel-Edge Troubleshooting Guide
 
-This comprehensive troubleshooting guide covers common issues encountered during installation, configuration, and operation of Azazel-Pi systems.
+This comprehensive troubleshooting guide covers common issues encountered during installation, configuration, and operation of Azazel-Edge systems.
 
 ## TUI Menu System Issues
 
@@ -780,7 +780,7 @@ sudo systemctl status azazel-epd.service
 sudo journalctl -u azazel-epd.service --no-pager
 
 # Test display manually
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 
 # Check wiring connections
 # Verify pins match expected GPIO assignments
@@ -797,8 +797,8 @@ sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
 
 ```bash
 # Force full refresh
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode shutdown
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode shutdown
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 
 # Disable gentle updates
 sudo nano /etc/default/azazel-epd
@@ -1052,7 +1052,7 @@ sudo journalctl --since "1 hour ago" > /tmp/recent-logs.txt
 
 ### Support Resources
 
-- **GitHub Issues**: [Azazel-Pi Issues](https://github.com/01rabbit/Azazel-Pi/issues)
+- **GitHub Issues**: [Azazel-Edge Issues](https://github.com/01rabbit/Azazel-Edge/issues)
 - **Documentation**: This troubleshooting guide and related docs
 - **Community**: Mattermost channels (if available)
 - **Professional Support**: Contact maintainers for enterprise deployments
@@ -1093,4 +1093,4 @@ sudo nano /etc/logrotate.d/azazel
 
 ---
 
-*For additional troubleshooting help, consult the [INSTALLATION.md](INSTALLATION.md), [OPERATIONS.md](OPERATIONS.md), and [NETWORK_SETUP.md](NETWORK_SETUP.md) guides, or file an issue at the [Azazel-Pi repository](https://github.com/01rabbit/Azazel-Pi).*
+*For additional troubleshooting help, consult the [INSTALLATION.md](INSTALLATION.md), [OPERATIONS.md](OPERATIONS.md), and [NETWORK_SETUP.md](NETWORK_SETUP.md) guides, or file an issue at the [Azazel-Edge repository](https://github.com/01rabbit/Azazel-Edge).*

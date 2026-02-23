@@ -1,4 +1,4 @@
-# Azazel-Pi AI Edge Computing Implementation（現行実装）
+# Azazel-Edge AI Edge Computing Implementation（現行実装）
 
 ## 概要
 
@@ -22,7 +22,7 @@
 
 ## 実装コンポーネント
 
-### 1) ハイブリッド脅威評価 (`azazel_pi/core/hybrid_threat_evaluator.py`)
+### 1) ハイブリッド脅威評価 (`azazel_edge/core/hybrid_threat_evaluator.py`)
 - Legacyルール評価とオフラインAI（Mock LLM含む）を統合
 - **Ollama統合**: 未知の脅威検出時に深堀り分析を実行
   - トリガー条件: 信頼度 < 0.7、unknownカテゴリ、低リスクだが不確実
@@ -33,20 +33,20 @@
 - 正常トラフィックの上書き判定（benign override）
 - 返却詳細に components（legacy_score/mock_llm_score/weights）を含む
 
-### 2) AI評価器 (`azazel_pi/core/ai_evaluator.py`)
+### 2) AI評価器 (`azazel_edge/core/ai_evaluator.py`)
 - **Ollama LLM評価器**: 未知の脅威に対する深堀り分析
 - APIエンドポイント: `http://127.0.0.1:11434/api/generate`
 - モデル: threatjudge (Qwen2.5-1.5B-Instruct-uncensored)
 - タイムアウト: 30秒（設定可能）
 - フォールバック機能: Ollama利用不可時は自動的にMock LLMへ
 
-### 3) オフラインAI評価器 (`azazel_pi/core/offline_ai_evaluator.py`)
+### 3) オフラインAI評価器 (`azazel_edge/core/offline_ai_evaluator.py`)
 - 特徴量: シグネチャ/ペイロード複雑度/対象サービス重要度/レピュテーション/時間的頻度/プロトコル異常
 - レピュテーション: `ipaddress` によるRFC1918・loopback・link-local・無効アドレスの厳密分類
 - モデル依存なし。Mock LLMを併用する場合も擬似決定論（プロンプトハッシュで乱数シード）
 - リスクは1-5で出力し、統合側で0-100に換算
 
-### 4) Suricataモニタ (`azazel_pi/monitor/main_suricata.py`)
+### 4) Suricataモニタ (`azazel_edge/monitor/main_suricata.py`)
 - `parse_alert` のカテゴリ正規化（大文字/小文字/アンダースコア差を吸収）
 - 設定の allow/deny カテゴリを `configs/network/azazel.yaml` の `soc.allowed_categories` / `soc.denied_categories` から読み込み（未設定時は既定リスト）
 - 独立した頻度カウンタ（signature×src_ipの時系列）で集中攻撃を安定検知
@@ -55,17 +55,17 @@
 - `state_machine.apply_score()` による移動平均反映とモード遷移
 - 10分ごとの期限切れルールのクリーンアップ呼び出し
 
-### 5) 状態機械 (`azazel_pi/core/state_machine.py`)
+### 5) 状態機械 (`azazel_edge/core/state_machine.py`)
 - portal/shield/lockdown の3モード + ユーザ一時モード
 - しきい値・アンロック遅延を YAML から読込。パス探索のフォールバックに `configs/network/azazel.yaml` を追加
 - 移動平均ウィンドウで遷移判定、ユーザモードタイムアウトに対応
 
-### 6) 統合トラフィック制御 (`azazel_pi/core/enforcer/traffic_control.py`)
+### 6) 統合トラフィック制御 (`azazel_edge/core/enforcer/traffic_control.py`)
 - 複合制御: DNAT→OpenCanary + suspect QoS + netem遅延 + HTBシェーピング
 - 冪等性: 同一IPへの同種ルール再適用を抑止、削除時は保持した `prio` で正確にフィルタ除去
 - 期限切れクリーンアップAPIと統計取得API
 
-### 7) ラッパー互換 (`azazel_pi/utils/delay_action.py`)
+### 7) ラッパー互換 (`azazel_edge/utils/delay_action.py`)
 - 旧APIから統合エンジンへ橋渡し。レガシーフォールバックは非推奨
 
 ## 設定
@@ -154,7 +154,7 @@ services:
 ### 管理コマンド
 
 ```bash
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 
 # 全サービス起動
 docker compose up -d
@@ -175,7 +175,7 @@ docker logs -f azazel_ollama
 
 ```bash
 # 自動セットアップスクリプト実行
-sudo /home/azazel/Azazel-Pi/scripts/setup_ollama.sh
+sudo /home/azazel/Azazel-Edge/scripts/setup_ollama.sh
 ```
 
 事前にモデルファイルをダウンロード:
@@ -193,7 +193,7 @@ pytest -q
 ### 3. 統合テスト
 ```bash
 python3 - << 'PY'
-from azazel_pi.monitor.main_suricata import calculate_threat_score
+from azazel_edge.monitor.main_suricata import calculate_threat_score
 
 # 既知の脅威テスト (Mock LLM)
 print("=== 既知の脅威: SQLi ===")
@@ -257,7 +257,7 @@ PY
 docker logs azazel_ollama
 
 # 再起動
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose restart ollama
 
 # ヘルスチェック

@@ -1,4 +1,4 @@
-from azazel_pi.core.offline_ai_evaluator import get_offline_evaluator
+from azazel_edge.core.offline_ai_evaluator import get_offline_evaluator
 
 
 def test_reputation_private_networks_low_risk():

@@ -1,4 +1,4 @@
-# Azazel-Pi Ollama統合 - 設計実装完了
+# Azazel-Edge Ollama統合 - 設計実装完了
 
 ## 概要
 Raspberry Pi 5でOllama + Qwen2.5-1.5B-Instruct-q4_K_Mを使用した
@@ -43,7 +43,7 @@ System: tc/nftables + Mattermost通知
 ├── policy_block.sh                    # nftables遮断
 └── .env                              # 環境設定
 
-Azazel-Pi/
+Azazel-Edge/
 ├── deploy/
 │   ├── docker-compose-ollama.yml     # Docker構成
 │   ├── alert_handler.py              # アラートハンドラ
@@ -51,7 +51,7 @@ Azazel-Pi/
 │   └── models/                       # モデル設定
 ├── scripts/
 │   └── install_ollama.sh             # 自動インストール
-├── azazel_pi/core/
+├── azazel_edge/core/
 │   ├── ai_config.py                  # AI設定（Ollama有効化済）
 │   └── ai_evaluator.py               # 既存AI評価器（対応済）
 └── configs/
@@ -80,7 +80,7 @@ wget https://huggingface.co/mradermacher/Qwen2.5-1.5B-Instruct-uncensored-GGUF/r
 
 ### 2. 自動インストール実行
 ```bash
-cd /home/azazel/Azazel-Pi
+cd /home/azazel/Azazel-Edge
 sudo ./scripts/install_ollama.sh
 ```
 
@@ -91,7 +91,7 @@ ls -la /opt/models/qwen/Qwen2.5-1.5B-Instruct-uncensored.Q4_K_M.gguf
 
 # 3. 設定ファイル配置
 sudo mkdir -p /opt/azazel
-cd /home/azazel/Azazel-Pi
+cd /home/azazel/Azazel-Edge
 cp deploy/docker-compose-ollama.yml /opt/azazel/docker-compose.yml
 cp deploy/alert_handler.py /opt/azazel/
 cp deploy/policy_*.sh /opt/azazel/
@@ -143,7 +143,7 @@ outputs:
 
 vars:
   address-groups:
-    HOME_NET: "[172.16.0.254]"  # Azazel-Pi自身のIP
+    HOME_NET: "[172.16.0.254]"  # Azazel-Edge自身のIP
 ```
 
 ## 動作確認
@@ -276,5 +276,5 @@ docker-compose restart threat-handler
 すべてのコンポーネントが実装され、ワンライン実行可能な状態です：
 
 ```bash
-sudo /home/azazel/Azazel-Pi/scripts/install_ollama.sh
+sudo /home/azazel/Azazel-Edge/scripts/install_ollama.sh
 ```

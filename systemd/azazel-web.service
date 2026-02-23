@@ -1,5 +1,5 @@
 [Unit]
-Description=Azazel-Pi Web UI Backend (Flask)
+Description=Azazel-Edge Web UI Backend (Flask)
 After=network-online.target azctl-unified.service
 Wants=network-online.target azctl-unified.service
 
@@ -8,7 +8,7 @@ Type=simple
 WorkingDirectory=/opt/azazel
 Environment="AZAZEL_WEB_HOST=127.0.0.1"
 Environment="AZAZEL_WEB_PORT=8084"
-EnvironmentFile=-/etc/default/azazel-pi
+EnvironmentFile=-/etc/default/azazel-edge
 ExecStart=/usr/bin/env python3 /opt/azazel/azazel_web/app.py
 Restart=always
 RestartSec=5

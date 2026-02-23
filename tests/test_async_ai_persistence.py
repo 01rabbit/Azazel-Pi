@@ -2,8 +2,8 @@ import time
 import json
 from pathlib import Path
 
-import azazel_pi.core.async_ai as async_ai
-from azazel_pi.core import notify_config
+import azazel_edge.core.async_ai as async_ai
+from azazel_edge.core import notify_config
 
 
 def test_async_ai_persists_deep_result(tmp_path):

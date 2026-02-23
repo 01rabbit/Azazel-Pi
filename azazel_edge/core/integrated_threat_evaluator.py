@@ -6,8 +6,8 @@ Combines the best of all systems: Exception Blocking + Mock LLM + Enhanced Ollam
 
 import logging
 from typing import Dict, Any, Optional
-from azazel_pi.core.offline_ai_evaluator import evaluate_with_offline_ai
-from azazel_pi.core.enhanced_ai_evaluator import EnhancedAIThreatEvaluator
+from azazel_edge.core.offline_ai_evaluator import evaluate_with_offline_ai
+from azazel_edge.core.enhanced_ai_evaluator import EnhancedAIThreatEvaluator
 
 logger = logging.getLogger(__name__)
 

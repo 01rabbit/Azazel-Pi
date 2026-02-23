@@ -12,14 +12,14 @@ from typing import Any, Dict, Iterable, List
 
 import yaml
 
-from azazel_pi.core import notify_config
-from azazel_pi.core.enforcer.traffic_control import get_traffic_control_engine
-from azazel_pi.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
-from azazel_pi.core.scorer import ScoreEvaluator
-from azazel_pi.core.state_machine import Event, StateMachine
+from azazel_edge.core import notify_config
+from azazel_edge.core.enforcer.traffic_control import get_traffic_control_engine
+from azazel_edge.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
+from azazel_edge.core.scorer import ScoreEvaluator
+from azazel_edge.core.state_machine import Event, StateMachine
 
 try:
-    from azazel_pi.core.notify import MattermostNotifier
+    from azazel_edge.core.notify import MattermostNotifier
 except Exception:
     MattermostNotifier = None
 

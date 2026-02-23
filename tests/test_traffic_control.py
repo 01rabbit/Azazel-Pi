@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from azazel_pi.core.enforcer.traffic_control import TrafficControlEngine, TrafficControlRule
+from azazel_edge.core.enforcer.traffic_control import TrafficControlEngine, TrafficControlRule
 
 
 class DummyCompleted:

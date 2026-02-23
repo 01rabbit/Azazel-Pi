@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from azazel_pi.core.ingest import CanaryTail, SuricataTail
+from azazel_edge.core.ingest import CanaryTail, SuricataTail
 
 
 def test_suricata_tail_includes_metadata(tmp_path: Path):

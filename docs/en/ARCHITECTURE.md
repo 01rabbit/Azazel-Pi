@@ -40,11 +40,11 @@ opinionated defaults that can be adapted per deployment.
 
 ## TUI Architecture
 
-Azazel-Pi uses a unified Textual UI ported from Azazel-Zero.
+Azazel-Edge uses a unified Textual UI ported from Azazel-Zero.
 
 ```
 azctl/cli.py                  # `menu` subcommand entry
-azctl/tui_zero.py             # Azazel-Pi adapters (snapshot/action mapping)
+azctl/tui_zero.py             # Azazel-Edge adapters (snapshot/action mapping)
 azctl/tui_zero_textual.py     # Textual application layout + key bindings
 ```
 

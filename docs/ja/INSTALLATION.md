@@ -1,10 +1,10 @@
-# Azazel-Pi インストールガイド
+# Azazel-Edge インストールガイド
 
-この包括的なガイドでは、Raspberry Piシステム上でのAzazel-Piのインストールと初期セットアップについて、メインシステムコンポーネント、E-Paperディスプレイ統合、トラブルシューティング手順を含めて説明します。
+この包括的なガイドでは、Raspberry Piシステム上でのAzazel-Edgeのインストールと初期セットアップについて、メインシステムコンポーネント、E-Paperディスプレイ統合、トラブルシューティング手順を含めて説明します。
 
 ## 概要
 
-Azazel-Piは、必要なすべてのコンポーネントを自動的にプロビジョニングする **単一スクリプトインストール** を提供します：
+Azazel-Edgeは、必要なすべてのコンポーネントを自動的にプロビジョニングする **単一スクリプトインストール** を提供します：
 - **コアサービス**: Suricata IDS/IPS、OpenCanaryハニーポット、Vectorログ収集
 - **制御プレーン**: azctlデーモンとステートマシン
 - **コラボレーションプラットフォーム**: PostgreSQLデータベース付きMattermost
@@ -40,19 +40,19 @@ sudo apt update && sudo apt upgrade -y
 sudo reboot
 ```
 
-### 2. Azazel-Piのダウンロード
+### 2. Azazel-Edgeのダウンロード
 
 #### オプションA: GitHubからクローン（開発版）
 ```bash
-git clone https://github.com/01rabbit/Azazel-Pi.git
-cd Azazel-Pi
+git clone https://github.com/01rabbit/Azazel-Edge.git
+cd Azazel-Edge
 ```
 
 #### オプションB: リリースバンドルのダウンロード（本番環境）
 ```bash
 # 特定のバージョンタグを使用（本番環境推奨）
 TAG=v1.0.0
-curl -fsSL https://github.com/01rabbit/Azazel-Pi/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
+curl -fsSL https://github.com/01rabbit/Azazel-Edge/releases/download/${TAG}/azazel-installer-${TAG}.tar.gz \
   | tar xz -C /tmp
 cd /tmp/azazel-installer
 ```
@@ -225,7 +225,7 @@ sudo reboot
 sudo scripts/install_epd.sh
 
 # ディスプレイをテスト
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 ```
 
 ### 4. E-Paperサービスの有効化
@@ -350,7 +350,7 @@ sudo systemctl restart azctl-unified.service
 ls -l /dev/spidev0.0
 
 # ディスプレイを手動テスト
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test
 
 # ドライバ競合を確認
 sudo journalctl -u azazel-epd.service | grep -i error
@@ -533,4 +533,4 @@ sudo systemctl restart azctl-unified.service
 
 ---
 
-*最新のインストール手順と更新については、常に公式[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)を参照してください。*
+*最新のインストール手順と更新については、常に公式[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)を参照してください。*

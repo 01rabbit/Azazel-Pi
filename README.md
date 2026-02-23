@@ -1,11 +1,11 @@
-# AZ-01X Azazel-Pi - The Cyber Scapegoat Gateway
+# AZ-01X Azazel-Edge - The Cyber Scapegoat Gateway
 
 English | [日本語](README_ja.md)
 
-![Azazel-Pi_image](images/Azazel-Pi_logo.png)  
-![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
-![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
-![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
+![Azazel-Edge_image](images/Azazel-Edge_logo.png)  
+![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Edge?label=Version)
+![License](https://img.shields.io/github/license/01rabbit/Azazel-Edge)
+![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Edge)
 ![BSidesTokyo](https://img.shields.io/badge/BSidesTokyo-2025-lightgreen)
 ![BSidesLV](https://img.shields.io/badge/BSidesLV-2025-lightgreen)
 ![BHUSA](https://img.shields.io/badge/BlackHat%20USA%20Arsenal-2025-black)
@@ -42,7 +42,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 
 ### Comparison with Azazel-Zero
 
-- **Azazel-Pi**
+- **Azazel-Edge**
   - Built on Raspberry Pi 5 as a Portable Security Gateway (Cyber Scapegoat Gateway)
   - Designed as a concept model to provide low-cost protection for small-scale networks temporarily constructed
   - Strongly experimental in nature, serving as a testbed for multiple technical elements
@@ -50,7 +50,7 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 - **Azazel-Zero**  
   - A lightweight version, intended for real-world operation by limiting use cases and stripping away unnecessary features
   - Built as a portable physical barrier, prioritizing mobility and practicality
-  - Unlike the concept-model Azazel-Pi, Azazel-Zero is positioned as a field-ready practical model
+  - Unlike the concept-model Azazel-Edge, Azazel-Zero is positioned as a field-ready practical model
 
 ### Core Defense Functions
 
@@ -78,10 +78,10 @@ Thus, Azazel realizes the concept that "defense is not merely protection, but co
 
 | Component | Purpose |
 |-----------|---------|
-| `azazel_pi/core/state_machine.py` | Governs transitions between defensive postures |
-| `azazel_pi/core/actions/` | Models tc/iptables operations as idempotent plans |
-| `azazel_pi/core/ingest/` | Parses Suricata EVE logs and OpenCanary events |
-| `azazel_pi/core/display/` | E-Paper status visualization and rendering |
+| `azazel_edge/core/state_machine.py` | Governs transitions between defensive postures |
+| `azazel_edge/core/actions/` | Models tc/iptables operations as idempotent plans |
+| `azazel_edge/core/ingest/` | Parses Suricata EVE logs and OpenCanary events |
+| `azazel_edge/core/display/` | E-Paper status visualization and rendering |
 | `azctl/` | Command-line interface, daemon management, and interactive TUI menu |
 | `configs/` | Declarative configuration with schema validation |
 | `deploy/` | Third-party service deployment configurations |
@@ -146,18 +146,6 @@ Lightweight configuration optimized for Raspberry Pi, enabling rapid deployment 
 After cloning the repository or downloading a release, run the complete automated installer:
 
 ```bash
-# Launch TUI menu. If you omit --wan-if the CLI will dynamically resolve the WAN
-# interface using the WAN manager (recommended). You can also force an interface
-# via the AZAZEL_WAN_IF / AZAZEL_LAN_IF environment variables.
-# Example: prefer runtime selection — WAN will be resolved automatically when omitted.
-# You can override the detected interfaces with environment variables:
-#   export AZAZEL_LAN_IF=${AZAZEL_LAN_IF:-wlan0}
-#   export AZAZEL_WAN_IF=${AZAZEL_WAN_IF:-wlan1}
-# then run the CLI without the --wan-if flag if you want the runtime helper to pick the WAN.
-python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
-# or: omit --wan-if to let the system choose the active WAN interface
-python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
-```
 sudo scripts/install_azazel_complete.sh --start
 
 # Or step-by-step installation:
@@ -206,7 +194,7 @@ sudo scripts/install_azazel_complete.sh --enable-epd --start
 sudo scripts/install_azazel_complete.sh --enable-epd --epd-emulate --start
 
 # Test the display (use --emulate if hardware not present)
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test --emulate
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test --emulate
 
 # Enable the E-Paper service (if you didn't use --start)
 sudo systemctl enable --now azazel-epd.service
@@ -224,10 +212,10 @@ This project uses a local virtual environment at `.venv` for development tests. 
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
-pip install -r requirements-dev.txt
+pip install -e '.[test]'
 ```
 
-2. Install optional dependencies used by E-Paper rendering (Pillow) if not included in `requirements-dev.txt`:
+2. Install optional dependencies used by E-Paper rendering (Pillow):
 
 ```bash
 pip install pillow
@@ -262,7 +250,7 @@ For HTTPS, add your TLS server block or use Certbot.
 
 ### Optional: Flask Web UI Dashboard
 
-Azazel-Pi now includes a Flask-based Web UI backend and dashboard assets in `azazel_web/`.
+Azazel-Edge now includes a Flask-based Web UI backend and dashboard assets in `azazel_web/`.
 
 ```bash
 # local run (dev)
@@ -373,7 +361,7 @@ python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0}
 - Health snapshots (link status, IP presence, estimated speed) are written to `runtime/wan_state.json` (or `/var/run/azazel/wan_state.json` on deployed systems) and surfaced on the E-Paper display. You can override the default path with the `AZAZEL_WAN_STATE_PATH` environment variable when testing or for non-standard deployments.
 - The WAN manager reads candidate lists in order of precedence: explicit CLI `--candidate` arguments, the `AZAZEL_WAN_CANDIDATES` environment variable (comma-separated), values declared in `configs/network/azazel.yaml` (`interfaces.external` or `interfaces.wan`), then safe fallbacks. Use `AZAZEL_WAN_CANDIDATES` to force a specific candidate ordering without changing config files.
 - When the active interface changes, the manager reapplies `bin/azazel-traffic-init.sh`, refreshes NAT (`iptables -t nat`), and restarts dependent services (Suricata and `azctl-unified`) so they immediately consume the new interface.
-- Suricata now launches through `azazel_pi.core.network.suricata_wrapper`, which reads the same WAN state file, so restarting the service is sufficient to follow the latest selection.
+- Suricata now launches through `azazel_edge.core.network.suricata_wrapper`, which reads the same WAN state file, so restarting the service is sufficient to follow the latest selection.
 
 Developer note — non-root testing and fallback behavior
 
@@ -429,7 +417,7 @@ The `TrafficControlEngine` exposes two helpers to make testing and development e
    - Example usage in tests:
 
       ```py
-      from azazel_pi.core.enforcer.traffic_control import get_traffic_control_engine, make_completed_process
+      from azazel_edge.core.enforcer.traffic_control import get_traffic_control_engine, make_completed_process
 
       engine = get_traffic_control_engine()
       engine.set_subprocess_runner(lambda cmd, **kw: make_completed_process(cmd, 0, stdout='ok'))
@@ -499,7 +487,7 @@ MIT License
 
 ## Contributing
 
-We welcome contributions to the Azazel-Pi project. Please see our [contribution guidelines](CONTRIBUTING.md) and submit pull requests for review.
+We welcome contributions to the Azazel-Edge project. Please see our [contribution guidelines](CONTRIBUTING.md) and submit pull requests for review.
 
 ## Security Disclosure
 
@@ -507,4 +495,4 @@ For security-related issues, please use GitHub's private vulnerability reporting
 
 ---
 
-*Azazel-Pi: Tactical cyber defense through strategic delay and deception*
+*Azazel-Edge: Tactical cyber defense through strategic delay and deception*

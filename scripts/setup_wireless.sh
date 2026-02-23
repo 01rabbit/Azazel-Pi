@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Unified Wireless Network Setup for Azazel-Pi
+# Unified Wireless Network Setup for Azazel-Edge
 # Configures an internal AP (default ${AZAZEL_LAN_IF:-wlan0}) and an upstream/monitoring interface (default ${AZAZEL_WAN_IF:-wlan1}).
 # Interfaces may be overridden by environment variables: AZAZEL_LAN_IF (AP) and AZAZEL_WAN_IF (upstream).
 # Run as root (sudo)
@@ -49,7 +49,7 @@ usage() {
   cat <<USAGE
 Usage: $0 [OPTIONS]
 
-Configure wireless interfaces for Azazel-Pi:
+Configure wireless interfaces for Azazel-Edge:
 - ${AZAZEL_LAN_IF:-wlan0}: Internal Access Point (172.16.0.0/24)
 - ${AZAZEL_WAN_IF:-wlan1}: Upstream connection + Suricata monitoring
 
@@ -123,7 +123,7 @@ if [[ $SETUP_SURICATA -eq 1 ]] && ! ip link show "$WLAN_UP" >/dev/null 2>&1; the
 fi
 
 # Display configuration summary
-log "Unified Wireless Network Setup for Azazel-Pi"
+log "Unified Wireless Network Setup for Azazel-Edge"
 echo
 echo "Configuration Summary:"
   echo "  AP Interface (${WLAN_AP}):     $([ $SETUP_AP -eq 1 ] && echo "✓ Configure as $AP_IP" || echo "✗ Skip")"
@@ -177,7 +177,7 @@ EOF
   if ! grep -q "interface $WLAN_AP" /etc/dhcpcd.conf; then
     cat >> /etc/dhcpcd.conf <<EOF
 
-# Azazel-Pi AP Configuration
+# Azazel-Edge AP Configuration
 interface $WLAN_AP
 static ip_address=$AP_IP/24
 nohook wpa_supplicant
@@ -223,7 +223,7 @@ EOF
   # Keep /etc/nftables.conf minimal (not used)
   cat > /etc/nftables.conf <<EOF
 #!/usr/sbin/nft -f
-# Azazel-Pi: nftables is not used. Keep this file minimal.
+# Azazel-Edge: nftables is not used. Keep this file minimal.
 
 EOF
   

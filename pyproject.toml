@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "azazel-pi"
+name = "azazel-edge"
 version = "3.2.0"
 description = "Network Security Monitoring and Response System"
 readme = "README.md"
@@ -29,7 +29,7 @@ test = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --cov=azazel_pi"
+addopts = "-v --cov=azazel_edge"
 
 [tool.hatch.build.targets.wheel]
-packages = ["azazel_pi"]
+packages = ["azazel_edge"]

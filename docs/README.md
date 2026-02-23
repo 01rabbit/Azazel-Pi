@@ -1,6 +1,6 @@
-# Azazel-Pi Documentation
+# Azazel-Edge Documentation
 
-Welcome to the Azazel-Pi documentation!
+Welcome to the Azazel-Edge documentation!
 
 ## Language / 言語
 

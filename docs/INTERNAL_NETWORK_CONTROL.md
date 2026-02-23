@@ -1,7 +1,7 @@
 # Internal Network Control Design (Draft)
 
 ## Objective
-Implement fine-grained control inside the LAN (wlan0) for Azazel-Pi, enabling:
+Implement fine-grained control inside the LAN (wlan0) for Azazel-Edge, enabling:
 - Per-host segmentation (isolate suspicious clients without full lockdown)
 - Micro-policies (rate limits, delay, block, redirect per internal IP/MAC)
 - Tiered trust zones (trusted, guest, quarantined)
@@ -35,7 +35,7 @@ internal_control:
 4. Enforcer executes nftables/tc operations using new per-host targets.
 
 ## Implementation Plan
-- `azazel_pi/core/network/internal_control.py`
+- `azazel_edge/core/network/internal_control.py`
   - Class `InternalControlManager` with:
     - `load_config(cfg: dict)`
     - `update_host_score(ip: str, score: float)`

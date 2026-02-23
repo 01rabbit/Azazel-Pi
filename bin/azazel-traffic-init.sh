@@ -128,7 +128,7 @@ else
         PY_IF=$(python3 - <<'PY'
 import sys
 try:
-    from azazel_pi.utils.wan_state import get_active_wan_interface
+    from azazel_edge.utils.wan_state import get_active_wan_interface
     iface = get_active_wan_interface()
     if iface:
         sys.stdout.write(iface)

@@ -1,5 +1,5 @@
 import pytest
-from azazel_pi.core.enforcer.traffic_control import TrafficControlEngine
+from azazel_edge.core.enforcer.traffic_control import TrafficControlEngine
 from tests.utils.fake_subprocess import FakeSubprocess
 
 

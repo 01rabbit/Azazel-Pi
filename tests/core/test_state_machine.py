@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from azazel_pi.core.state_machine import Event, State, StateMachine, Transition
+from azazel_edge.core.state_machine import Event, State, StateMachine, Transition
 
 
 @dataclass

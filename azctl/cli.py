@@ -13,10 +13,10 @@ from pathlib import Path
 from typing import Iterable, Optional
 from datetime import datetime
 
-from azazel_pi.core.config import AzazelConfig
-from azazel_pi.core.scorer import ScoreEvaluator
-from azazel_pi.core.state_machine import Event, State, StateMachine, Transition
-from azazel_pi.utils.network_utils import (
+from azazel_edge.core.config import AzazelConfig
+from azazel_edge.core.scorer import ScoreEvaluator
+from azazel_edge.core.state_machine import Event, State, StateMachine, Transition
+from azazel_edge.utils.network_utils import (
     get_wlan_ap_status, get_wlan_link_info, get_active_profile,
     get_network_interfaces_stats, format_bytes
 )
@@ -28,11 +28,11 @@ import time
 from queue import Queue, Empty
 import threading
 import signal
-from azazel_pi.core.ingest.suricata_tail import SuricataTail
-from azazel_pi.core.ingest.canary_tail import CanaryTail
-from azazel_pi.core import notify_config as notice
-from azazel_pi.core.display.status_collector import StatusCollector
-from azazel_pi.utils.wan_state import get_active_wan_interface
+from azazel_edge.core.ingest.suricata_tail import SuricataTail
+from azazel_edge.core.ingest.canary_tail import CanaryTail
+from azazel_edge.core import notify_config as notice
+from azazel_edge.core.display.status_collector import StatusCollector
+from azazel_edge.utils.wan_state import get_active_wan_interface
 
 
 # ---------------------------------------------------------------------------
@@ -469,7 +469,7 @@ def cmd_status_tui(decisions: Optional[str], lan_if: str, wan_if: str, interval:
         # Header
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         header = Text.assemble(
-            (" AZ-01X Azazel Pi ", "bold white on blue"),
+            (" AZ-01X Azazel Edge ", "bold white on blue"),
             ("  "),
             (f"{now}", "dim"),
         )
@@ -656,7 +656,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             wan_if=wan_if,
         )
     if args.command == "wan-manager":
-        from azazel_pi.core.network.wan_manager import WANManager
+        from azazel_edge.core.network.wan_manager import WANManager
 
         cfg_path = safe_path(getattr(args, "config", None), "/etc/azazel/azazel.yaml")
         state_path = safe_path(getattr(args, "state_file", None), None)
@@ -817,7 +817,7 @@ def cmd_serve(config: Optional[str], decisions: Optional[str], suricata_eve: str
 
     def canary_reader(path: str):
         try:
-            from azazel_pi.core.ingest.canary_tail import CanaryTail
+            from azazel_edge.core.ingest.canary_tail import CanaryTail
         except Exception:
             return
         tail = CanaryTail(Path(path))

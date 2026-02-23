@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 
-from azazel_pi.core.display import epd_daemon
+from azazel_edge.core.display import epd_daemon
 
 
 def test_status_collector_reads_wan_state(tmp_path):
@@ -70,7 +70,7 @@ def test_epd_daemon_test_mode_saves_image(tmp_path, monkeypatch):
     cmd = [
         "python",
         "-m",
-        "azazel_pi.core.display.epd_daemon",
+        "azazel_edge.core.display.epd_daemon",
         "--mode",
         "test",
         "--emulate",

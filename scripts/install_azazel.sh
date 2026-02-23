@@ -205,7 +205,7 @@ service = cfg.setdefault("ServiceSettings", {})
 if not service.get("ListenAddress"):
     service["ListenAddress"] = ":8065"
     changed = True
-# Set SiteURL to internal network gateway for Azazel-Pi
+# Set SiteURL to internal network gateway for Azazel-Edge
 if service.get("SiteURL") != "http://172.16.0.254:8065":
     service["SiteURL"] = "http://172.16.0.254:8065"
     changed = True
@@ -392,8 +392,8 @@ fi
 
 log "Staging Azazel runtime under $TARGET_ROOT"
 mkdir -p "$TARGET_ROOT" "$CONFIG_ROOT"
-# Copy current package layout (azazel_pi) and azctl CLI into target runtime
-rsync -a --delete "$REPO_ROOT/azazel_pi" "$REPO_ROOT/azctl" "$REPO_ROOT/azazel_web" "$TARGET_ROOT/"
+# Copy current package layout (azazel_edge) and azctl CLI into target runtime
+rsync -a --delete "$REPO_ROOT/azazel_edge" "$REPO_ROOT/azctl" "$REPO_ROOT/azazel_web" "$TARGET_ROOT/"
 rsync -a "$REPO_ROOT/configs/" "$CONFIG_ROOT/"
 rsync -a "$REPO_ROOT/systemd/" /etc/systemd/system/
 

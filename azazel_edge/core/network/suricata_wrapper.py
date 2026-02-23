@@ -5,7 +5,7 @@ import os
 import sys
 from typing import List
 
-from azazel_pi.utils.wan_state import get_active_wan_interface
+from azazel_edge.utils.wan_state import get_active_wan_interface
 import os
 
 

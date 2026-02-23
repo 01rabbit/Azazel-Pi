@@ -1,11 +1,11 @@
-# AZ-01X Azazel-Pi - The Cyber Scapegoat Gateway
+# AZ-01X Azazel-Edge - The Cyber Scapegoat Gateway
 
 [English](README.md) | 日本語
 
-![Azazel-Pi_image](images/Azazel-Pi_logo.png)  
-![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Pi?label=Version)
-![License](https://img.shields.io/github/license/01rabbit/Azazel-Pi)
-![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Pi)
+![Azazel-Edge_image](images/Azazel-Edge_logo.png)  
+![version](https://img.shields.io/github/v/tag/01rabbit/Azazel-Edge?label=Version)
+![License](https://img.shields.io/github/license/01rabbit/Azazel-Edge)
+![release-date](https://img.shields.io/github/release-date/01rabbit/Azazel-Edge)
 ![BSidesTokyo](https://img.shields.io/badge/BSidesTokyo-2025-lightgreen)
 ![BSidesLV](https://img.shields.io/badge/BSidesLV-2025-lightgreen)
 ![BHUSA](https://img.shields.io/badge/BlackHat%20USA%20Arsenal-2025-black)
@@ -41,7 +41,7 @@
 
 ### Azazel-Zeroとの比較
 
-- **Azazel-Pi**
+- **Azazel-Edge**
   - ポータブルセキュリティゲートウェイ（サイバー贖罪の山羊ゲートウェイ）としてRaspberry Pi 5上に構築
   - 一時的に構築された小規模ネットワークに低コスト保護を提供するコンセプトモデルとして設計
   - 強い実験的性質を持ち、複数の技術要素のテストベッドとして機能
@@ -49,7 +49,7 @@
 - **Azazel-Zero**
   - 軽量版で、使用例を限定し不要な機能を削除することで実世界での運用を意図
   - 機動性と実用性を優先したポータブル物理バリアとして構築
-  - コンセプトモデルのAzazel-Piとは異なり、Azazel-Zeroは現場対応可能な実用モデルとして位置づけ
+  - コンセプトモデルのAzazel-Edgeとは異なり、Azazel-Zeroは現場対応可能な実用モデルとして位置づけ
 
 ### コア防御機能
 
@@ -72,10 +72,10 @@
 
 | コンポーネント | 目的 |
 |---------------|------|
-| `azazel_pi/core/state_machine.py` | 防御姿勢間の遷移を管理 |
-| `azazel_pi/core/actions/` | tc/iptables操作をべき等プランとしてモデル化 |
-| `azazel_pi/core/ingest/` | Suricata EVEログとOpenCanaryイベントを解析 |
-| `azazel_pi/core/display/` | E-Paperステータス可視化とレンダリング |
+| `azazel_edge/core/state_machine.py` | 防御姿勢間の遷移を管理 |
+| `azazel_edge/core/actions/` | tc/iptables操作をべき等プランとしてモデル化 |
+| `azazel_edge/core/ingest/` | Suricata EVEログとOpenCanaryイベントを解析 |
+| `azazel_edge/core/display/` | E-Paperステータス可視化とレンダリング |
 | `azctl/` | コマンドラインインターフェースとデーモン管理 |
 | `configs/` | スキーマ検証付き宣言的設定 |
 | `deploy/` | サードパーティサービス展開設定 |
@@ -135,7 +135,7 @@ Raspberry Piに最適化された軽量設定により、災害復旧、フィ�
 リポジトリをクローンまたはリリースをダウンロードした後、完全自動インストーラーを実行：
 
 ```bash
-cd Azazel-Pi
+cd Azazel-Edge
 # 全依存関係と設定を含む完全インストール
 sudo scripts/install_azazel_complete.sh --start
 
@@ -185,7 +185,7 @@ sudo scripts/install_azazel_complete.sh --enable-epd --start
 sudo scripts/install_azazel_complete.sh --enable-epd --epd-emulate --start
 
 # テスト表示（未接続の場合は --emulate 推奨）
-sudo python3 -m azazel_pi.core.display.epd_daemon --mode test --emulate
+sudo python3 -m azazel_edge.core.display.epd_daemon --mode test --emulate
 
 # E-Paperサービスを有効化（--startを使っていない場合）
 sudo systemctl enable --now azazel-epd.service
@@ -352,7 +352,7 @@ python3 -m azctl.cli menu --lan-if ${AZAZEL_LAN_IF:-wlan0} --wan-if ${AZAZEL_WAN
 - 選定結果と各インターフェースの状態は `runtime/wan_state.json`（本番では `/var/run/azazel/wan_state.json`）に記録され、E-Paper 画面にも「再設定中」「WAN切替完了」といったメッセージで表示されます。テストやカスタム配置では `AZAZEL_WAN_STATE_PATH` 環境変数で状態ファイルの場所を上書きできます。
 - WAN マネージャは候補の読み取り順序（優先順位）を持ちます: 明示的な CLI の `--candidate` → `AZAZEL_WAN_CANDIDATES` 環境変数（カンマ区切り）→ `configs/network/azazel.yaml` の `interfaces.external` / `interfaces.wan` → フォールバック。設定ファイルを直接編集せずに候補順序を制御したい環境では `AZAZEL_WAN_CANDIDATES` を利用してください。
 - 切り替え時には `bin/azazel-traffic-init.sh`、NAT (`iptables -t nat`) を再適用し、Suricata と `azctl-unified` を順次再起動して即座に新しいインターフェースを利用させます。
-- Suricata は `azazel_pi.core.network.suricata_wrapper` を経由して起動するため、サービス再起動だけで常に最新の WAN 状態を参照できます。
+- Suricata は `azazel_edge.core.network.suricata_wrapper` を経由して起動するため、サービス再起動だけで常に最新の WAN 状態を参照できます。
 
 開発者向けメモ — 非 root 環境でのテストとフォールバック動作
 
@@ -415,7 +415,7 @@ MIT License
 
 ## 貢献
 
-Azazel-Piプロジェクトへの貢献を歓迎します。[貢献ガイドライン](CONTRIBUTING.md)を参照し、レビュー用のプルリクエストを提出してください。
+Azazel-Edgeプロジェクトへの貢献を歓迎します。[貢献ガイドライン](CONTRIBUTING.md)を参照し、レビュー用のプルリクエストを提出してください。
 
 ## セキュリティ開示
 
@@ -423,4 +423,4 @@ Azazel-Piプロジェクトへの貢献を歓迎します。[貢献ガイドラ�
 
 ---
 
-*Azazel-Pi: 戦略的遅延と欺瞞による戦術的サイバー防御*
+*Azazel-Edge: 戦略的遅延と欺瞞による戦術的サイバー防御*

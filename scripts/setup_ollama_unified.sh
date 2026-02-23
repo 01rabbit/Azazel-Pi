@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Unified Ollama Setup for Azazel-Pi
+# Unified Ollama Setup for Azazel-Edge
 # Handles Docker deployment, model download, and configuration
 set -euo pipefail
 
@@ -35,10 +35,10 @@ usage() {
   cat <<USAGE
 Usage: $0 [OPTIONS]
 
-Unified Ollama setup for Azazel-Pi:
+Unified Ollama setup for Azazel-Edge:
 - Docker service deployment
 - Model download and configuration
-- Integration with Azazel-Pi AI system
+- Integration with Azazel-Edge AI system
 
 Options:
   --deploy-only      Deploy Ollama Docker service only (skip model setup)
@@ -116,10 +116,10 @@ check_root() {
 
 # Check if we're in the right directory
 if [[ ! -f "pyproject.toml" || ! -d "scripts" ]]; then
-  error "Please run this script from the Azazel-Pi project root directory"
+  error "Please run this script from the Azazel-Edge project root directory"
 fi
 
-log "Unified Ollama Setup for Azazel-Pi"
+log "Unified Ollama Setup for Azazel-Edge"
 echo
 
 # Display setup summary

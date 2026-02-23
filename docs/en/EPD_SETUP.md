@@ -1,12 +1,12 @@
-# E-Paper Display Setup for Azazel Pi
+# E-Paper Display Setup for Azazel Edge
 
-This guide describes how to set up and use the Waveshare E-Paper display with Azazel Pi for real-time status visualization.
+This guide describes how to set up and use the Waveshare E-Paper display with Azazel Edge for real-time status visualization.
 
 ## Overview
 
 The E-Paper display integration provides:
 
-- **Real-time status visualization** of Azazel Pi's defensive posture
+- **Real-time status visualization** of Azazel Edge's defensive posture
 - **Mode indication** (Portal, Shield, Lockdown) with visual highlighting
 - **Network status** showing interface state and IP address
 - **Alert counters** for recent and total security events
@@ -88,7 +88,7 @@ sudo systemctl restart azazel-epd.service
 
 ### 3. Install systemd Service
 
-The E-Paper service is installed automatically with Azazel Pi, but can be manually installed:
+The E-Paper service is installed automatically with Azazel Edge, but can be manually installed:
 
 ```bash
 # Copy service file
@@ -123,7 +123,7 @@ DEBUG=0
 If using a different E-Paper model, you may need to adjust the driver:
 
 1. Check available drivers in `/opt/waveshare-epd/RaspberryPi_JetsonNano/python/lib/waveshare_epd/`
-2. Edit `azazel_pi/core/display/renderer.py` and update the `driver_name` parameter
+2. Edit `azazel_edge/core/display/renderer.py` and update the `driver_name` parameter
 
 ## Usage
 
@@ -142,16 +142,16 @@ Test the display without running the full daemon:
 
 ```bash
 # Test mode: single status update (use --emulate if no hardware)
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test --emulate
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=test --emulate
 
 # Boot performs a non-animated clear-to-white (no long animation)
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=boot
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=boot
 
 # Shutdown clears the display and puts the hardware to sleep
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=shutdown
 
 # Run daemon in foreground with debug output
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py \
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py \
     --mode=daemon \
     --interval=5 \
     --debug
@@ -173,7 +173,7 @@ The E-Paper display shows the following information:
 
 ```
 ╔════════════════════════════════════════════╗
-║          Azazel-Pi (inverted)              ║
+║          Azazel-Edge (inverted)              ║
 ╠════════════════════════════════════════════╣
 ║ [Mode: SHIELD]          Score: 32.5        ║
 ╟────────────────────────────────────────────╢
@@ -236,7 +236,7 @@ This is normal for E-Paper displays. To mitigate:
 
 2. **Clear display manually:**
    ```bash
-   sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=shutdown
+   sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=shutdown
    ```
 
 ### Driver Not Found Error
@@ -265,7 +265,7 @@ The E-Paper service runs as root because SPI access requires elevated privileges
 If testing manually, always use `sudo`:
 
 ```bash
-sudo python3 /opt/azazel/azazel_pi/core/display/epd_daemon.py --mode=test
+sudo python3 /opt/azazel/azazel_edge/core/display/epd_daemon.py --mode=test
 ```
 
 ### High CPU Usage
@@ -282,7 +282,7 @@ E-Paper updates are CPU-intensive. To reduce load:
    - Partial refresh uses less CPU
    - May cause slight ghosting over time
 
-## Integration with Azazel Pi
+## Integration with Azazel Edge
 
 The E-Paper display automatically integrates with:
 
@@ -299,7 +299,7 @@ The E-Paper display automatically integrates with:
 To monitor a different network interface, modify the status collector:
 
 ```python
-# Edit azazel_pi/core/display/status_collector.py
+# Edit azazel_edge/core/display/status_collector.py
 # In the collect() method, change:
 network=self._get_network_status("wlan0"),  # Instead of "eth0"
 ```
@@ -309,7 +309,7 @@ network=self._get_network_status("wlan0"),  # Instead of "eth0"
 The display renderer can be customized:
 
 ```python
-# Edit azazel_pi/core/display/renderer.py
+# Edit azazel_edge/core/display/renderer.py
 # Modify the render_status() method to change layout
 ```
 
@@ -331,7 +331,7 @@ To run multiple displays (e.g., different update intervals):
 ## See Also
 
 - [Waveshare E-Paper Documentation](https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT)
-- [Azazel Pi Architecture](ARCHITECTURE.md)
+- [Azazel Edge Architecture](ARCHITECTURE.md)
 - [Operations Guide](OPERATIONS.md)
 
 ## Credits

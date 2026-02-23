@@ -5,8 +5,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/azazel/Azazel-Pi
-Environment=PYTHONPATH=/home/azazel/Azazel-Pi
+WorkingDirectory=/home/azazel/Azazel-Edge
+Environment=PYTHONPATH=/home/azazel/Azazel-Edge
 ExecStart=/usr/bin/env python3 -m azctl.cli wan-manager --config /etc/azazel/azazel.yaml
 Restart=always
 RestartSec=5

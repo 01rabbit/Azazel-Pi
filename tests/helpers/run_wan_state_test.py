@@ -5,14 +5,14 @@ Usage:
     python tests/helpers/run_wan_state_test.py /path/to/wan_state.json /tmp/out.png
 
 This script writes a minimal WAN state file if it does not exist, then runs
-`azazel_pi.core.display.epd_daemon` in test+emulate mode pointing at that file and
+`azazel_edge.core.display.epd_daemon` in test+emulate mode pointing at that file and
 saving the output PNG to the given path.
 """
 from __future__ import annotations
 
 import json
 import subprocess
-from azazel_pi.utils.cmd_runner import run as run_cmd
+from azazel_edge.utils.cmd_runner import run as run_cmd
 import sys
 from pathlib import Path
 
@@ -38,7 +38,7 @@ def main(argv: list[str]) -> int:
     cmd = [
         sys.executable,
         "-m",
-        "azazel_pi.core.display.epd_daemon",
+        "azazel_edge.core.display.epd_daemon",
         "--mode",
         "test",
         "--emulate",

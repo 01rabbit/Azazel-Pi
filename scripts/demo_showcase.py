@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Demo orchestrator for Azazel-Pi
+"""Demo orchestrator for Azazel-Edge
 
 Runs a small showcase that:
 - optionally starts the demo_injector to append Suricata-like alerts to a file
@@ -30,9 +30,9 @@ from rich.layout import Layout
 from rich.console import Console
 
 try:
-    from azazel_pi.core.enforcer.traffic_control import get_traffic_control_engine, TrafficControlEngine
-    from azazel_pi.core.mock_llm import simulate_llm_request
-    from azazel_pi.utils.mattermost import send_alert_to_mattermost, send_simple_message
+    from azazel_edge.core.enforcer.traffic_control import get_traffic_control_engine, TrafficControlEngine
+    from azazel_edge.core.mock_llm import simulate_llm_request
+    from azazel_edge.utils.mattermost import send_alert_to_mattermost, send_simple_message
 except ModuleNotFoundError:
     # If the package isn't installed (running script directly from repo),
     # add repo root to sys.path so imports work when running via system python.
@@ -40,9 +40,9 @@ except ModuleNotFoundError:
     repo_root = Path(__file__).resolve().parents[1]
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
-    from azazel_pi.core.enforcer.traffic_control import get_traffic_control_engine, TrafficControlEngine
-    from azazel_pi.core.mock_llm import simulate_llm_request
-    from azazel_pi.utils.mattermost import send_alert_to_mattermost, send_simple_message
+    from azazel_edge.core.enforcer.traffic_control import get_traffic_control_engine, TrafficControlEngine
+    from azazel_edge.core.mock_llm import simulate_llm_request
+    from azazel_edge.utils.mattermost import send_alert_to_mattermost, send_simple_message
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_EVE = Path("runtime/demo_eve.json")
@@ -275,7 +275,7 @@ class DemoOrchestrator:
             # services
             svc_text = ", ".join([f"{k}: {v}" for k, v in self.services.items()])
             t.add_row(f"Services", svc_text)
-            return Panel(t, title="Azazel-Pi Demo Status")
+            return Panel(t, title="Azazel-Edge Demo Status")
 
         def make_lower():
             # show last lines of epd_out
@@ -350,7 +350,7 @@ class DemoOrchestrator:
 
 
 def main() -> int:
-    p = argparse.ArgumentParser(description="Azazel-Pi demo orchestrator")
+    p = argparse.ArgumentParser(description="Azazel-Edge demo orchestrator")
     p.add_argument('--eve', type=Path, default=DEFAULT_EVE, help='Path to eve.json to monitor')
     p.add_argument('--epd-out', type=Path, default=DEFAULT_EPD_OUT, help='Path to write lightweight EPD preview output')
     p.add_argument('--count', type=int, default=200, help='Number of demo events to inject (0 to skip injector)')

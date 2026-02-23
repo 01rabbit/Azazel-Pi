@@ -3,8 +3,8 @@ Normal mode implementation tests
 仕様書セクション8に基づくテスト実装
 """
 import pytest
-from azazel_pi.core.state_machine import StateMachine
-from azazel_pi.core.enforcer.traffic_control import TrafficControlEngine
+from azazel_edge.core.state_machine import StateMachine
+from azazel_edge.core.enforcer.traffic_control import TrafficControlEngine
 
 
 class TestNormalModeStateMachine:
@@ -31,7 +31,7 @@ soc:
   critical_signatures: []
 """)
         
-        from azazel_pi.core.state_machine import State
+        from azazel_edge.core.state_machine import State
         
         # score=19 → normal (新しいインスタンス)
         sm1 = StateMachine(
@@ -71,7 +71,7 @@ soc:
   critical_signatures: []
 """)
         
-        from azazel_pi.core.state_machine import State
+        from azazel_edge.core.state_machine import State
         
         # score=49 → portal (新しいインスタンス)
         sm1 = StateMachine(
@@ -111,7 +111,7 @@ soc:
   critical_signatures: []
 """)
         
-        from azazel_pi.core.state_machine import State
+        from azazel_edge.core.state_machine import State
         
         # score=79 → shield (新しいインスタンス)
         sm1 = StateMachine(
@@ -155,7 +155,7 @@ soc:
   critical_signatures: []
 """)
         
-        from azazel_pi.core.state_machine import State
+        from azazel_edge.core.state_machine import State
         sm = StateMachine(
             initial_state=State("normal_state", "Normal Mode"),
             config_path=str(config_file)
@@ -182,8 +182,8 @@ class TestExceptionBlocking:
     
     def test_denylist_detection(self):
         """Denylist IPの検出テスト"""
-        from azazel_pi.monitor.main_suricata import check_exception_block
-        from azazel_pi.monitor import main_suricata
+        from azazel_edge.monitor.main_suricata import check_exception_block
+        from azazel_edge.monitor import main_suricata
         
         # Denylist IPを設定（モジュールレベル変数はset型）
         main_suricata.DENYLIST_IPS.clear()
@@ -198,8 +198,8 @@ class TestExceptionBlocking:
     
     def test_critical_signature_detection(self):
         """Critical signatureの検出テスト"""
-        from azazel_pi.monitor.main_suricata import check_exception_block
-        from azazel_pi.monitor import main_suricata
+        from azazel_edge.monitor.main_suricata import check_exception_block
+        from azazel_edge.monitor import main_suricata
         
         # Critical signaturesを設定（list型なので再代入）
         main_suricata.CRITICAL_SIGNATURES.clear()
@@ -214,8 +214,8 @@ class TestExceptionBlocking:
     
     def test_no_exception_for_benign(self):
         """通常トラフィックは例外遮断しないことを確認"""
-        from azazel_pi.monitor.main_suricata import check_exception_block
-        from azazel_pi.monitor import main_suricata
+        from azazel_edge.monitor.main_suricata import check_exception_block
+        from azazel_edge.monitor import main_suricata
         
         main_suricata.DENYLIST_IPS.clear()
         main_suricata.CRITICAL_SIGNATURES.clear()

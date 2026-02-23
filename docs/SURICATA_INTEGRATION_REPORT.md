@@ -122,7 +122,7 @@ tail -f /var/log/suricata/azazel-suricata-update.log
 ## Migration Notes
 
 ### For Existing Installations
-Users with existing Azazel-Pi installations can benefit from the enhanced features by:
+Users with existing Azazel-Edge installations can benefit from the enhanced features by:
 
 1. Running the updated complete installer: `sudo scripts/install_azazel_complete.sh`
 2. The installer is idempotent and will safely add missing components
@@ -145,6 +145,6 @@ New installations automatically receive all integrated features with no addition
 
 ## Conclusion
 
-The integration of Suricata environment setup into the main installer represents a significant improvement in Azazel-Pi's installation process. Users now receive a more robust, secure, and maintainable Suricata configuration as part of the standard installation, eliminating the need for additional manual setup steps while providing enhanced security and monitoring capabilities.
+The integration of Suricata environment setup into the main installer represents a significant improvement in Azazel-Edge's installation process. Users now receive a more robust, secure, and maintainable Suricata configuration as part of the standard installation, eliminating the need for additional manual setup steps while providing enhanced security and monitoring capabilities.
 
 **Status**: ✅ Production Ready - The integrated system is fully functional and ready for deployment.

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from azazel_pi.utils import wan_state
+from azazel_edge.utils import wan_state
 
 
 def test_update_and_load_custom_path(tmp_path, monkeypatch):

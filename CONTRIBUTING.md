@@ -1,6 +1,6 @@
-# Contributing to Azazel-Pi
+# Contributing to Azazel-Edge
 
-We welcome contributions to the Azazel-Pi project! This document provides guidelines for developers who want to contribute code, documentation, or bug reports.
+We welcome contributions to the Azazel-Edge project! This document provides guidelines for developers who want to contribute code, documentation, or bug reports.
 
 ## Development Environment Setup
 
@@ -14,8 +14,8 @@ We welcome contributions to the Azazel-Pi project! This document provides guidel
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/01rabbit/Azazel-Pi.git
-   cd Azazel-Pi
+   git clone https://github.com/01rabbit/Azazel-Edge.git
+   cd Azazel-Edge
    ```
 
 2. **Install development dependencies**:
@@ -29,7 +29,7 @@ We welcome contributions to the Azazel-Pi project! This document provides guidel
 
 3. **Verify installation**:
    ```bash
-   python3 -c "import azazel_pi; print('Import successful')"
+   python3 -c "import azazel_edge; print('Import successful')"
    ```
 
 ## Running Tests
@@ -49,7 +49,7 @@ The test suite is organized under `tests/` with the following structure:
 python3 -m pytest
 
 # Run tests with coverage report
-python3 -m pytest --cov=azazel_pi
+python3 -m pytest --cov=azazel_edge
 
 # Run specific test modules
 python3 -m pytest tests/core/test_state_machine.py
@@ -80,7 +80,7 @@ make package
 
 Tests are configured via `pytest.ini` and `pyproject.toml`:
 - Test discovery: `test_*.py` files
-- Coverage target: `azazel_pi` module
+- Coverage target: `azazel_edge` module
 - Markers: `unit`, `integration`, `slow`
 
 ### Writing Tests
@@ -274,4 +274,4 @@ When contributing code, also update:
 
 ---
 
-Thank you for contributing to Azazel-Pi! Your help makes this project better for everyone.
+Thank you for contributing to Azazel-Edge! Your help makes this project better for everyone.

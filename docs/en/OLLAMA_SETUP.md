@@ -2,7 +2,7 @@
 
 ## Overview
 
-Azazel-Pi is a hybrid AI system that uses Mock LLM (fast and lightweight) for known threats and Ollama (deep analysis) for unknown threats.
+Azazel-Edge is a hybrid AI system that uses Mock LLM (fast and lightweight) for known threats and Ollama (deep analysis) for unknown threats.
 
 Ollama is managed via Docker Compose and integrated with PostgreSQL/Mattermost.
 
@@ -61,7 +61,7 @@ wget https://huggingface.co/mradermacher/Qwen2.5-1.5B-Instruct-uncensored-GGUF/r
 
 ```bash
 # Run automatic setup script
-sudo /home/azazel/Azazel-Pi/scripts/setup_ollama.sh
+sudo /home/azazel/Azazel-Edge/scripts/setup_ollama.sh
 ```
 
 This script performs the following:
@@ -76,7 +76,7 @@ This script performs the following:
 ### Docker Compose Operations
 
 ```bash
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 
 # Start all services (PostgreSQL + Ollama)
 docker compose up -d
@@ -142,7 +142,7 @@ Deep analysis by Ollama is executed under the following conditions:
 ### Docker Compose Status Check
 
 ```bash
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose ps
 ```
 
@@ -168,7 +168,7 @@ curl -X POST http://127.0.0.1:11434/api/generate \
 ### Integration Test
 
 ```python
-from azazel_pi.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
+from azazel_edge.core.hybrid_threat_evaluator import evaluate_with_hybrid_system
 
 # Test alert (unknown threat)
 alert = {
@@ -209,7 +209,7 @@ print(f"Reason: {result['reason']}")
 docker logs azazel_ollama
 
 # Restart
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose restart ollama
 ```
 
@@ -256,7 +256,7 @@ To configure manually:
 sudo systemctl enable docker
 
 # Auto-start containers on boot
-cd /home/azazel/Azazel-Pi/deploy
+cd /home/azazel/Azazel-Edge/deploy
 docker compose up -d
 ```
 

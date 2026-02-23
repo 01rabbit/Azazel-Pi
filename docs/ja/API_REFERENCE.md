@@ -2,7 +2,7 @@
 
 このリファレンスでは、Azazel制御プレーンを構成するPythonモジュールについて文書化しています。運用者がテスト中に動作を拡張またはモック化するのに十分なコンテキストを提供することを目的としています。
 
-## `azazel_pi.core.state_machine`
+## `azazel_edge.core.state_machine`
 
 ### 基本クラス
 
@@ -156,7 +156,7 @@ print(f"目標モード: {result['desired_mode']}")
 print(f"適用モード: {result['applied_mode']}")
 ```
 
-## `azazel_pi.core.scorer`
+## `azazel_edge.core.scorer`
 
 ### ScoreEvaluator クラス
 
@@ -210,7 +210,7 @@ classification = scorer.classify(65)
 print(classification)  # "elevated"
 ```
 
-## `azazel_pi.core.actions`
+## `azazel_edge.core.actions`
 
 ネットワーク制御アクションのための共通インターフェースです。
 
@@ -282,7 +282,7 @@ results = redirect_action.execute("eth0")
 - `output`: コマンド出力
 - `error`: エラーメッセージ（ある場合）
 
-## `azazel_pi.core.ingest`
+## `azazel_edge.core.ingest`
 
 ログファイルからイベントを読み取り、Eventインスタンスを発行します。意図的に決定論的であり、ユニットテストのカバレッジを容易にします。
 
@@ -328,7 +328,7 @@ for event in canary_tail.tail_events():
     print(f"ハニーポットイベント: {event.name}, 重要度: {event.severity}")
 ```
 
-## `azazel_pi.core.api`
+## `azazel_edge.core.api`
 
 将来のHTTPフロントエンドで使用される最小限のディスパッチャーです。
 
@@ -372,7 +372,7 @@ systemdサービスを支援し、イベントを`AzazelDaemon`に送信して�
 
 ## `azctl.tui_zero` - Unified Textual TUI
 
-Azazel-Pi のメニューTUIは、Azazel-Zero由来の unified Textual UI に統一されました。  
+Azazel-Edge のメニューTUIは、Azazel-Zero由来の unified Textual UI に統一されました。  
 旧 `azctl/menu` モジュラー実装は削除済みです。
 
 ### 実装ファイル
@@ -706,8 +706,8 @@ lockdown:
 ### 基本的な状態マシン使用例
 
 ```python
-from azazel_pi.core.state_machine import StateMachine, State, Event, Transition
-from azazel_pi.core.scorer import ScoreEvaluator
+from azazel_edge.core.state_machine import StateMachine, State, Event, Transition
+from azazel_edge.core.scorer import ScoreEvaluator
 
 # 状態定義
 portal = State("portal", "通常運用")
@@ -737,7 +737,7 @@ print(f"新しい状態: {new_state.name}")
 ### カスタムアクション実装
 
 ```python
-from azazel_pi.core.actions import Action, ActionResult
+from azazel_edge.core.actions import Action, ActionResult
 
 class CustomLogAction(Action):
     def __init__(self, log_message: str):
@@ -770,7 +770,7 @@ class CustomLogAction(Action):
 
 ```python
 import time
-from azazel_pi.core.ingest import SuricataTail
+from azazel_edge.core.ingest import SuricataTail
 
 # リアルタイム監視
 suricata_tail = SuricataTail("/var/log/suricata/eve.json")
@@ -793,4 +793,4 @@ for event in suricata_tail.tail_events():
 
 ---
 
-*API仕様の最新情報については、[Azazel-Piリポジトリ](https://github.com/01rabbit/Azazel-Pi)のソースコードとテストスイートを参照してください。*
+*API仕様の最新情報については、[Azazel-Edgeリポジトリ](https://github.com/01rabbit/Azazel-Edge)のソースコードとテストスイートを参照してください。*

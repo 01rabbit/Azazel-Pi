@@ -1,16 +1,16 @@
-# Azazel-Pi アーキテクチャ
+# Azazel-Edge アーキテクチャ
 
-Azazel-PiはSOC/NOC制御プレーンを自己完結型リポジトリにパッケージ化しています。クリーンなRaspberry Piイメージがタグ付きリリースを取得して、アドホックな設定なしに運用可能になるように設計されています。
+Azazel-EdgeはSOC/NOC制御プレーンを自己完結型リポジトリにパッケージ化しています。クリーンなRaspberry Piイメージがタグ付きリリースを取得して、アドホックな設定なしに運用可能になるように設計されています。
 
 ## システム概要
 
-Azazel-Piは、ネットワークセキュリティ監視および自動応答システムとして機能します。侵入検知、脅威スコアリング、適応的防御対応を統合し、Raspberry Piハードウェア上で効率的に動作します。
+Azazel-Edgeは、ネットワークセキュリティ監視および自動応答システムとして機能します。侵入検知、脅威スコアリング、適応的防御対応を統合し、Raspberry Piハードウェア上で効率的に動作します。
 
 ### 基本アーキテクチャ
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Azazel-Pi System                    │
+│                    Azazel-Edge System                    │
 ├─────────────────────┬───────────────────────────────────┤
 │   Control Plane     │         Data Plane               │
 │                     │                                   │
@@ -35,11 +35,11 @@ Azazel-Piは、ネットワークセキュリティ監視および自動応答�
 
 | コンポーネント | 目的 | 実装場所 |
 |---------------|------|----------|
-| `azazel_pi/core/state_machine.py` | 防御態勢間の遷移を制御 | コア状態管理 |
-| `azazel_pi/core/actions/` | tc/nftables操作をべき等プランとしてモデル化 | ネットワーク制御 |
-| `azazel_pi/core/ingest/` | SuricataのEVEログとOpenCanaryイベントを解析 | データ取り込み |
-| `azazel_pi/core/display/` | E-Paperステータス表示とレンダリング | 物理インターフェース |
-| `azazel_pi/core/qos/` | プロファイルをQoS実行クラスにマッピング | 帯域制御 |
+| `azazel_edge/core/state_machine.py` | 防御態勢間の遷移を制御 | コア状態管理 |
+| `azazel_edge/core/actions/` | tc/nftables操作をべき等プランとしてモデル化 | ネットワーク制御 |
+| `azazel_edge/core/ingest/` | SuricataのEVEログとOpenCanaryイベントを解析 | データ取り込み |
+| `azazel_edge/core/display/` | E-Paperステータス表示とレンダリング | 物理インターフェース |
+| `azazel_edge/core/qos/` | プロファイルをQoS実行クラスにマッピング | 帯域制御 |
 | `azctl/` | systemdで使用される軽量CLI/デーモンインターフェース | システム統合 |
 | `azctl/tui_zero.py` + `azctl/tui_zero_textual.py` | unified Textual TUI（Azazel-Zero移植） | ユーザーインターフェース |
 | `configs/` | スキーマ検証を含む宣言的設定セット | 設定管理 |
@@ -111,7 +111,7 @@ class StateMachine:
 
 ## スコアリングシステム
 
-脅威スコアリングロジックは`azazel_pi/core/scorer.py`に実装され、`tests/`配下のユニットテストで検証されています。
+脅威スコアリングロジックは`azazel_edge/core/scorer.py`に実装され、`tests/`配下のユニットテストで検証されています。
 
 ### ScoreEvaluator クラス
 
@@ -370,7 +370,7 @@ Azazelは統合された`azctl-unified.service`を通じてすべてのサービ
 # azctl-unified.service
 [Unit]
 Description=Azazel Control System
-Documentation=https://github.com/01rabbit/Azazel-Pi
+Documentation=https://github.com/01rabbit/Azazel-Edge
 Wants=azctl-unified.service mattermost.service nginx.service
 After=multi-user.target network-online.target
 
@@ -439,11 +439,11 @@ class MetricsCollector:
 
 ## TUIメニューアーキテクチャ
 
-Azazel-PiのメニューTUIは、Azazel-Zero由来の unified Textual UI に統一されました。
+Azazel-EdgeのメニューTUIは、Azazel-Zero由来の unified Textual UI に統一されました。
 
 ```
 azctl/cli.py                  # `menu` サブコマンド入口
-azctl/tui_zero.py             # Azazel-Pi向けアダプタ（状態/アクション変換）
+azctl/tui_zero.py             # Azazel-Edge向けアダプタ（状態/アクション変換）
 azctl/tui_zero_textual.py     # Textualレイアウトとキー操作
 ```
 
@@ -517,4 +517,4 @@ TUI拡張時は `azctl/tui_zero.py` の状態/アクション変換と、`azctl/
 
 ---
 
-*Azazel-Piアーキテクチャの詳細については、[公式リポジトリ](https://github.com/01rabbit/Azazel-Pi)のソースコードとドキュメントを参照してください。*
+*Azazel-Edgeアーキテクチャの詳細については、[公式リポジトリ](https://github.com/01rabbit/Azazel-Edge)のソースコードとドキュメントを参照してください。*

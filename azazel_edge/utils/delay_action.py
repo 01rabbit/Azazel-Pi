@@ -60,7 +60,7 @@ def load_opencanary_ip() -> str:
     return OPENCANARY_IP
 
 
-from azazel_pi.utils.cmd_runner import run as run_cmd
+from azazel_edge.utils.cmd_runner import run as run_cmd
 
 
 def check_nft_table_exists(table_name: str = "azazel") -> bool:

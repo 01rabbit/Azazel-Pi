@@ -1,4 +1,4 @@
-# Azazel-Pi Ollama Integration - Design Implementation Complete
+# Azazel-Edge Ollama Integration - Design Implementation Complete
 
 ## Overview
 Complete implementation of a real-time threat detection and automatic response system
@@ -43,7 +43,7 @@ System: tc/nftables + Mattermost Notification
 ├── policy_block.sh                    # nftables blocking
 └── .env                              # Environment settings
 
-Azazel-Pi/
+Azazel-Edge/
 ├── deploy/
 │   ├── docker-compose-ollama.yml     # Docker configuration
 │   ├── alert_handler.py              # Alert handler
@@ -51,7 +51,7 @@ Azazel-Pi/
 │   └── models/                       # Model settings
 ├── scripts/
 │   └── install_ollama.sh             # Automatic installation
-├── azazel_pi/core/
+├── azazel_edge/core/
 │   ├── ai_config.py                  # AI config (Ollama enabled)
 │   └── ai_evaluator.py               # Existing AI evaluator (supported)
 └── configs/
@@ -80,7 +80,7 @@ wget https://huggingface.co/mradermacher/Qwen2.5-1.5B-Instruct-uncensored-GGUF/r
 
 ### 2. Run Automatic Installation
 ```bash
-cd /home/azazel/Azazel-Pi
+cd /home/azazel/Azazel-Edge
 sudo ./scripts/install_ollama.sh
 ```
 
@@ -91,7 +91,7 @@ ls -la /opt/models/qwen/Qwen2.5-1.5B-Instruct-uncensored.Q4_K_M.gguf
 
 # 3. Place configuration files
 sudo mkdir -p /opt/azazel
-cd /home/azazel/Azazel-Pi
+cd /home/azazel/Azazel-Edge
 cp deploy/docker-compose-ollama.yml /opt/azazel/docker-compose.yml
 cp deploy/alert_handler.py /opt/azazel/
 cp deploy/policy_*.sh /opt/azazel/
@@ -143,7 +143,7 @@ outputs:
 
 vars:
   address-groups:
-    HOME_NET: "[172.16.0.254]"  # Azazel-Pi's own IP
+    HOME_NET: "[172.16.0.254]"  # Azazel-Edge's own IP
 ```
 
 ## Verification
@@ -276,5 +276,5 @@ docker-compose restart threat-handler
 All components are implemented and ready for one-line execution:
 
 ```bash
-sudo /home/azazel/Azazel-Pi/scripts/install_ollama.sh
+sudo /home/azazel/Azazel-Edge/scripts/install_ollama.sh
 ```

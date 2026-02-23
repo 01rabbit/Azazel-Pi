@@ -1,4 +1,4 @@
-"""Azazel Pi - Network Security Monitoring and Response System."""
+"""Azazel Edge - Network Security Monitoring and Response System."""
 
 from .core.state_machine import Event, StateMachine, State, Transition
 from .core.scorer import ScoreEvaluator

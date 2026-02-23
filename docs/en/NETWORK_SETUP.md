@@ -1,10 +1,10 @@
 # Network Setup Guide
 
-This guide covers network configuration for Azazel-Pi deployments, including automatic setup via the installer and manual configuration procedures for advanced use cases.
+This guide covers network configuration for Azazel-Edge deployments, including automatic setup via the installer and manual configuration procedures for advanced use cases.
 
 ## Overview
 
-Azazel-Pi can operate in multiple network modes:
+Azazel-Edge can operate in multiple network modes:
 
 1. **Gateway Mode**: Acting as a Wi-Fi access point with internet sharing
 2. **Monitor Mode**: Monitoring existing network traffic without routing
@@ -68,7 +68,7 @@ ip route show
 
 ## Gateway Mode Setup
 
-When Azazel-Pi needs to act as a Wi-Fi access point with internet sharing:
+When Azazel-Edge needs to act as a Wi-Fi access point with internet sharing:
 
 ### Automatic Gateway Setup
 
@@ -200,7 +200,7 @@ sudo systemctl restart dnsmasq
 # Configure static IP for AP interface (AP interface uses AZAZEL_LAN_IF)
 sudo tee -a /etc/dhcpcd.conf <<EOF
 
-# Azazel-Pi AP configuration
+# Azazel-Edge AP configuration
 interface ${AZAZEL_LAN_IF:-wlan0}
 static ip_address=172.16.0.1/24
 nohook wpa_supplicant
@@ -452,4 +452,4 @@ For cloud-connected deployments:
 
 ---
 
-*For the latest networking guidance, refer to the [Azazel-Pi repository](https://github.com/01rabbit/Azazel-Pi) and consult your network administrator for enterprise deployments.*
+*For the latest networking guidance, refer to the [Azazel-Edge repository](https://github.com/01rabbit/Azazel-Edge) and consult your network administrator for enterprise deployments.*

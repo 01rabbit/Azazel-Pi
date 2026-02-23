@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 
 from azctl.daemon import AzazelDaemon
-from azazel_pi.core.scorer import ScoreEvaluator
-from azazel_pi.core.state_machine import Event
+from azazel_edge.core.scorer import ScoreEvaluator
+from azazel_edge.core.state_machine import Event
 
 
 class DummyMachine:

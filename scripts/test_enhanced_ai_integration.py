@@ -13,8 +13,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from azazel_pi.core.enhanced_ai_evaluator import EnhancedAIThreatEvaluator
-from azazel_pi.core.integrated_threat_evaluator import IntegratedThreatEvaluator
+from azazel_edge.core.enhanced_ai_evaluator import EnhancedAIThreatEvaluator
+from azazel_edge.core.integrated_threat_evaluator import IntegratedThreatEvaluator
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

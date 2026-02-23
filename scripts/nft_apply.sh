@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# NOTE: This script is deprecated as Azazel-Pi now uses iptables instead of nftables.
+# NOTE: This script is deprecated as Azazel-Edge now uses iptables instead of nftables.
 # For iptables rule management, use iptables-restore or netfilter-persistent.
 set -euo pipefail
 
-echo "WARNING: nft_apply.sh is deprecated. Azazel-Pi now uses iptables." >&2
+echo "WARNING: nft_apply.sh is deprecated. Azazel-Edge now uses iptables." >&2
 echo "Please use 'iptables-restore < /path/to/rules' or 'netfilter-persistent reload' instead." >&2
 exit 1
 

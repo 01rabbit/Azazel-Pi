@@ -1,5 +1,5 @@
-from azazel_pi.core import notify_config
-from azazel_pi.core.notify import MattermostNotifier
+from azazel_edge.core import notify_config
+from azazel_edge.core.notify import MattermostNotifier
 
 
 def test_mattermost_notifier_builds_payload(monkeypatch):

@@ -3,9 +3,9 @@ set -euo pipefail
 # 手動実行用ラッパー: 統合監視を停止して `run_all` を root で起動
 # 使い方: sudo ./scripts/manual_monitor.sh
 
-REPO_ROOT="/home/azazel/Azazel-Pi"
+REPO_ROOT="/home/azazel/Azazel-Edge"
 PYTHONPATH_ENV="$REPO_ROOT"
-MODULE="azazel_pi.monitor.run_all"
+MODULE="azazel_edge.monitor.run_all"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "このスクリプトは root(または sudo) で実行してください。例: sudo $0"

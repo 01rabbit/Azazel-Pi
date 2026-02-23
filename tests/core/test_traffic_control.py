@@ -8,7 +8,7 @@ import subprocess
 import pytest
 import time
 from unittest.mock import Mock, patch, call
-from azazel_pi.core.enforcer.traffic_control import (
+from azazel_edge.core.enforcer.traffic_control import (
     TrafficControlEngine, TrafficControlRule, get_traffic_control_engine
 )
 
@@ -16,7 +16,7 @@ from azazel_pi.core.enforcer.traffic_control import (
 @pytest.fixture
 def traffic_engine():
     """テスト用トラフィック制御エンジン"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
         engine = TrafficControlEngine()
         return engine
@@ -39,7 +39,7 @@ def test_traffic_control_rule_creation():
 
 def test_apply_delay(traffic_engine):
     """遅延適用テスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
         
         result = traffic_engine.apply_delay("192.168.1.100", 200)
@@ -53,7 +53,7 @@ def test_apply_delay(traffic_engine):
 
 def test_apply_shaping(traffic_engine):
     """帯域制限適用テスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
         
         result = traffic_engine.apply_shaping("192.168.1.100", 128)
@@ -67,11 +67,11 @@ def test_apply_shaping(traffic_engine):
 
 def test_apply_dnat_redirect(traffic_engine):
     """DNAT転送適用テスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
-        with patch('azazel_pi.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
+        with patch('azazel_edge.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
             mock_load.return_value = "192.168.1.200"
-            with patch('azazel_pi.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
+            with patch('azazel_edge.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
                 mock_ensure.return_value = True
                 
                 result = traffic_engine.apply_dnat_redirect("192.168.1.100", 22)
@@ -103,9 +103,9 @@ def test_apply_dnat_redirect_fallbacks_to_iptables(traffic_engine):
 
     traffic_engine.set_subprocess_runner(runner)
 
-    with patch('azazel_pi.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
+    with patch('azazel_edge.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
         mock_load.return_value = "192.168.1.200"
-        with patch('azazel_pi.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
+        with patch('azazel_edge.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
             mock_ensure.return_value = True
             result = traffic_engine.apply_dnat_redirect("192.168.1.150", 22)
             assert result is True
@@ -116,7 +116,7 @@ def test_apply_dnat_redirect_fallbacks_to_iptables(traffic_engine):
 
 def test_apply_suspect_classification(traffic_engine):
     """suspect分類適用テスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
         
         result = traffic_engine.apply_suspect_classification("192.168.1.100")
@@ -130,11 +130,11 @@ def test_apply_suspect_classification(traffic_engine):
 
 def test_apply_combined_action_shield(traffic_engine):
     """shield モード複合アクションテスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
-        with patch('azazel_pi.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
+        with patch('azazel_edge.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
             mock_load.return_value = "192.168.1.200"
-            with patch('azazel_pi.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
+            with patch('azazel_edge.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
                 mock_ensure.return_value = True
                 
                 result = traffic_engine.apply_combined_action("192.168.1.100", "shield")
@@ -153,11 +153,11 @@ def test_apply_combined_action_shield(traffic_engine):
 
 def test_apply_combined_action_lockdown(traffic_engine):
     """lockdown モード複合アクションテスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
-        with patch('azazel_pi.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
+        with patch('azazel_edge.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
             mock_load.return_value = "192.168.1.200"
-            with patch('azazel_pi.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
+            with patch('azazel_edge.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
                 mock_ensure.return_value = True
                 
                 result = traffic_engine.apply_combined_action("192.168.1.100", "lockdown")
@@ -176,11 +176,11 @@ def test_apply_combined_action_lockdown(traffic_engine):
 def test_remove_rules_for_ip(traffic_engine):
     """IPアドレス別ルール削除テスト"""
     # まずルールを追加
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
-        with patch('azazel_pi.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
+        with patch('azazel_edge.core.enforcer.traffic_control.load_opencanary_ip') as mock_load:
             mock_load.return_value = "192.168.1.200"
-            with patch('azazel_pi.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
+            with patch('azazel_edge.core.enforcer.traffic_control.ensure_nft_table_and_chain') as mock_ensure:
                 mock_ensure.return_value = True
                 
                 traffic_engine.apply_combined_action("192.168.1.100", "shield")
@@ -204,7 +204,7 @@ def test_cleanup_expired_rules(traffic_engine):
     )
     traffic_engine.active_rules["192.168.1.100"] = [old_rule]
     
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
         
         cleaned_count = traffic_engine.cleanup_expired_rules(max_age_seconds=3600)  # 1時間
@@ -232,7 +232,7 @@ def test_get_stats(traffic_engine):
 
 def test_singleton_engine():
     """シングルトンエンジンテスト"""
-    with patch('azazel_pi.core.enforcer.traffic_control.subprocess.run') as mock_run:
+    with patch('azazel_edge.core.enforcer.traffic_control.subprocess.run') as mock_run:
         mock_run.return_value = Mock(returncode=0)
         
         engine1 = get_traffic_control_engine()

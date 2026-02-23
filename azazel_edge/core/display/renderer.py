@@ -1,4 +1,4 @@
-"""E-Paper renderer for Azazel Pi status display."""
+"""E-Paper renderer for Azazel Edge status display."""
 from __future__ import annotations
 
 import os
@@ -32,7 +32,7 @@ MONO_FONT_CANDIDATES = [
 
 
 class EPaperRenderer:
-    """Renders Azazel Pi status to Waveshare E-Paper display."""
+    """Renders Azazel Edge status to Waveshare E-Paper display."""
 
     def __init__(
         self,
@@ -196,7 +196,7 @@ class EPaperRenderer:
         y = 2
 
         # Title bar (inverted)
-        title = "Azazel-Pi"
+        title = "Azazel-Edge"
         bbox = draw.textbbox((0, 0), title, font=title_font)
         title_height = bbox[3] - bbox[1] + 6
         draw.rectangle([(0, 0), (self.width, title_height)], fill=0)

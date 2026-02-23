@@ -191,13 +191,13 @@ def main():
     print("💡 Quick Download Commands:")
     print("=" * 60)
     print("# For Q4_0 (recommended for Pi5):")
-    print("./scripts/auto_retry_download.py /home/azazel/Azazel-Pi/models/qwen2.5-q4_0.gguf")
+    print("./scripts/auto_retry_download.py /home/azazel/Azazel-Edge/models/qwen2.5-q4_0.gguf")
     print()
     print("# For Q4_K_M (current download):")
-    print("./scripts/auto_retry_download.py /home/azazel/Azazel-Pi/models/qwen2.5-q4_k_m.gguf")
+    print("./scripts/auto_retry_download.py /home/azazel/Azazel-Edge/models/qwen2.5-q4_k_m.gguf")
     print()
     print("# For Q5_0 (higher quality):")
-    print("./scripts/auto_retry_download.py /home/azazel/Azazel-Pi/models/qwen2.5-q5_0.gguf")
+    print("./scripts/auto_retry_download.py /home/azazel/Azazel-Edge/models/qwen2.5-q5_0.gguf")
 
 if __name__ == "__main__":
     main()
