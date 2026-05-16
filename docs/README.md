@@ -22,6 +22,7 @@ Choose your preferred language:
 - [アーキテクチャ概要](ja/ARCHITECTURE.md)
 - [AIエッジ実装](ja/AI_EDGE_IMPLEMENTATION.md)
 - [Ollamaセットアップ](ja/OLLAMA_SETUP.md)
+- [Azazel-Pi→Azazel-Edge 引き継ぎサマリ](ja/HANDOVER_FROM_AZAZEL_PI.md)
 
 ## Structure
 

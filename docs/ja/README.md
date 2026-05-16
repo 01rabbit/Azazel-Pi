@@ -23,6 +23,7 @@
 - [OPERATIONS.md](OPERATIONS.md) - 運用ガイド
 - [API_REFERENCE.md](API_REFERENCE.md) - APIリファレンス
 - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - トラブルシューティングガイド
+- [HANDOVER_FROM_AZAZEL_PI.md](HANDOVER_FROM_AZAZEL_PI.md) - Azazel-Pi終了に伴う引き継ぎサマリ
 
 ## 言語
 

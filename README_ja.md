@@ -12,6 +12,19 @@
 ![SecTor](https://img.shields.io/badge/SecTor%20Arsenal-2025-red)
 ![bluebox](https://img.shields.io/badge/CODE%20BLUE%20bluebox-2025-blue)
 
+## プロジェクト状態（EOL）
+
+このリポジトリは **2026-05-16 に開発終了（EOL）** しました。
+
+- このリポジトリでの新規開発は終了しています。
+- 機能はすべて **Azazel-Edge** に引き継がれています。
+- 新機能・不具合修正・セキュリティ修正は以下でのみ受け付けます:
+  - [https://github.com/01rabbit/Azazel-Edge](https://github.com/01rabbit/Azazel-Edge)
+- アーカイブ実施手順チェックリスト:
+  - [EOL_ARCHIVE_CHECKLIST.md](EOL_ARCHIVE_CHECKLIST.md)
+
+Issue / PR はこのリポジトリではなく Azazel-Edge 側へお願いします。
+
 ## コンセプト
 
 **遅滞行動（Delaying Action）** という言葉をご存知でしょうか？軍事戦略において、これは防御部隊が決定的な戦闘を避けつつ、可能な限り敵の進撃を遅らせ、時間を稼ぐための防衛行動を意味します。今日のサイバー戦では、攻撃は高速で自動化されており、資産が数秒で侵害される可能性があります。私たちは、この古典的な戦術概念を現代のサイバーセキュリティに再解釈して適用すべきだと考えています。
@@ -415,11 +428,20 @@ MIT License
 
 ## 貢献
 
-Azazel-Edgeプロジェクトへの貢献を歓迎します。[貢献ガイドライン](CONTRIBUTING.md)を参照し、レビュー用のプルリクエストを提出してください。
+このリポジトリはEOLのため、コード貢献は受け付けていません。
+
+- このリポジトリへのPRは作成しないでください。
+- 貢献先は **Azazel-Edge** を利用してください:
+  - [https://github.com/01rabbit/Azazel-Edge](https://github.com/01rabbit/Azazel-Edge)
+- 方針は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
 
 ## セキュリティ開示
 
-セキュリティ関連の問題については、GitHubのプライベート脆弱性報告を使用するか、メンテナーに直接連絡してください。
+このリポジトリでは新規セキュリティ報告を受け付けません。
+
+- 報告先は **Azazel-Edge**:
+  - [https://github.com/01rabbit/Azazel-Edge/security](https://github.com/01rabbit/Azazel-Edge/security)
+- このリポジトリのEOLセキュリティ方針は [SECURITY.md](SECURITY.md) を参照してください。
 
 ---
 

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [EOL] - 2026-05-16
+### Changed
+- Declared this repository End of Life (EOL).
+- Redirected issue, PR, contribution, and security reporting paths to Azazel-Edge.
+
+### Notes
+- Active development continues in: https://github.com/01rabbit/Azazel-Edge
+
 ## [3.2.0] - 2025-11-14
 ### Added
 - `scripts/link_opt_to_repo.sh`: backup and symlink `deploy/` files into `/opt/azazel/config` to keep runtime config synced with the repository.

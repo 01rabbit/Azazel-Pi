@@ -12,6 +12,19 @@ English | [日本語](README_ja.md)
 ![SecTor](https://img.shields.io/badge/SecTor%20Arsenal-2025-red)
 ![bluebox](https://img.shields.io/badge/CODE%20BLUE%20bluebox-2025-blue)
 
+## Project Status (EOL)
+
+This repository reached **End of Life (EOL) on 2026-05-16**.
+
+- Development for this repository has ended.
+- All maintained features have been handed over to **Azazel-Edge**.
+- New features, bug fixes, and security fixes are accepted only in:
+  - [https://github.com/01rabbit/Azazel-Edge](https://github.com/01rabbit/Azazel-Edge)
+- EOL archive operations checklist:
+  - [EOL_ARCHIVE_CHECKLIST.md](EOL_ARCHIVE_CHECKLIST.md)
+
+Before opening any issue or pull request, use Azazel-Edge instead of this repository.
+
 ## Concept
 
 Do you know the term **Delaying Action**? In military strategy, this refers to a defensive operation where defending forces continue to fight while avoiding decisive engagement, slowing the enemy's advance as much as possible to buy time. In today's cyber warfare, attacks are fast and automated, with assets potentially compromised within seconds. We believe this classical tactical concept should be reinterpreted and applied to modern cybersecurity.
@@ -487,11 +500,20 @@ MIT License
 
 ## Contributing
 
-We welcome contributions to the Azazel-Edge project. Please see our [contribution guidelines](CONTRIBUTING.md) and submit pull requests for review.
+This repository is EOL and no longer accepts code contributions.
+
+- Please do not open PRs against this repository.
+- Contribute to **Azazel-Edge** instead:
+  - [https://github.com/01rabbit/Azazel-Edge](https://github.com/01rabbit/Azazel-Edge)
+- See the archived contribution policy in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Security Disclosure
 
-For security-related issues, please use GitHub's private vulnerability reporting or contact the maintainers directly.
+Do not report new security issues in this repository.
+
+- Report security issues to **Azazel-Edge**:
+  - [https://github.com/01rabbit/Azazel-Edge/security](https://github.com/01rabbit/Azazel-Edge/security)
+- See [SECURITY.md](SECURITY.md) for this repository's EOL security policy.
 
 ---
 
